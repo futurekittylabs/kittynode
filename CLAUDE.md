@@ -15,8 +15,7 @@ cargo install just
 
 # Clone and set up
 git clone git@github.com:kittynode/kittynode.git && cd kittynode
-pnpm install
-just install-dev-tools  # Installs cargo-edit, cargo-llvm-cov, cargo-nextest, tauri-cli
+just setup
 ```
 
 ## Command Reference

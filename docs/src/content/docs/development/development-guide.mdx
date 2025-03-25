@@ -33,7 +33,7 @@ Get started with the codebase and running development commands.
 
 </Steps>
 
-### Development commands
+### Get started
 
 <Steps>
 
@@ -43,22 +43,22 @@ Get started with the codebase and running development commands.
     git clone git@github.com:kittynode/kittynode.git && cd kittynode
     ```
 
-2. Install dependencies:
+2. Install Node dependencies and Rust dev tools:
 
     ```bash
-    pnpm install
+    just setup
     ```
 
-3. Install Rust dev tools:
+3. Start the GUI app locally:
 
     ```bash
-    just install-dev-tools
+    just gui
     ```
 
 4. See the full list of commands:
 
     ```bash
-    just -l
+    just --list
     ```
 
 </Steps>

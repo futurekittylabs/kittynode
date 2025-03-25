@@ -71,6 +71,10 @@ lint-rs:
 lint-rs-pedantic:
   cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::too_many_lines && cargo fmt --all -- --check
 
+# set up the project
+setup:
+  pnpm install && just install-dev-tools
+
 # add a shadcn component
 shadcn-add *args='':
   cd packages/gui && pnpm dlx shadcn-svelte@next add {{args}} && pnpm format-lint:fix
