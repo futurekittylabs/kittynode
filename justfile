@@ -73,7 +73,7 @@ lint-rs-pedantic:
 
 # set up the project
 setup:
-  pnpm install && just install-dev-tools
+  pnpm install && just install-dev-tools && just ios-init
 
 # add a shadcn component
 shadcn-add *args='':
