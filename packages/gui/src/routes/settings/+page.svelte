@@ -6,7 +6,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { updates } from "$stores/updates.svelte";
-import { LoaderCircle } from "lucide-svelte";
+import { LoaderCircle } from "@lucide/svelte";
 import { refetchStores } from "$utils/refetchStores";
 import { error } from "$utils/error";
 import { setMode, userPrefersMode } from "mode-watcher";
@@ -130,7 +130,7 @@ function setRemote(serverUrl: string) {
     <Select.Root
       type="single"
       bind:value={currentTheme}
-      onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
+      onValueChange={(value: "light" | "dark" | "system") => setMode(value)}
     >
       <Select.Trigger class="w-[180px] capitalize">
         {currentTheme || "Select theme"}
