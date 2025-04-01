@@ -47,7 +47,7 @@ fn get_processor_info(system: &System) -> Result<ProcessorInfo> {
         } else {
             cpu.brand().to_string()
         },
-        cores: system.physical_core_count().unwrap_or(1) as u32,
+        cores: sysinfo::System::physical_core_count().unwrap_or(1) as u32,
         frequency_ghz: cpu.frequency() as f64 / 1000.0,
         architecture: std::env::consts::ARCH.to_string(),
     })
