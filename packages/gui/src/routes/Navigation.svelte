@@ -1,6 +1,6 @@
 <script lang="ts">
 import { page } from "$app/stores";
-import { House, HeartPulse, Settings, KeyRound } from "lucide-svelte";
+import { House, HeartPulse, Settings } from "@lucide/svelte";
 </script>
 
 <nav>

@@ -2,7 +2,7 @@
 import { Button } from "$lib/components/ui/button";
 import { Separator } from "$lib/components/ui/separator";
 import { updates } from "$stores/updates.svelte";
-import { LoaderCircle } from "lucide-svelte";
+import { LoaderCircle } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { error } from "$utils/error";
 
