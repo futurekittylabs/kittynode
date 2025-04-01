@@ -14,7 +14,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install just
 
 # Clone and set up
-git clone git@github.com:kittynode/kittynode.git && cd kittynode
+git clone git@github.com:blackkittylabs/kittynode.git && cd kittynode
 just setup
 ```
 
