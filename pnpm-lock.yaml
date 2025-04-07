@@ -33,8 +33,8 @@ importers:
         specifier: ^0.11.1
         version: 0.11.1(@astrojs/starlight@0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1)))
       starlight-links-validator:
-        specifier: ^0.14.3
-        version: 0.14.3(@astrojs/starlight@0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1)))
+        specifier: ^0.15.0
+        version: 0.15.0(@astrojs/starlight@0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1)))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -2351,11 +2351,11 @@ packages:
     peerDependencies:
       '@astrojs/starlight': '>=0.32.0'
 
-  starlight-links-validator@0.14.3:
-    resolution: {integrity: sha512-2CvQs0ZdIVExrEQ1bn0r2aFx4n+VSOb6vDWK+gTNb5N1c+nXJ7VjUbEsQhj+9Lb7XgY6Nxqz9JXUM9364hJ3ZA==}
+  starlight-links-validator@0.15.0:
+    resolution: {integrity: sha512-NZeb9WF5Skdz1dQnALFtxU2sQW9mSMqudDUG7B2w3NCe4xDAwKEdBOOSn7hfJtzziFWksZXobvUgEBhR4S5eXA==}
     engines: {node: '>=18.17.1'}
     peerDependencies:
-      '@astrojs/starlight': '>=0.15.0'
+      '@astrojs/starlight': '>=0.32.0'
 
   stream-replace-string@2.0.0:
     resolution: {integrity: sha512-TlnjJ1C0QrmxRNrON00JvaFFlNh5TTG00APw23j74ET7gkQpTASi6/L2fuiav8pzK715HXtUeClpBTw2NPSn6w==}
@@ -5751,7 +5751,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  starlight-links-validator@0.14.3(@astrojs/starlight@0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1))):
+  starlight-links-validator@0.15.0(@astrojs/starlight@0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1))):
     dependencies:
       '@astrojs/starlight': 0.32.6(astro@5.6.1(@types/node@18.19.86)(jiti@2.4.2)(lightningcss@1.29.2)(rollup@4.39.0)(typescript@5.8.3)(yaml@2.7.1))
       '@types/picomatch': 3.0.2
