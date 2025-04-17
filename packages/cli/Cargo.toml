@@ -22,5 +22,5 @@ tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = "0.3.19"
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
+assert_cmd = "2.0.17"
 predicates = "3.1.3"
