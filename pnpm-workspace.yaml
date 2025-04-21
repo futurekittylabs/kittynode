@@ -1,3 +1,8 @@
 packages:
-  - "docs"
-  - "packages/gui"
+  - docs
+  - packages/gui
+
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - esbuild
+  - sharp
