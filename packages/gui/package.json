@@ -19,7 +19,7 @@
     "@tauri-apps/plugin-shell": "^2.2.1",
     "@tauri-apps/plugin-updater": "^2.7.0",
     "ansi-to-html": "^0.7.2",
-    "mode-watcher": "^0.5.1"
+    "mode-watcher": "^1.0.2"
   },
   "devDependencies": {
     "@lucide/svelte": "^0.486.0",
