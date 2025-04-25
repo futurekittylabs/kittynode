@@ -24,11 +24,23 @@ export default defineConfig({
       },
       customCss: ["./src/styles/custom.css"],
       favicon: "/images/favicon.ico",
-      social: {
-        github: "https://github.com/blackkittylabs",
-        discord: "https://discord.kittynode.io",
-        farcaster: "https://warpcast.com/kittynode",
-      },
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/blackkittylabs/kittynode",
+        },
+        {
+          icon: "discord",
+          label: "Discord",
+          href: "https://discord.kittynode.io",
+        },
+        {
+          icon: "farcaster",
+          label: "Farcaster",
+          href: "https://warpcast.com/kittynode",
+        },
+      ],
       sidebar: [
         {
           label: "Learn",
