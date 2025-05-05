@@ -20,7 +20,7 @@ tokio-stream = "0.1.17"
 home = "0.5.11"
 hex = "0.4.3"
 rand = "0.9.1"
-sysinfo = "0.34.2"
+sysinfo = "0.35.0"
 
 [dev-dependencies]
 tempfile = "3.19.1"
