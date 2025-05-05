@@ -31,3 +31,6 @@ jobs:
 
       - name: Format and lint
         run: pnpm -F docs -F gui format-lint
+
+      - name: Svelte check
+        run: pnpm -F gui check

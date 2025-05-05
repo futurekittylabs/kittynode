@@ -87,7 +87,7 @@ onMount(() => {
   window.addEventListener("resize", resizeCanvas);
 
   function animate() {
-    ctx.fillStyle = $mode === "dark" ? "#0a0a0a" : "#FFFFFF";
+    ctx.fillStyle = mode.current === "dark" ? "#0a0a0a" : "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (const node of nodes) {
@@ -98,7 +98,7 @@ onMount(() => {
 
       ctx.beginPath();
       ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-      ctx.fillStyle = $mode === "dark" ? "#FFFFFF" : "#000000";
+      ctx.fillStyle = mode.current === "dark" ? "#FFFFFF" : "#000000";
       ctx.fill();
     }
 
@@ -112,7 +112,7 @@ onMount(() => {
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
           ctx.lineTo(nodes[j].x, nodes[j].y);
-          const color = $mode === "dark" ? "255, 255, 255" : "0, 0, 0";
+          const color = mode.current === "dark" ? "255, 255, 255" : "0, 0, 0";
           ctx.strokeStyle = `rgba(${color}, ${1 - distance / 100})`;
           ctx.lineWidth = 1;
           ctx.stroke();
