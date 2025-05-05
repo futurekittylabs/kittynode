@@ -63,8 +63,8 @@ importers:
         specifier: ^0.7.2
         version: 0.7.2
       mode-watcher:
-        specifier: ^1.0.2
-        version: 1.0.2(svelte@5.28.2)
+        specifier: ^1.0.6
+        version: 1.0.6(svelte@5.28.2)
     devDependencies:
       '@lucide/svelte':
         specifier: ^0.503.0
@@ -2064,8 +2064,8 @@ packages:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
     engines: {node: '>=16 || 14 >=14.17'}
 
-  mode-watcher@1.0.2:
-    resolution: {integrity: sha512-b3ghU4F4kZeRHHPlsVeCltBgYRHNr7HNyT9JTlvIIvuob7Vulu7iKCfaKNU4FGugBIFWyK5q4bDhqCeZy3Cuxw==}
+  mode-watcher@1.0.6:
+    resolution: {integrity: sha512-6bG6KfPPaZoaw523rLR3z8dlCK/dskIBv7z7qdRPizD5b5BDYyCCLQ33FSCRTd7Ai3i7FWIBuXCZaF5IVVC3GQ==}
     peerDependencies:
       svelte: ^5.27.0
 
@@ -5479,7 +5479,7 @@ snapshots:
 
   minipass@7.1.2: {}
 
-  mode-watcher@1.0.2(svelte@5.28.2):
+  mode-watcher@1.0.6(svelte@5.28.2):
     dependencies:
       runed: 0.25.0(svelte@5.28.2)
       svelte: 5.28.2
