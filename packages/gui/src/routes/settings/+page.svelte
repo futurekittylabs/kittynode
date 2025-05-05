@@ -12,7 +12,7 @@ import { error } from "$utils/error";
 import { setMode, userPrefersMode } from "mode-watcher";
 import * as Select from "$lib/components/ui/select";
 
-let currentTheme = $state<"light" | "dark" | "system">($userPrefersMode);
+let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
 
 async function enableRemoteAccess() {
   try {
@@ -130,7 +130,7 @@ function setRemote(serverUrl: string) {
     <Select.Root
       type="single"
       bind:value={currentTheme}
-      onValueChange={(value: "light" | "dark" | "system") => setMode(value)}
+      onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
     >
       <Select.Trigger class="w-[180px] capitalize">
         {currentTheme || "Select theme"}
