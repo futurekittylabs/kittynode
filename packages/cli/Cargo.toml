@@ -18,7 +18,7 @@ eyre = { version = "0.6.12", default-features = false, features = [
   "track-caller",
 ] }
 kittynode-core = { version = "0.4.0", path = "../core" }
-tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.45.0", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = "0.3.19"
 
 [dev-dependencies]
