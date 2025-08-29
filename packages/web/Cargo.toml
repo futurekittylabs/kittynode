@@ -11,4 +11,4 @@ readme.workspace = true
 axum = "0.8.4"
 tokio = { version = "1.45.0", features = ["macros", "rt-multi-thread"] }
 kittynode-core = { version = "0.4.0", path = "../core" }
-tracing-subscriber = "0.3.19"
+tracing-subscriber = "0.3.20"
