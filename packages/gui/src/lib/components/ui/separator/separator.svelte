@@ -5,18 +5,16 @@ import { cn } from "$lib/utils.js";
 let {
   ref = $bindable(null),
   class: className,
-  orientation = "horizontal",
   ...restProps
 }: SeparatorPrimitive.RootProps = $props();
 </script>
 
 <SeparatorPrimitive.Root
 	bind:ref
+	data-slot="separator"
 	class={cn(
-		"bg-border shrink-0",
-		orientation === "horizontal" ? "h-px w-full" : "min-h-full w-px",
+		"bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px",
 		className
 	)}
-	{orientation}
 	{...restProps}
 />
