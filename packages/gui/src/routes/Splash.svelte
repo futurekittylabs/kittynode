@@ -148,7 +148,7 @@ onMount(() => {
 <canvas bind:this={canvasElement}></canvas>
 
 <main class="flex flex-col justify-center items-center h-full text-center p-4 main-content">
-  <Card.Root>
+  <Card.Root class="min-w-80 max-w-md mx-4">
     <Card.Header class="flex flex-col items-center">
       <img
       class="logo w-24"
@@ -157,7 +157,7 @@ onMount(() => {
     />
       <Card.Title>Kittynode</Card.Title>
       <Card.Description>
-        <div class="mt-3">A control center for world computer operators.</div>
+        <div class="mt-3">Control center for world computer operators.</div>
       </Card.Description>
     </Card.Header>
     <Card.Content>

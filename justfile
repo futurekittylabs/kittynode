@@ -77,11 +77,11 @@ setup:
 
 # add a shadcn component
 shadcn-add *args='':
-  cd packages/gui && pnpm dlx shadcn-svelte@next add {{args}} && pnpm format-lint:fix
+  cd packages/gui && pnpm dlx shadcn-svelte@latest add {{args}} && pnpm format-lint:fix
 
 # update shadcn components
 shadcn-update:
-  cd packages/gui && pnpm dlx shadcn-svelte@next update -a -y && pnpm format-lint:fix
+  cd packages/gui && pnpm dlx shadcn-svelte@latest update -a -y && pnpm format-lint:fix
 
 # run the unit tests
 test:
