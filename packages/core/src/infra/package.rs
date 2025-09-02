@@ -97,7 +97,13 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
     // Clean up images if requested
     for image in image_names {
         info!("Removing image '{}'...", image);
-        docker.remove_image(image, None, None).await?;
+        docker
+            .remove_image(
+                image,
+                None::<bollard::query_parameters::RemoveImageOptions>,
+                None,
+            )
+            .await?;
         info!("Image '{}' removed successfully", image);
     }
 
@@ -116,7 +122,12 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
     // Clean up Docker volumes and network
     for volume in volume_names {
         info!("Removing volume '{}'...", volume);
-        docker.remove_volume(volume, None).await?;
+        docker
+            .remove_volume(
+                volume,
+                None::<bollard::query_parameters::RemoveVolumeOptions>,
+            )
+            .await?;
         info!("Volume '{}' removed successfully", volume);
     }
 

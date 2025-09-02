@@ -1,10 +1,11 @@
 use crate::domain::container::{Binding, Container};
 use bollard::{
     Docker,
-    container::{Config, CreateContainerOptions, ListContainersOptions, StartContainerOptions},
-    image::CreateImageOptions,
-    models::EndpointSettings,
-    network::{ConnectNetworkOptions, CreateNetworkOptions},
+    models::{ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest},
+    query_parameters::{
+        CreateContainerOptionsBuilder, CreateImageOptionsBuilder, ListContainersOptionsBuilder,
+        LogsOptionsBuilder,
+    },
     secret::{ContainerSummary, HostConfig},
 };
 use eyre::{Report, Result};
@@ -19,7 +20,7 @@ pub(crate) fn get_docker_instance() -> Result<Docker> {
 pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &str) -> Result<()> {
     // Check if network already exists
     let network_exists = docker
-        .list_networks::<String>(None)
+        .list_networks(None::<bollard::query_parameters::ListNetworksOptions>)
         .await?
         .iter()
         .any(|n| n.name.as_deref() == Some(network_name));
@@ -31,14 +32,12 @@ pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &s
     }
 
     // Create new network
-    docker
-        .create_network(CreateNetworkOptions {
-            name: network_name,
-            check_duplicate: true,
-            driver: "bridge",
-            ..Default::default()
-        })
-        .await?;
+    let network_config = NetworkCreateRequest {
+        name: network_name.to_string(),
+        driver: Some("bridge".to_string()),
+        ..Default::default()
+    };
+    docker.create_network(network_config).await?;
     info!("Created new network: '{}'", network_name);
 
     Ok(())
@@ -47,13 +46,12 @@ pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &s
 pub(crate) async fn find_container(docker: &Docker, name: &str) -> Result<Vec<ContainerSummary>> {
     let filters = HashMap::from([("name".to_string(), vec![name.to_string()])]);
 
-    Ok(docker
-        .list_containers(Some(ListContainersOptions {
-            all: true,
-            filters,
-            ..Default::default()
-        }))
-        .await?)
+    let options = ListContainersOptionsBuilder::default()
+        .all(true)
+        .filters(&filters)
+        .build();
+
+    Ok(docker.list_containers(Some(options)).await?)
 }
 
 pub(crate) async fn remove_container(docker: &Docker, name: &str) -> Result<()> {
@@ -61,8 +59,16 @@ pub(crate) async fn remove_container(docker: &Docker, name: &str) -> Result<()> 
         let id = container
             .id
             .ok_or_else(|| eyre::eyre!("Container ID was None"))?;
-        docker.stop_container(&id, None).await.ok(); // Ignore stop errors
-        docker.remove_container(&id, None).await?;
+        docker
+            .stop_container(&id, None::<bollard::query_parameters::StopContainerOptions>)
+            .await
+            .ok(); // Ignore stop errors
+        docker
+            .remove_container(
+                &id,
+                None::<bollard::query_parameters::RemoveContainerOptions>,
+            )
+            .await?;
     }
 
     Ok(())
@@ -73,11 +79,12 @@ pub(crate) async fn pull_and_start_container(
     container: &Container,
     network_name: &str,
 ) -> Result<()> {
-    let options = Some(CreateImageOptions {
-        from_image: container.image.to_string(),
-        tag: "latest".to_string(),
-        ..Default::default()
-    });
+    let options = Some(
+        CreateImageOptionsBuilder::default()
+            .from_image(container.image.as_str())
+            .tag("latest")
+            .build(),
+    );
 
     let mut stream = docker.create_image(options, None, None);
     while let Some(item) = stream.next().await {
@@ -106,37 +113,37 @@ pub(crate) async fn pull_and_start_container(
         ..Default::default()
     };
 
-    let config = Config {
+    let config = ContainerCreateBody {
         image: Some(container.image.to_string()),
         cmd: Some(container.cmd.clone()),
         host_config: Some(host_config),
         ..Default::default()
     };
 
-    let created_container = docker
-        .create_container(
-            Some(CreateContainerOptions {
-                name: container.name.to_string(),
-                ..Default::default()
-            }),
-            config,
-        )
-        .await?;
+    let options = Some(
+        CreateContainerOptionsBuilder::default()
+            .name(container.name.as_str())
+            .build(),
+    );
+
+    let created_container = docker.create_container(options, config).await?;
     info!("Container {} created successfully.", container.name);
 
     docker
-        .start_container(&created_container.id, None::<StartContainerOptions<String>>)
+        .start_container(
+            &created_container.id,
+            None::<bollard::query_parameters::StartContainerOptions>,
+        )
         .await?;
     info!("Container {} started successfully.", container.name);
 
+    let connect_options = NetworkConnectRequest {
+        container: Some(container.name.to_string()),
+        endpoint_config: Some(EndpointSettings::default()),
+    };
+
     docker
-        .connect_network(
-            network_name,
-            ConnectNetworkOptions {
-                container: container.name.to_string(),
-                endpoint_config: EndpointSettings::default(),
-            },
-        )
+        .connect_network(network_name, connect_options)
         .await?;
     info!(
         "Container {} connected to network '{}'.",
@@ -153,14 +160,13 @@ pub async fn get_container_logs(
 ) -> Result<Vec<String>> {
     let tail = tail_lines.map_or_else(|| "all".to_string(), |n| n.to_string());
 
-    let options = bollard::container::LogsOptions::<String> {
-        stdout: true,
-        stderr: true,
-        follow: false,
-        timestamps: true,
-        tail,
-        ..Default::default()
-    };
+    let options = LogsOptionsBuilder::default()
+        .stdout(true)
+        .stderr(true)
+        .follow(false)
+        .timestamps(true)
+        .tail(&tail)
+        .build();
 
     let mut stream = docker.logs(container_name, Some(options));
     let mut log_strings = Vec::new();
