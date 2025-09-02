@@ -6,6 +6,11 @@
     "useIgnoreFile": true
   },
   "files": {
+    "includes": [
+      "**",
+      "!packages/gui/src/app.css",
+      "!packages/gui/src/lib/utils.ts"
+    ],
     "ignoreUnknown": false
   },
   "formatter": {
