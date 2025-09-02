@@ -6,14 +6,12 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false,
-    "includes": ["**"]
+    "ignoreUnknown": false
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space"
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -25,14 +23,26 @@
       "quoteStyle": "double"
     }
   },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "overrides": [
     {
-      "includes": ["**/*.astro", "**/*.svelte"],
+      "includes": ["**/*.svelte", "**/*.astro"],
       "linter": {
         "rules": {
           "style": {
             "useConst": "off",
             "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
           }
         }
       }
