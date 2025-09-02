@@ -3,5 +3,10 @@
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "^2.2.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
