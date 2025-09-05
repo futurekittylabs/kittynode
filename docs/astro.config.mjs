@@ -53,22 +53,8 @@ export default defineConfig({
           ],
         },
         {
-          label: "Development",
-          items: [
-            {
-              label: "Development guide",
-              slug: "development/development-guide",
-            },
-            { label: "Releases", slug: "development/releases" },
-          ],
-        },
-        {
           label: "Resources",
           items: [
-            {
-              label: "Educational materials",
-              slug: "resources/educational-materials",
-            },
             {
               label: "Hardware resources",
               slug: "resources/hardware-resources",
