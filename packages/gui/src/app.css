@@ -119,3 +119,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* shadcn component overrides */
+@layer components {
+  /* Button component overrides */
+  [data-slot="button"] {
+    cursor: pointer;
+  }
+}
