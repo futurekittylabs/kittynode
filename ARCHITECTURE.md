@@ -40,7 +40,7 @@ Here are a few example capabilities related to remote access:
 
 ## Architecture Diagram
 
-![Kittynode architecture diagram](./docs/src/content/docs/assets/diagrams/diagram.svg)
+![Kittynode architecture diagram](./assets/diagrams/diagram.svg)
 
 ## Design
 
