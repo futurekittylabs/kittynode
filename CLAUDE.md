@@ -1,11 +1,6 @@
-# Kittynode Development Guide
+# Kittynode Developer Reference
 
-## Project Overview
-Kittynode is a control center for world computer operators with these main components:
-- `kittynode-core`: Core Rust library powering all applications
-- `kittynode-cli`: Command-line interface built on the core library
-- `kittynode-gui`: Cross-platform Tauri app with Svelte frontend
-- `kittynode-web`: Web server binding to the core library
+This file contains all development guidelines and instructions for working with the Kittynode codebase. It serves both human developers and AI assistants.
 
 ## Development Setup
 ```bash
@@ -59,13 +54,62 @@ just lint-js                # Lint JS/TS code
 - Modular package ecosystem that's secure, consistent, and atomic
 - Testing focuses on unit tests and behavior tests, not 100% coverage
 
-## Documentation
-This file consolidates information previously located in:
-- `./justfile` - Command reference
-- `./docs/src/content/docs/development/development-guide.mdx` - Development guide
-- `./packages/README.md` - Architecture overview
+## Testing Philosophy
 
-For end-user documentation, visit https://kittynode.io
+### Test Types
+- **Unit tests** for kittynode-core: Focus on data transformation without mocking
+- **Behavior tests** for kittynode-cli: Test actual CLI behavior
+
+We discourage mocking in unit tests. A unit test should take primitive data, transform it, and return a result. Integration boundaries are tested at higher levels.
+
+### Code Coverage
+We include integration test coverage in our total. This represents our holistic testing strategy. We don't aim for 100% coverage - tests should explain how code works and ensure expected behavior.
+
+### Running Tests
+```bash
+just test                   # Run unit tests
+just test-all               # Run all tests including ignored
+cargo nextest run test_name # Run a specific test
+```
+
+## Logging Guidelines
+
+### When to Log
+- **Required**: In library functions and after operations succeed/fail
+- **Encouraged**: At API entry points in binding layers
+- **Optional**: Other layers (use judgment, avoid over-logging)
+
+### Log Format
+- Write logs in sentence case without trailing periods
+- Log errors when calling library functions or external APIs
+
+### Log Functions
+- **Rust**: `info!()` and `error!()`
+- **JavaScript**: `console.info()` and custom `error()` functions
+
+## Managing Releases
+
+We push tags in format `<package-name>-0.y.z-alpha` to GitHub. CI builds and publishes draft releases with auto-generated changelogs.
+
+Find latest releases at: https://github.com/blackkittylabs/kittynode/releases
+
+## Troubleshooting
+
+### iOS Deployment
+1. Ensure physical device is connected and Xcode is open
+2. Uninstall any previous builds from device
+3. If iOS IP isn't visible, check connection
+
+### iOS Clean Commands
+```bash
+# Clean Xcode data
+rm -rf ~/Library/Developer/Xcode/DerivedData
+rm -rf ~/Library/Developer/Xcode/Archives
+rm -rf ~/Library/Developer/Xcode/Projects
+
+# Reset simulators
+xcrun simctl erase all
+```
 
 ## Git Style Guidelines
 - We use merge commits for PRs

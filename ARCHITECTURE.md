@@ -1,24 +1,22 @@
-This document gives a high level architectural overview for Kittynode.
+# Kittynode Architecture
+
+Control center for world computer operators.
 
 ## Packages
 
 | Package | Description |
 | --- | --- |
-| [kittynode-cli](https://github.com/blackkittylabs/kittynode/tree/main/packages/cli) | A CLI frontend that binds to kittynode-core. |
-| [kittynode-core](https://github.com/blackkittylabs/kittynode/tree/main/packages/core) | Core library powering the Kittynode apps. |
-| [kittynode-gui](https://github.com/blackkittylabs/kittynode/tree/main/packages/gui) | A GUI frontend that binds to kittynode-core. |
-| [kittynode-web](https://github.com/blackkittylabs/kittynode/tree/main/packages/web) | A web server that binds to kittynode-core. |
+| `kittynode-core` | Core Rust library powering all Kittynode applications |
+| `kittynode-cli` | Command-line interface built on the core library |
+| `kittynode-gui` | Cross-platform Tauri app with Svelte frontend |
+| `kittynode-web` | Web server binding to the core library |
 
-## Technology used
+## Technology Stack
 
-- Core library written in Rust.
-- Frontend written in Svelte.
-- CLI is a cross-platform Rust binary.
-- GUI is a cross-platform Tauri app.
-
-## Development guide
-
-See the [development guide](https://kittynode.io/development/development-guide) for more information on coding principles and how to contribute to the project.
+- **Core library**: Rust for safety, performance, and cross-platform compatibility
+- **Frontend**: Svelte for reactive UI
+- **Desktop app**: Tauri for native performance with web technologies
+- **CLI**: Pure Rust binary for minimal dependencies
 
 ## User facing apps
 
@@ -40,13 +38,9 @@ Here are a few example capabilities related to remote access:
 - **Private onchain requests**: Kittynode can update local node infrastructure via listening to private requests submitted onchain.
 - **Local HTTPS server**: Kittynode can update local node infrastructure via requests that come from the same Wireguard network (but a different machine, such as a phone); these requests are authenticated by a passkey or JWT token.
 
-## A diagram
+## Architecture Diagram
 
-:::note
-This diagram is not fully up to date.
-:::
-
-![Kittynode architecture diagram](../assets/diagrams/diagram.svg)
+![Kittynode architecture diagram](./assets/diagrams/diagram.svg)
 
 ## Design
 
