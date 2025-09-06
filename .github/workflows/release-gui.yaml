@@ -26,15 +26,16 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Verify version match
+        shell: bash
         run: |
           TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^gui-\([0-9.]*\).*/\1/')
           CARGO_VERSION=$(grep '^version = ' packages/gui/src-tauri/Cargo.toml | cut -d'"' -f2)
-          
+
           if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
             echo "Version mismatch: Tag version '$TAG_VERSION' does not match Cargo.toml version '$CARGO_VERSION'"
             exit 1
           fi
-          
+
           echo "Version check passed: $TAG_VERSION"
 
       - name: Install system dependencies (Ubuntu only)
