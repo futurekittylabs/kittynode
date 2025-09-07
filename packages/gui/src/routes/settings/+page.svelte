@@ -48,7 +48,19 @@ async function disableRemoteAccess() {
 
 async function connectRemote() {
   try {
-    setRemote("http://merlin:3000");
+    const current = serverUrlStore.serverUrl || "http://localhost:3000";
+    const input = window.prompt("Enter remote server URL", current);
+    if (input === null) return; // cancelled
+    const url = input.trim();
+    if (!url) {
+      notifyError("Remote URL cannot be empty");
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      notifyError("Remote URL must start with http:// or https://");
+      return;
+    }
+    setRemote(url);
     notifySuccess("Connected to remote");
   } catch (e) {
     notifyError("Failed to connect to remote", e);

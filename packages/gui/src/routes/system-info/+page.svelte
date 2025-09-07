@@ -12,7 +12,6 @@ import {
   HardDrive,
   Activity,
   Server,
-  Wifi,
   WifiOff,
   RefreshCw,
   CheckCircle2,

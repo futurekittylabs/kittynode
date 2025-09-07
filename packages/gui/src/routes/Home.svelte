@@ -1,6 +1,5 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
-import type { Package } from "$lib/types";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
@@ -36,12 +35,7 @@ function isMobileAndLocal() {
   );
 }
 
-const formatBytes = (bytes: number): string => {
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  if (bytes === 0) return "0 B";
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${Math.round((bytes / 1024 ** i) * 100) / 100} ${sizes[i]}`;
-};
+// Removed unused helpers to keep file tidy
 
 onMount(async () => {
   if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();

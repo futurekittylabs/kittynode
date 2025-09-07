@@ -28,8 +28,11 @@ import {
   Activity,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
+import { page } from "$app/state";
 
 const { children } = $props();
+
+const currentPath = $derived(page.url?.pathname || "");
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -77,7 +80,10 @@ onMount(async () => {
           <SidebarMenu>
             {#each navigationItems as item}
               <SidebarMenuItem>
-                <SidebarMenuButton href={item.href}>
+                <SidebarMenuButton
+                  href={item.href}
+                  isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
+                >
                   <item.icon class="h-4 w-4" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
@@ -91,7 +97,10 @@ onMount(async () => {
               <SidebarMenu class="mt-2">
                 {#each packagesStore.installedPackages as pkg}
                   <SidebarMenuItem>
-                    <SidebarMenuButton href="/node/{pkg.name}">
+                    <SidebarMenuButton
+                      href={`/node/${pkg.name}`}
+                      isActive={currentPath.startsWith(`/node/${pkg.name}`)}
+                    >
                       <Activity class="h-4 w-4" />
                       <span>{pkg.name}</span>
                     </SidebarMenuButton>
