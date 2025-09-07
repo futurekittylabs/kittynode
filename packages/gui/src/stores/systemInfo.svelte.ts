@@ -1,7 +1,6 @@
 import type { SystemInfo } from "$lib/types/system_info";
 import { invoke } from "@tauri-apps/api/core";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
-import { error } from "$utils/error";
 
 let systemInfo = $state<SystemInfo>();
 
@@ -17,7 +16,7 @@ export const systemInfoStore = {
       });
       console.info("Successfully fetched system info.");
     } catch (e) {
-      error(`Failed to fetch system info: ${e}.`);
+      console.error(`Failed to fetch system info: ${e}.`);
     }
   },
 };

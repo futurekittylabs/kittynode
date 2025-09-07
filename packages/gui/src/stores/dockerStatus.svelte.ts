@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import { platform } from "@tauri-apps/plugin-os";
-import { error } from "$utils/error";
 
 let isRunning = $state<boolean | null>(null);
 let interval: number | null = $state(null);
@@ -16,7 +15,7 @@ export const dockerStatus = {
         ? true
         : await invoke("is_docker_running");
     } catch (e) {
-      error(`Failed to check Docker status: ${e}`);
+      console.error(`Failed to check Docker status: ${e}`);
       isRunning = false;
     }
   },

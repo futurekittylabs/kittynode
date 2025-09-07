@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Package } from "$lib/types";
-import { error } from "$utils/error";
 import { serverUrlStore } from "./serverUrl.svelte";
 
 let packages = $state<{ [name: string]: Package }>({});
@@ -29,7 +28,7 @@ export const packagesStore = {
     try {
       packages = await invoke("get_packages");
     } catch (e) {
-      error(`Failed to load packages: ${e}`);
+      console.error(`Failed to load packages: ${e}`);
     }
   },
 
@@ -40,7 +39,7 @@ export const packagesStore = {
         serverUrl: serverUrlStore.serverUrl,
       });
     } catch (e) {
-      error(`Failed to load installed packages: ${e}`);
+      console.error(`Failed to load installed packages: ${e}`);
     } finally {
       isLoading = false;
     }
@@ -54,7 +53,7 @@ export const packagesStore = {
       });
       await this.loadInstalledPackages();
     } catch (e) {
-      error(`Failed to install ${name}: ${e}`);
+      console.error(`Failed to install ${name}: ${e}`);
       throw e;
     }
   },
@@ -68,7 +67,7 @@ export const packagesStore = {
       });
       await this.loadInstalledPackages();
     } catch (e) {
-      error(`Failed to delete ${name}: ${e}`);
+      console.error(`Failed to delete ${name}: ${e}`);
       throw e;
     }
   },
