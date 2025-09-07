@@ -4,7 +4,6 @@ import { goto } from "$app/navigation";
 import { platform } from "@tauri-apps/plugin-os";
 import { onMount } from "svelte";
 import { mode } from "mode-watcher";
-import { error } from "$utils/error";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 
@@ -21,7 +20,7 @@ async function initKittynode() {
       await initializedStore.initialize();
     }
   } catch (e) {
-    error(`Failed to initialize kittynode: ${e}`);
+    console.error(`Failed to initialize kittynode: ${e}`);
   }
   await goto("/");
 }
@@ -39,7 +38,7 @@ onMount(() => {
   const canvas = canvasElement;
   const context = canvas.getContext("2d");
   if (!context) {
-    error("Please report this error: Failed to get 2D context.");
+    console.error("Please report this error: Failed to get 2D context.");
     return;
   }
   ctx = context;

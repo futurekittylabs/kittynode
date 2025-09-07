@@ -19,7 +19,8 @@
     "@tauri-apps/plugin-shell": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
     "ansi-to-html": "^0.7.2",
-    "mode-watcher": "^1.1.0"
+    "mode-watcher": "^1.1.0",
+    "svelte-sonner": "^1.0.5"
   },
   "devDependencies": {
     "@internationalized/date": "^3.9.0",

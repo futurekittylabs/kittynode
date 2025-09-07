@@ -45,7 +45,7 @@ just lint-js                # Lint JS/TS code
 ### TypeScript/JavaScript
 - Format with Biome using double quotes and 2-space indentation
 - Use camelCase for variables/functions
-- Logging: Use `console.info()` and custom `error()` functions
+- Logging: Primarily use the custom toast util so the user can see the necessary info (and report bugs); can also use `console.info()` and `console.error()` when appropriate
 - Always log errors when calling library functions or external APIs
 
 ### Architectural Principles

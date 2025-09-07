@@ -10,6 +10,7 @@ import { packageConfigStore } from "$stores/packageConfig.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import { Terminal } from "@lucide/svelte";
+import { notifyError, notifySuccess } from "$utils/notify";
 
 let installLoading: string | null = $state(null);
 let deleteLoading: string | null = $state(null);
@@ -38,7 +39,7 @@ function canInstallPackage(packageName: string): boolean {
 
 async function installPackage(name: string) {
   if (!dockerStatus.isRunning) {
-    alert("Docker must be running to install packages.");
+    notifyError("Docker must be running to install packages");
     return;
   }
 
@@ -46,8 +47,10 @@ async function installPackage(name: string) {
   try {
     await packagesStore.installPackage(name);
     activeLogType = "execution";
-    console.info(`Successfully installed ${name}.`);
+    notifySuccess(`Successfully installed ${name}`);
     await loadConfig();
+  } catch (e) {
+    notifyError(`Failed to install ${name}`, e);
   } finally {
     installLoading = null;
   }
@@ -55,15 +58,17 @@ async function installPackage(name: string) {
 
 async function deletePackage(name: string) {
   if (!dockerStatus.isRunning) {
-    alert("Docker must be running to delete packages.");
+    notifyError("Docker must be running to delete packages");
     return;
   }
 
   deleteLoading = name;
   try {
     await packagesStore.deletePackage(name);
-    console.info(`Successfully deleted ${name}.`);
+    notifySuccess(`Successfully deleted ${name}`);
     activeLogType = null;
+  } catch (e) {
+    notifyError(`Failed to delete ${name}`, e);
   } finally {
     deleteLoading = null;
   }
@@ -82,7 +87,7 @@ async function loadConfig() {
     const network = config.values.network || "holesky";
     currentNetwork = selectedNetwork = network;
   } catch (e) {
-    console.error(`Failed to get package config: ${e}.`);
+    notifyError("Failed to get package config", e);
   }
 }
 
@@ -97,9 +102,9 @@ async function updateConfig() {
       },
     });
     currentNetwork = selectedNetwork;
-    console.info("Successfully updated configuration");
+    notifySuccess("Configuration updated successfully");
   } catch (e) {
-    console.error(`Failed to update package config: ${e}.`);
+    notifyError("Failed to update package config", e);
   } finally {
     configLoading = false;
   }
