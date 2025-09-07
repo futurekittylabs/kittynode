@@ -9,10 +9,9 @@ import { systemInfoStore } from "$stores/systemInfo.svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { goto } from "$app/navigation";
+import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
 import {
   Package2,
-  Play,
-  Square,
   Settings2,
   CheckCircle2,
   AlertCircle,
@@ -25,21 +24,10 @@ import {
   Download,
 } from "@lucide/svelte";
 
-let installingPackages = $state<Set<string>>(new Set());
+const { isInstalling, installPackage } = usePackageInstaller();
 
 function managePackage(packageName: string) {
   goto(`/node/${packageName}`);
-}
-
-async function installPackage(packageName: string) {
-  installingPackages.add(packageName);
-  try {
-    await packagesStore.installPackage(packageName);
-  } catch (error) {
-    console.error("Failed to install package:", error);
-  } finally {
-    installingPackages.delete(packageName);
-  }
 }
 
 function isMobileAndLocal() {
@@ -161,16 +149,18 @@ onDestroy(() => {
           <Card.Root>
             <Card.Header>
               <div class="flex items-start justify-between">
-                <div class="flex items-start space-x-3">
-                  <Activity class="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
+                <div class="flex items-start gap-3">
+                  <div class="shrink-0">
+                    <Activity class="w-5 h-5 text-green-500 mt-0.5" />
+                  </div>
+                  <div class="min-w-0">
                     <Card.Title class="text-base">{pkg.name}</Card.Title>
                     <Card.Description class="mt-1">
                       {pkg.description}
                     </Card.Description>
                   </div>
                 </div>
-                <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1">
+                <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1 shrink-0">
                   <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
                   <span class="text-xs font-medium text-green-700 dark:text-green-400">Running</span>
                 </div>
@@ -214,12 +204,14 @@ onDestroy(() => {
       {#if availablePackages.length > 0}
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {#each availablePackages as [name, pkg]}
-            {@const isInstalling = installingPackages.has(name)}
+            {@const isInstallingPackage = isInstalling(name)}
             <Card.Root>
               <Card.Header>
-                <div class="flex items-start space-x-3">
-                  <Package2 class="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div class="flex-1">
+                <div class="flex items-start gap-3">
+                  <div class="shrink-0">
+                    <Package2 class="w-5 h-5 text-muted-foreground mt-0.5" />
+                  </div>
+                  <div class="min-w-0 flex-1">
                     <Card.Title class="text-base">{name}</Card.Title>
                     <Card.Description class="mt-1">
                       {pkg.description}
@@ -233,10 +225,10 @@ onDestroy(() => {
                   size="sm"
                   variant="default"
                   onclick={() => installPackage(name)}
-                  disabled={!dockerStatus.isRunning || isInstalling}
+                  disabled={!dockerStatus.isRunning || isInstallingPackage}
                   class="w-full"
                 >
-                  {#if isInstalling}
+                  {#if isInstallingPackage}
                     <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                     Installing...
                   {:else}

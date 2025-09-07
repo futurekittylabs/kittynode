@@ -7,6 +7,7 @@ import { onDestroy, onMount } from "svelte";
 import DockerLogs from "../../package/DockerLogs.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { packageConfigStore } from "$stores/packageConfig.svelte";
+import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import {
@@ -21,16 +22,16 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
-  ChevronDown,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
+
+const { isDeleting, deletePackage } = usePackageDeleter();
 
 const packageName = $derived(page.params.name || "");
 const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
 
-let deleteLoading = $state(false);
 let activeLogType = $state<null | "execution" | "consensus">(null);
 let configLoading = $state(false);
 let selectedNetwork = $state("holesky");
@@ -45,24 +46,15 @@ const networkTriggerContent = $derived(
   networks.find((n) => n.value === selectedNetwork)?.label || "Holesky",
 );
 
+const currentNetworkDisplay = $derived(
+  networks.find((n) => n.value === currentNetwork)?.label || "Holesky",
+);
+
 const isInstalled = $derived(pkg ? packagesStore.isInstalled(pkg.name) : false);
+const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
 
-async function deletePackage(name: string) {
-  if (!dockerStatus.isRunning) {
-    notifyError("Docker must be running to delete packages");
-    return;
-  }
-
-  deleteLoading = true;
-  try {
-    await packagesStore.deletePackage(name);
-    notifySuccess(`Successfully deleted ${name}`);
-    activeLogType = null;
-  } catch (e) {
-    notifyError(`Failed to delete ${name}`, e);
-  } finally {
-    deleteLoading = false;
-  }
+async function handleDeletePackage(name: string) {
+  await deletePackage(name, { redirectToDashboard: true });
 }
 
 function toggleLogs(logType: "execution" | "consensus") {
@@ -179,7 +171,7 @@ onDestroy(() => {
           <Card.Content>
             <div class="flex items-center space-x-2">
               <Activity class="h-4 w-4 text-muted-foreground" />
-              <span class="text-sm font-medium">{currentNetwork}</span>
+              <span class="text-sm font-medium">{currentNetworkDisplay}</span>
             </div>
           </Card.Content>
         </Card.Root>
@@ -192,11 +184,11 @@ onDestroy(() => {
             <Button
               size="sm"
               variant="destructive"
-              onclick={() => deletePackage(pkg.name)}
-              disabled={deleteLoading}
+              onclick={() => handleDeletePackage(pkg.name)}
+              disabled={isDeletingPackage}
               class="w-full"
             >
-              {#if deleteLoading}
+              {#if isDeletingPackage}
                 <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                 Deleting...
               {:else}
@@ -225,10 +217,7 @@ onDestroy(() => {
               <label for="network" class="text-sm font-medium">Network</label>
               <Select.Root type="single" name="network" bind:value={selectedNetwork}>
                 <Select.Trigger class="w-full md:w-[200px]">
-                  <div class="flex items-center justify-between">
-                    <span>{networkTriggerContent}</span>
-                    <ChevronDown class="h-4 w-4 opacity-50" />
-                  </div>
+                  {networkTriggerContent}
                 </Select.Trigger>
                 <Select.Content>
                   <Select.Group>

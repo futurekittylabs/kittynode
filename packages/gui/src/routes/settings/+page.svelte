@@ -8,7 +8,6 @@ import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { updates } from "$stores/updates.svelte";
 import {
-  LoaderCircle,
   Globe,
   Moon,
   Sun,
@@ -281,16 +280,16 @@ function setRemote(serverUrl: string) {
             onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
           >
             {#if updates.isProcessing}
-              <LoaderCircle class="h-4 w-4 mr-1 animate-spin" />
-              Updating
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              Updating...
             {:else if updates.isChecking}
-              <LoaderCircle class="h-4 w-4 mr-1 animate-spin" />
-              Checking
-            {:else if !updates.hasUpdate}
-              Check Now
-            {:else}
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              Checking...
+            {:else if updates.hasUpdate}
               <Download class="h-4 w-4 mr-1" />
               Install Update
+            {:else}
+              Check Now
             {/if}
           </Button>
         </div>

@@ -5,6 +5,7 @@ import { Button } from "$lib/components/ui/button";
 import { packagesStore } from "$stores/packages.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { goto } from "$app/navigation";
+import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
 import {
   Package2,
   Download,
@@ -13,10 +14,10 @@ import {
   AlertCircle,
   Search,
 } from "@lucide/svelte";
-import { notifyError, notifySuccess } from "$utils/notify";
+
+const { isInstalling, installPackage } = usePackageInstaller();
 
 let searchQuery = $state("");
-let installingPackages = $state<Set<string>>(new Set());
 
 const filteredPackages = $derived(() => {
   const query = searchQuery.toLowerCase();
@@ -28,23 +29,6 @@ const filteredPackages = $derived(() => {
     )
     .sort(([a], [b]) => a.localeCompare(b));
 });
-
-async function installPackage(packageName: string) {
-  if (!dockerStatus.isRunning) {
-    notifyError("Docker must be running to install packages");
-    return;
-  }
-
-  installingPackages.add(packageName);
-  try {
-    await packagesStore.installPackage(packageName);
-    notifySuccess(`Successfully installed ${packageName}`);
-  } catch (error) {
-    notifyError(`Failed to install ${packageName}`, error);
-  } finally {
-    installingPackages.delete(packageName);
-  }
-}
 
 function managePackage(packageName: string) {
   goto(`/node/${packageName}`);
@@ -99,7 +83,7 @@ onMount(() => {
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each filteredPackages() as [name, pkg]}
         {@const isInstalled = packagesStore.isInstalled(name)}
-        {@const isInstalling = installingPackages.has(name)}
+        {@const isInstallingPackage = isInstalling(name)}
         
         <Card.Root>
           <Card.Header>
@@ -138,10 +122,10 @@ onMount(() => {
                 size="sm"
                 variant="default"
                 onclick={() => installPackage(name)}
-                disabled={!dockerStatus.isRunning || isInstalling}
+                disabled={!dockerStatus.isRunning || isInstallingPackage}
                 class="w-full"
               >
-                {#if isInstalling}
+                {#if isInstallingPackage}
                   <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                   Installing...
                 {:else}
