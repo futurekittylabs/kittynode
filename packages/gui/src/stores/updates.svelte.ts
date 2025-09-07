@@ -21,7 +21,8 @@ export const updates = {
         lastChecked = now;
         console.info("Successfully checked for update.");
       } catch (e) {
-        notifyError("Failed to check for update", e);
+        // Surface error to caller; leave UI notifications to callers
+        console.error("Failed to check for update", e);
         throw e;
       } finally {
         checkingForUpdate = false;
