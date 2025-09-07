@@ -24,7 +24,7 @@ onMount(async () => {
 {:else}
   <div class="flex flex-col h-screen">
     <main class="flex-1 overflow-y-auto">
-      <div class="container mx-auto pt-8">
+      <div class="container mx-auto px-4 pt-8">
         {#if !["ios", "android"].includes(platform())}
           <UpdateBanner />
         {/if}
@@ -33,7 +33,7 @@ onMount(async () => {
       </div>
     </main>
     <nav class="sticky bottom-0 left-0 right-0 border-t">
-      <div class="container mx-auto py-4">
+      <div class="container mx-auto px-4 py-4">
         <Navigation />
       </div>
     </nav>
