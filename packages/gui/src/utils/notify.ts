@@ -1,5 +1,4 @@
 import { toast } from "svelte-sonner";
-import { error as logError } from "$utils/error";
 
 interface NotifyOptions {
   description?: string;
@@ -22,7 +21,7 @@ export function notifyError(
   options?: NotifyOptions,
 ) {
   const errorMessage = error ? `${message}: ${error}` : message;
-  logError(errorMessage);
+  console.error(errorMessage);
 
   toast.error(message, {
     description: options?.description || (error ? String(error) : undefined),
