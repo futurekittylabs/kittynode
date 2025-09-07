@@ -7,8 +7,5 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "^2.2.3"
-  },
-  "trustedDependencies": [
-    "@tailwindcss/oxide"
-  ]
+  }
 }
