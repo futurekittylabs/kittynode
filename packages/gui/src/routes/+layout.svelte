@@ -3,11 +3,12 @@ import "../app.css";
 import { onMount } from "svelte";
 import { windowShownStore } from "$stores/windowShown.svelte.ts";
 import { initializedStore } from "$stores/initialized.svelte";
-import { ModeWatcher } from "mode-watcher";
+import { ModeWatcher, mode } from "mode-watcher";
 import Splash from "./Splash.svelte";
 import Navigation from "./Navigation.svelte";
 import UpdateBanner from "./UpdateBanner.svelte";
 import { platform } from "@tauri-apps/plugin-os";
+import { Toaster } from "svelte-sonner";
 
 const { children } = $props();
 
@@ -17,6 +18,7 @@ onMount(async () => {
 </script>
 
 <ModeWatcher />
+<Toaster richColors theme={mode.current} />
 {#if !initializedStore.initialized}
   <Splash />
 {:else}

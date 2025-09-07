@@ -8,7 +8,7 @@ import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { updates } from "$stores/updates.svelte";
 import { LoaderCircle } from "@lucide/svelte";
 import { refetchStores } from "$utils/refetchStores";
-import { error } from "$utils/error";
+import { notifySuccess, notifyError, notifyInfo } from "$utils/notify";
 import { setMode, userPrefersMode } from "mode-watcher";
 import * as Select from "$lib/components/ui/select";
 
@@ -17,36 +17,36 @@ let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
 async function enableRemoteAccess() {
   try {
     remoteAccessStore.enable();
-    alert("Remote access has been enabled.");
+    notifySuccess("Remote access enabled");
   } catch (e) {
-    error(`Failed to enable remote access: ${e}`);
+    notifyError("Failed to enable remote access", e);
   }
 }
 
 async function disableRemoteAccess() {
   try {
     remoteAccessStore.disable();
-    alert("Remote access has been disabled.");
+    notifySuccess("Remote access disabled");
   } catch (e) {
-    error(`Failed to disable remote access: ${e}`);
+    notifyError("Failed to disable remote access", e);
   }
 }
 
 async function connectRemote() {
   try {
     setRemote("http://merlin:3000");
-    alert("Connected to remote.");
+    notifySuccess("Connected to remote");
   } catch (e) {
-    error(`Failed to connect to remote: ${e}`);
+    notifyError("Failed to connect to remote", e);
   }
 }
 
 async function disconnectRemote() {
   try {
     setRemote("");
-    alert("Disconnected from remote.");
+    notifySuccess("Disconnected from remote");
   } catch (e) {
-    error(`Failed to disconnect from remote: ${e}`);
+    notifyError("Failed to disconnect from remote", e);
   }
 }
 
@@ -54,20 +54,35 @@ async function deleteKittynode() {
   try {
     await invoke("delete_kittynode", { serverUrl: serverUrlStore.serverUrl });
     await initializedStore.uninitialize();
-    console.info("Kittynode data has been deleted successfully.");
+    notifySuccess("Kittynode data deleted", {
+      description: "All data has been removed successfully.",
+    });
   } catch (e) {
-    error(`Failed to delete Kittynode: ${e}`);
+    notifyError("Failed to delete Kittynode data", e);
   }
 }
 
 async function handleUpdate() {
+  notifyInfo("Installing update...", {
+    description: "Kittynode will restart when the update is complete.",
+  });
   await updates.installUpdate();
 }
 
 async function checkForUpdates() {
-  await updates.getUpdate();
-  if (!updates.hasUpdate) {
-    alert("No update available, you're up to date!");
+  try {
+    await updates.getUpdate(true);
+    if (!updates.hasUpdate) {
+      notifySuccess("You're up to date!", {
+        description: "No updates available at this time.",
+      });
+    } else {
+      notifyInfo("Update available!", {
+        description: "A new version of Kittynode is ready to install.",
+      });
+    }
+  } catch (e) {
+    notifyError("Failed to check for updates", e);
   }
 }
 
@@ -112,10 +127,13 @@ function setRemote(serverUrl: string) {
   {#if !["ios", "android"].includes(platform())}
     <li>
       <span>{updates.hasUpdate ? "Update Kittynode" : "Check for updates"}</span>
-      <Button disabled={updates.isProcessing} onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}>
+      <Button disabled={updates.isProcessing || updates.isChecking} onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}>
         {#if updates.isProcessing}
           <LoaderCircle class="animate-spin" />
           Updating
+        {:else if updates.isChecking}
+          <LoaderCircle class="animate-spin" />
+          Checking
         {:else if !updates.hasUpdate}
           Check for updates
         {:else}

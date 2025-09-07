@@ -1,4 +1,6 @@
+import { toast } from "svelte-sonner";
+
 export function error(message: string) {
   console.error(message);
-  alert(message);
+  toast.error(message);
 }

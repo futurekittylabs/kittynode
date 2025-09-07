@@ -9,17 +9,22 @@ let currentUpdate = $state<Update | null>(null);
 let dismissedTime = $state<number | null>(null);
 let lastChecked = $state(0);
 let processingUpdate = $state(false);
+let checkingForUpdate = $state(false);
 
 export const updates = {
-  async getUpdate() {
+  async getUpdate(forceCheck = false) {
     const now = Date.now();
-    if (now > lastChecked + TWENTY_FOUR_HOURS) {
+    if (forceCheck || now > lastChecked + TWENTY_FOUR_HOURS) {
+      checkingForUpdate = true;
       try {
         currentUpdate = await check();
         lastChecked = now;
         console.info("Successfully checked for update.");
       } catch (e) {
         error(`Failed to check for update: ${e}.`);
+        throw e;
+      } finally {
+        checkingForUpdate = false;
       }
     }
     return currentUpdate;
@@ -36,6 +41,10 @@ export const updates = {
 
   get isProcessing() {
     return processingUpdate;
+  },
+
+  get isChecking() {
+    return checkingForUpdate;
   },
 
   dismiss() {
