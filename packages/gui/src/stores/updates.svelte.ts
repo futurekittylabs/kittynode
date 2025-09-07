@@ -1,7 +1,7 @@
 import { check } from "@tauri-apps/plugin-updater";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { error } from "$utils/error";
+import { notifyError } from "$utils/notify";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
@@ -21,7 +21,7 @@ export const updates = {
         lastChecked = now;
         console.info("Successfully checked for update.");
       } catch (e) {
-        error(`Failed to check for update: ${e}.`);
+        notifyError("Failed to check for update", e);
         throw e;
       } finally {
         checkingForUpdate = false;
@@ -82,7 +82,7 @@ export const updates = {
       console.info("Update installed.");
       await relaunch();
     } catch (e) {
-      error(`Failed to update Kittynode: ${e}.`);
+      notifyError("Failed to update Kittynode", e);
     }
     processingUpdate = false;
   },

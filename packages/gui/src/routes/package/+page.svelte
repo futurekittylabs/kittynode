@@ -49,6 +49,8 @@ async function installPackage(name: string) {
     activeLogType = "execution";
     notifySuccess(`Successfully installed ${name}`);
     await loadConfig();
+  } catch (e) {
+    notifyError(`Failed to install ${name}`, e);
   } finally {
     installLoading = null;
   }
@@ -65,6 +67,8 @@ async function deletePackage(name: string) {
     await packagesStore.deletePackage(name);
     notifySuccess(`Successfully deleted ${name}`);
     activeLogType = null;
+  } catch (e) {
+    notifyError(`Failed to delete ${name}`, e);
   } finally {
     deleteLoading = null;
   }

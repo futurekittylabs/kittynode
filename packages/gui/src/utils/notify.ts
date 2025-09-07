@@ -1,5 +1,5 @@
 import { toast } from "svelte-sonner";
-import { error as logError } from "$utils/error";
+import { logError } from "$utils/log";
 
 interface NotifyOptions {
   description?: string;
