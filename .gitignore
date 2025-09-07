@@ -22,9 +22,6 @@ gen
 !.env.example
 !.env.test
 
-# Logs
-pnpm-debug.log*
-
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

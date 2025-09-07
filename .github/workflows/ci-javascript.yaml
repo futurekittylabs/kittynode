@@ -14,23 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 23
-          cache: pnpm
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Format and lint
-        run: pnpm -F docs -F gui format-lint
+        run: bun -F docs -F gui format-lint
 
       - name: Svelte check
-        run: pnpm -F gui check
+        run: bun -F gui check
