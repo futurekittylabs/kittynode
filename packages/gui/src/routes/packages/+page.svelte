@@ -1,0 +1,166 @@
+<script lang="ts">
+import { onMount } from "svelte";
+import * as Card from "$lib/components/ui/card";
+import { Button } from "$lib/components/ui/button";
+import { packagesStore } from "$stores/packages.svelte";
+import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { goto } from "$app/navigation";
+import {
+  Package2,
+  Download,
+  CheckCircle2,
+  Settings2,
+  AlertCircle,
+  Search,
+} from "@lucide/svelte";
+import { notifyError, notifySuccess } from "$utils/notify";
+
+let searchQuery = $state("");
+let installingPackages = $state<Set<string>>(new Set());
+
+const filteredPackages = $derived(() => {
+  const query = searchQuery.toLowerCase();
+  return Object.entries(packagesStore.packages)
+    .filter(
+      ([name, pkg]) =>
+        name.toLowerCase().includes(query) ||
+        pkg.description.toLowerCase().includes(query),
+    )
+    .sort(([a], [b]) => a.localeCompare(b));
+});
+
+async function installPackage(packageName: string) {
+  if (!dockerStatus.isRunning) {
+    notifyError("Docker must be running to install packages");
+    return;
+  }
+
+  installingPackages.add(packageName);
+  try {
+    await packagesStore.installPackage(packageName);
+    notifySuccess(`Successfully installed ${packageName}`);
+  } catch (error) {
+    notifyError(`Failed to install ${packageName}`, error);
+  } finally {
+    installingPackages.delete(packageName);
+  }
+}
+
+function managePackage(packageName: string) {
+  goto(`/node/${packageName}`);
+}
+
+onMount(() => {
+  dockerStatus.startPolling();
+  packagesStore.loadPackages();
+  packagesStore.loadInstalledPackages();
+
+  return () => {
+    dockerStatus.stopPolling();
+  };
+});
+</script>
+
+<div class="space-y-6">
+  <div>
+    <h2 class="text-3xl font-bold tracking-tight">Package Store</h2>
+    <p class="text-muted-foreground">
+      Browse and install blockchain node packages
+    </p>
+  </div>
+
+  {#if !dockerStatus.isRunning}
+    <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
+      <Card.Header>
+        <Card.Title class="flex items-center space-x-2">
+          <AlertCircle class="h-5 w-5 text-yellow-500" />
+          <span>Docker Required</span>
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <p class="text-sm">
+          Docker needs to be running to install packages. Please start Docker Desktop.
+        </p>
+      </Card.Content>
+    </Card.Root>
+  {/if}
+
+  <div class="relative">
+    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <input
+      type="text"
+      placeholder="Search packages..."
+      bind:value={searchQuery}
+      class="w-full rounded-md border bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+    />
+  </div>
+
+  {#if filteredPackages().length > 0}
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {#each filteredPackages() as [name, pkg]}
+        {@const isInstalled = packagesStore.isInstalled(name)}
+        {@const isInstalling = installingPackages.has(name)}
+        
+        <Card.Root>
+          <Card.Header>
+            <div class="flex items-start justify-between">
+              <div class="flex items-start space-x-3">
+                <Package2 class="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div class="flex-1">
+                  <Card.Title class="text-base">{name}</Card.Title>
+                  <Card.Description class="mt-1">
+                    {pkg.description}
+                  </Card.Description>
+                </div>
+              </div>
+              {#if isInstalled}
+                <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1">
+                  <CheckCircle2 class="h-3 w-3 text-green-500" />
+                  <span class="text-xs font-medium text-green-700 dark:text-green-400">Installed</span>
+                </div>
+              {/if}
+            </div>
+          </Card.Header>
+          
+          <Card.Footer>
+            {#if isInstalled}
+              <Button 
+                size="sm"
+                variant="outline"
+                onclick={() => managePackage(name)}
+                class="w-full"
+              >
+                <Settings2 class="h-4 w-4 mr-1" />
+                Manage
+              </Button>
+            {:else}
+              <Button 
+                size="sm"
+                variant="default"
+                onclick={() => installPackage(name)}
+                disabled={!dockerStatus.isRunning || isInstalling}
+                class="w-full"
+              >
+                {#if isInstalling}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Installing...
+                {:else}
+                  <Download class="h-4 w-4 mr-1" />
+                  Install
+                {/if}
+              </Button>
+            {/if}
+          </Card.Footer>
+        </Card.Root>
+      {/each}
+    </div>
+  {:else}
+    <Card.Root>
+      <Card.Content class="pt-6">
+        <p class="text-center text-muted-foreground">
+          {searchQuery ? "No packages found matching your search." : "No packages available."}
+        </p>
+      </Card.Content>
+    </Card.Root>
+  {/if}
+</div>

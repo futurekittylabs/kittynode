@@ -2,11 +2,26 @@
 import { invoke } from "@tauri-apps/api/core";
 import { initializedStore } from "$stores/initialized.svelte";
 import { Button } from "$lib/components/ui/button";
+import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { updates } from "$stores/updates.svelte";
-import { LoaderCircle } from "@lucide/svelte";
+import {
+  LoaderCircle,
+  Globe,
+  Moon,
+  Sun,
+  Monitor,
+  Download,
+  MessageSquare,
+  Trash2,
+  Wifi,
+  WifiOff,
+  Link2,
+  Unlink,
+  ChevronDown,
+} from "@lucide/svelte";
 import { refetchStores } from "$utils/refetchStores";
 import { notifySuccess, notifyError, notifyInfo } from "$utils/notify";
 import { setMode, userPrefersMode } from "mode-watcher";
@@ -88,105 +103,261 @@ async function checkForUpdates() {
 
 function setRemote(serverUrl: string) {
   serverUrlStore.setServerUrl(serverUrl);
-  // Refetch store caches
   refetchStores();
 }
 </script>
 
-<h3 class="scroll-m-20 text-2xl font-semibold tracking-tight mb-4">Settings</h3>
+<div class="space-y-6">
+  <div>
+    <h2 class="text-3xl font-bold tracking-tight">Settings</h2>
+    <p class="text-muted-foreground">
+      Manage your Kittynode preferences and configuration
+    </p>
+  </div>
 
-<ul class="settings-list">
-  {#if remoteAccessStore.remoteAccess === null}
-    <li>Loading remote access status...</li>
-  {:else if !remoteAccessStore.remoteAccess}
-    <li>
-      <span>Enable remote access</span>
-      <Button onclick={enableRemoteAccess} disabled={ ["ios", "android"].includes(platform()) }>Enable</Button>
-    </li>
-    <hr />
-  {:else}
-    <li>
-      <span>Disable remote access</span>
-      <Button onclick={disableRemoteAccess}>Disable</Button>
-    </li>
-    <hr />
-  {/if}
-  {#if serverUrlStore.serverUrl === ""}
-    <li>
-      <span>Connect to remote</span>
-      <Button onclick={connectRemote}>Connect</Button>
-    </li>
-    <hr />
-  {:else}
-    <li>
-      <span>Disconnect from remote</span>
-      <Button onclick={disconnectRemote}>Disconnect</Button>
-    </li>
-    <hr />
-  {/if}
-  {#if !["ios", "android"].includes(platform())}
-    <li>
-      <span>{updates.hasUpdate ? "Update Kittynode" : "Check for updates"}</span>
-      <Button disabled={updates.isProcessing || updates.isChecking} onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}>
-        {#if updates.isProcessing}
-          <LoaderCircle class="animate-spin" />
-          Updating
-        {:else if updates.isChecking}
-          <LoaderCircle class="animate-spin" />
-          Checking
-        {:else if !updates.hasUpdate}
-          Check for updates
+  <!-- Network Settings -->
+  <Card.Root>
+    <Card.Header>
+      <Card.Title class="flex items-center gap-2">
+        <Globe class="h-5 w-5" />
+        Network
+      </Card.Title>
+      <Card.Description>
+        Configure remote access and connections
+      </Card.Description>
+    </Card.Header>
+    <Card.Content class="space-y-4">
+      <!-- Remote Access -->
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Remote Access</p>
+          <p class="text-xs text-muted-foreground">
+            Allow external connections to this node
+          </p>
+        </div>
+        {#if remoteAccessStore.remoteAccess === null}
+          <span class="text-sm text-muted-foreground">Loading...</span>
+        {:else if !remoteAccessStore.remoteAccess}
+          <Button 
+            size="sm"
+            onclick={enableRemoteAccess} 
+            disabled={["ios", "android"].includes(platform())}
+          >
+            <Wifi class="h-4 w-4 mr-1" />
+            Enable
+          </Button>
         {:else}
-          Update
+          <Button 
+            size="sm"
+            variant="outline"
+            onclick={disableRemoteAccess}
+          >
+            <WifiOff class="h-4 w-4 mr-1" />
+            Disable
+          </Button>
         {/if}
-      </Button>
-    </li>
-    <hr />
+      </div>
+
+      <div class="border-t pt-4"></div>
+
+      <!-- Remote Connection -->
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Remote Server</p>
+          <p class="text-xs text-muted-foreground">
+            {serverUrlStore.serverUrl || "Not connected"}
+          </p>
+        </div>
+        {#if serverUrlStore.serverUrl === ""}
+          <Button 
+            size="sm"
+            variant="outline"
+            onclick={connectRemote}
+          >
+            <Link2 class="h-4 w-4 mr-1" />
+            Connect
+          </Button>
+        {:else}
+          <Button 
+            size="sm"
+            variant="outline"
+            onclick={disconnectRemote}
+          >
+            <Unlink class="h-4 w-4 mr-1" />
+            Disconnect
+          </Button>
+        {/if}
+      </div>
+    </Card.Content>
+  </Card.Root>
+
+  <!-- Appearance -->
+  <Card.Root>
+    <Card.Header>
+      <Card.Title class="flex items-center gap-2">
+        <Sun class="h-5 w-5" />
+        Appearance
+      </Card.Title>
+      <Card.Description>
+        Customize how Kittynode looks
+      </Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Theme</p>
+          <p class="text-xs text-muted-foreground">
+            Select your preferred color scheme
+          </p>
+        </div>
+        <Select.Root
+          type="single"
+          bind:value={currentTheme}
+          onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
+        >
+          <Select.Trigger class="w-[140px]">
+            <div class="flex items-center gap-2">
+              {#if currentTheme === "light"}
+                <Sun class="h-4 w-4" />
+              {:else if currentTheme === "dark"}
+                <Moon class="h-4 w-4" />
+              {:else}
+                <Monitor class="h-4 w-4" />
+              {/if}
+              <span class="capitalize">{currentTheme || "System"}</span>
+            </div>
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="light">
+              <div class="flex items-center gap-2">
+                <Sun class="h-4 w-4" />
+                Light
+              </div>
+            </Select.Item>
+            <Select.Item value="dark">
+              <div class="flex items-center gap-2">
+                <Moon class="h-4 w-4" />
+                Dark
+              </div>
+            </Select.Item>
+            <Select.Item value="system">
+              <div class="flex items-center gap-2">
+                <Monitor class="h-4 w-4" />
+                System
+              </div>
+            </Select.Item>
+          </Select.Content>
+        </Select.Root>
+      </div>
+    </Card.Content>
+  </Card.Root>
+
+  {#if !["ios", "android"].includes(platform())}
+    <!-- Updates -->
+    <Card.Root>
+      <Card.Header>
+        <Card.Title class="flex items-center gap-2">
+          <Download class="h-5 w-5" />
+          Updates
+        </Card.Title>
+        <Card.Description>
+          Keep Kittynode up to date with the latest features
+        </Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium">
+              {updates.hasUpdate ? "Update Available" : "Check for Updates"}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {updates.hasUpdate ? "A new version is ready to install" : "You're running the latest version"}
+            </p>
+          </div>
+          <Button 
+            size="sm"
+            variant={updates.hasUpdate ? "default" : "outline"}
+            disabled={updates.isProcessing || updates.isChecking} 
+            onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
+          >
+            {#if updates.isProcessing}
+              <LoaderCircle class="h-4 w-4 mr-1 animate-spin" />
+              Updating
+            {:else if updates.isChecking}
+              <LoaderCircle class="h-4 w-4 mr-1 animate-spin" />
+              Checking
+            {:else if !updates.hasUpdate}
+              Check Now
+            {:else}
+              <Download class="h-4 w-4 mr-1" />
+              Install Update
+            {/if}
+          </Button>
+        </div>
+      </Card.Content>
+    </Card.Root>
   {/if}
-  <li>
-    <span>Select theme</span>
-    <Select.Root
-      type="single"
-      bind:value={currentTheme}
-      onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
-    >
-      <Select.Trigger class="w-[180px] capitalize">
-        {currentTheme || "Select theme"}
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="light">Light</Select.Item>
-        <Select.Item value="dark">Dark</Select.Item>
-        <Select.Item value="system">System</Select.Item>
-      </Select.Content>
-    </Select.Root>
-  </li>
-  <hr />
-  <li>
-    <span>Feedback</span>
-    <div class="flex gap-2">
-      <a href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback" target="_blank">
-        <Button>GitHub</Button>
-      </a>
-      <a href="https://discord.kittynode.io" target="_blank">
-        <Button>Discord</Button>
-      </a>
-    </div>
-  </li>
-  <hr />
-  <li>
-    <span>Delete all Kittynode data</span>
-    <Button onclick={deleteKittynode} disabled={serverUrlStore.serverUrl !== ""} variant="destructive">Delete data</Button>
-  </li>
-</ul>
 
-<style>
-  hr {
-    margin: 16px 0px 16px 0px;
-  }
+  <!-- Support -->
+  <Card.Root>
+    <Card.Header>
+      <Card.Title class="flex items-center gap-2">
+        <MessageSquare class="h-5 w-5" />
+        Support & Feedback
+      </Card.Title>
+      <Card.Description>
+        Get help and share your thoughts
+      </Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <div class="flex gap-2">
+        <Button 
+          size="sm"
+          variant="outline"
+          href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
+        >
+          GitHub Discussions
+        </Button>
+        <Button 
+          size="sm"
+          variant="outline"
+          href="https://discord.kittynode.io"
+        >
+          Discord Community
+        </Button>
+      </div>
+    </Card.Content>
+  </Card.Root>
 
-  .settings-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-</style>
+  <!-- Danger Zone -->
+  <Card.Root class="border-destructive/50">
+    <Card.Header>
+      <Card.Title class="flex items-center gap-2 text-destructive">
+        <Trash2 class="h-5 w-5" />
+        Danger Zone
+      </Card.Title>
+      <Card.Description>
+        Irreversible actions that affect your Kittynode data
+      </Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Delete All Data</p>
+          <p class="text-xs text-muted-foreground">
+            Permanently remove all Kittynode data and settings
+          </p>
+        </div>
+        <Button 
+          size="sm"
+          onclick={deleteKittynode} 
+          disabled={serverUrlStore.serverUrl !== ""} 
+          variant="destructive"
+        >
+          <Trash2 class="h-4 w-4 mr-1" />
+          Delete Data
+        </Button>
+      </div>
+    </Card.Content>
+  </Card.Root>
+</div>
