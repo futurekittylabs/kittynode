@@ -12,7 +12,9 @@
     "windows": [
       {
         "title": "",
-        "visible": false
+        "visible": false,
+        "height": 900,
+        "width": 1200
       }
     ],
     "security": {
