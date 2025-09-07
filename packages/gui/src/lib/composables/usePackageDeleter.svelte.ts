@@ -1,0 +1,55 @@
+import { packagesStore } from "$stores/packages.svelte";
+import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { notifyError, notifySuccess } from "$utils/notify";
+import { goto } from "$app/navigation";
+
+export function usePackageDeleter() {
+  let deletingPackages = $state<Set<string>>(new Set());
+
+  function isDeleting(packageName: string): boolean {
+    return deletingPackages.has(packageName);
+  }
+
+  async function deletePackage(
+    packageName: string,
+    options?: { redirectToDashboard?: boolean },
+  ): Promise<boolean> {
+    if (!dockerStatus.isRunning) {
+      notifyError("Docker must be running to delete packages");
+      return false;
+    }
+
+    if (deletingPackages.has(packageName)) {
+      return false;
+    }
+
+    // Create a new Set to trigger reactivity
+    deletingPackages = new Set([...deletingPackages, packageName]);
+    try {
+      await packagesStore.deletePackage(packageName);
+      notifySuccess(`Successfully deleted ${packageName}`);
+
+      if (options?.redirectToDashboard) {
+        await goto("/");
+      }
+
+      return true;
+    } catch (error) {
+      notifyError(`Failed to delete ${packageName}`, error);
+      return false;
+    } finally {
+      // Create a new Set to trigger reactivity
+      const newSet = new Set(deletingPackages);
+      newSet.delete(packageName);
+      deletingPackages = newSet;
+    }
+  }
+
+  return {
+    get deletingPackages() {
+      return deletingPackages;
+    },
+    isDeleting,
+    deletePackage,
+  };
+}
