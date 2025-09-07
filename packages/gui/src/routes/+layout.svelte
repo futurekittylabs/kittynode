@@ -42,6 +42,7 @@ const navigationItems = [
 ];
 
 let appVersion = $state("");
+let versionError = $state(false);
 
 onMount(async () => {
   await windowShownStore.show();
@@ -50,9 +51,10 @@ onMount(async () => {
 
   try {
     appVersion = await getVersion();
+    versionError = false;
   } catch (error) {
     console.error("Failed to get app version:", error);
-    appVersion = "0.23.0"; // Fallback to version from Cargo.toml
+    versionError = true;
   }
 });
 </script>
@@ -115,6 +117,8 @@ onMount(async () => {
           <div class="px-2 py-2 text-xs text-muted-foreground">
             {#if appVersion}
               Version {appVersion}
+            {:else if versionError}
+              <span class="opacity-50">Failed to get version</span>
             {:else}
               <span class="opacity-50">Loading version...</span>
             {/if}
