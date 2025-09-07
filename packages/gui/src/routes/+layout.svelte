@@ -54,7 +54,6 @@ onMount(async () => {
     versionError = false;
   } catch (error) {
     console.error("Failed to get app version:", error);
-    // No fallback: rely on getVersion working in Tauri context
     versionError = true;
   }
 });
