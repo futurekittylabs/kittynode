@@ -3,9 +3,9 @@
   "productName": "Kittynode",
   "identifier": "com.kittynode.app",
   "build": {
-    "beforeDevCommand": "pnpm -F gui dev",
+    "beforeDevCommand": "bun -F gui dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm -F gui build",
+    "beforeBuildCommand": "bun -F gui build",
     "frontendDist": "../build"
   },
   "app": {

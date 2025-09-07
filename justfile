@@ -4,7 +4,7 @@ build:
 
 # start the docs dev server
 docs:
-  pnpm -F docs dev --open
+  bun -F docs dev --open
 
 # generate the kittynode-core docs
 docs-rs:
@@ -57,11 +57,11 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-  pnpm -F docs -F gui format-lint
+  bun -F docs -F gui format-lint
 
 # lint and fix the javascript code
 lint-js-fix:
-  pnpm -F docs -F gui format-lint:fix
+  bun -F docs -F gui format-lint:fix
 
 # lint the rust code
 lint-rs:
@@ -73,15 +73,15 @@ lint-rs-pedantic:
 
 # set up the project
 setup:
-  pnpm install && just install-dev-tools && just ios-init
+  bun install && just install-dev-tools && just ios-init
 
 # add a shadcn component
 shadcn-add *args='':
-  cd packages/gui && pnpm dlx shadcn-svelte@latest add {{args}} && pnpm format-lint:fix
+  cd packages/gui && bunx shadcn-svelte@latest add {{args}} && bun format-lint:fix
 
 # update shadcn components
 shadcn-update:
-  cd packages/gui && pnpm dlx shadcn-svelte@latest update -a -y && pnpm format-lint:fix
+  cd packages/gui && bunx shadcn-svelte@latest update -a -y && bun format-lint:fix
 
 # run the unit tests
 test:
@@ -104,9 +104,8 @@ update:
   rustup update
   just install-dev-tools
   cargo upgrade
-  pnpm self-update
-  pnpm up -r
-  just shadcn-update
+  bun upgrade
+  bun update
 
 # start the web server
 web:

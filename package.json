@@ -1,12 +1,14 @@
 {
   "name": "kittynode",
   "private": true,
+  "workspaces": [
+    "docs",
+    "packages/gui"
+  ],
   "devDependencies": {
-    "@biomejs/biome": "^2.2.2"
+    "@biomejs/biome": "^2.2.3"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "trustedDependencies": [
+    "@tailwindcss/oxide"
+  ]
 }

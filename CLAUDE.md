@@ -4,7 +4,7 @@ This file contains all development guidelines and instructions for working with 
 
 ## Development Setup
 ```bash
-# Prerequisites: Rust, just, Node.js, pnpm
+# Prerequisites: Rust, just, Node.js, bun
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install just
 
