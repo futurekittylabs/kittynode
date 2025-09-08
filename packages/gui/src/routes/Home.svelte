@@ -216,7 +216,7 @@ onDestroy(() => {
         </div>
       {:else}
         <Card.Root>
-          <Card.Content class="pt-6">
+          <Card.Content>
             <p class="text-center text-muted-foreground">All available packages are installed!</p>
           </Card.Content>
         </Card.Root>
@@ -237,7 +237,7 @@ onDestroy(() => {
       </Card.Root>
     {:else}
       <Card.Root>
-        <Card.Content class="pt-6">
+        <Card.Content>
           <p class="text-center text-muted-foreground">No packages available.</p>
         </Card.Content>
       </Card.Root>
