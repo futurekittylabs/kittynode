@@ -7,16 +7,14 @@ import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { systemInfoStore } from "$stores/systemInfo.svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
+import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
 import {
   Package2,
   Settings2,
-  CheckCircle2,
-  AlertCircle,
   Info,
   Activity,
-  Server,
   HardDrive,
   Cpu,
   ArrowRight,
@@ -61,25 +59,7 @@ onDestroy(() => {
   </div>
 
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-    <Card.Root>
-      <Card.Header class="pb-3">
-        <Card.Title class="text-sm font-medium flex items-center justify-between">
-          Docker Status
-          <Server class="h-4 w-4 text-muted-foreground" />
-        </Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <div class="flex items-center space-x-2">
-          {#if dockerStatus.isRunning}
-            <CheckCircle2 class="h-4 w-4 text-green-500" />
-            <span class="text-sm font-medium">Running</span>
-          {:else}
-            <AlertCircle class="h-4 w-4 text-yellow-500" />
-            <span class="text-sm font-medium">Not Running</span>
-          {/if}
-        </div>
-      </Card.Content>
-    </Card.Root>
+    <DockerStatusCard showServerIcon={true} />
 
     <Card.Root>
       <Card.Header class="pb-3">
@@ -168,7 +148,7 @@ onDestroy(() => {
                 class="w-full"
               >
                 <Settings2 class="h-4 w-4 mr-1" />
-                Manage Node
+                Manage
               </Button>
             </Card.Footer>
           </Card.Root>

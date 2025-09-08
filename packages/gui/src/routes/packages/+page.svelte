@@ -110,7 +110,7 @@ onMount(() => {
             {#if isInstalled}
               <Button 
                 size="sm"
-                variant="outline"
+                variant="default"
                 onclick={() => managePackage(name)}
                 class="w-full"
               >

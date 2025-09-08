@@ -33,6 +33,7 @@ pub struct DiskInfo {
     pub total_bytes: u64,
     pub available_bytes: u64,
     pub total_display: String,
+    pub used_display: String,
     pub available_display: String,
     pub disk_type: String,
 }
