@@ -60,7 +60,7 @@ onMount(async () => {
   <Sidebar.Provider>
     <Sidebar.Root variant="inset">
       <Sidebar.Header>
-        <div class="flex items-center gap-2 mb-2">
+        <div class="flex items-center gap-2 pl-1 pr-2 pt-1 pb-0 mb-0">
           <img
             src={mode.current === "dark" ? "/images/kittynode-wordmark-dark.png" : "/images/kittynode-wordmark-light.png"}
             alt="Kittynode"
@@ -70,27 +70,29 @@ onMount(async () => {
       </Sidebar.Header>
 
       <Sidebar.Content>
-        <Sidebar.Menu>
-          {#each navigationItems as item}
-            <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
-              >
-                {#snippet child({ props })}
-                  <a href={item.href} {...props}>
-                    <item.icon class="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </a>
-                {/snippet}
-              </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-          {/each}
-        </Sidebar.Menu>
+        <Sidebar.Group class="px-2 py-2 md:p-2">
+          <Sidebar.Menu>
+            {#each navigationItems as item}
+              <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                  isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
+                >
+                  {#snippet child({ props })}
+                    <a href={item.href} {...props}>
+                      <item.icon class="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </a>
+                  {/snippet}
+                </Sidebar.MenuButton>
+              </Sidebar.MenuItem>
+            {/each}
+          </Sidebar.Menu>
+        </Sidebar.Group>
 
         {#if packagesStore.installedPackages.length > 0}
-          <div class="mt-6">
-            <div class="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Installed Nodes</div>
-            <Sidebar.Menu class="mt-2">
+          <Sidebar.Group class="px-2 py-2 md:p-2">
+            <Sidebar.GroupLabel>Installed Nodes</Sidebar.GroupLabel>
+            <Sidebar.Menu>
               {#each packagesStore.installedPackages as pkg}
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton
@@ -106,11 +108,11 @@ onMount(async () => {
                 </Sidebar.MenuItem>
               {/each}
             </Sidebar.Menu>
-          </div>
+          </Sidebar.Group>
         {/if}
       </Sidebar.Content>
 
-      <Sidebar.Footer>
+      <Sidebar.Footer class="px-2 py-2 md:p-2">
         <Sidebar.Separator />
         <Sidebar.Menu>
           <Sidebar.MenuItem>
@@ -167,12 +169,12 @@ onMount(async () => {
     <Sidebar.Inset>
       <!-- Desktop header with always-visible sidebar toggle -->
       <header class="hidden md:flex h-12 items-center gap-4 border-b px-4">
-        <Sidebar.Trigger />
+        <Sidebar.Trigger class="cursor-pointer" />
       </header>
 
       <!-- Mobile header: keep only the toggle button -->
       <header class="flex h-14 items-center border-b px-4 md:hidden">
-        <Sidebar.Trigger />
+        <Sidebar.Trigger class="cursor-pointer" />
       </header>
 
       <div class="flex-1 overflow-y-auto">
