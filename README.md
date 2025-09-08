@@ -8,7 +8,7 @@ Control center for world computer operators.
 
 ## What is Kittynode?
 
-Kittynode is a modular, secure control center for managing blockchain nodes. It provides both a desktop application and command-line interface for operators to easily deploy, monitor, and maintain their nodes.
+Kittynode is a modular, secure control center for managing node infrastructure. It provides both a desktop application and command-line interface for operators to easily deploy, monitor, and maintain their nodes.
 
 ## Installation
 

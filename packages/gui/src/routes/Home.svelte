@@ -54,7 +54,7 @@ onDestroy(() => {
   <div>
     <h2 class="text-3xl font-bold tracking-tight">Dashboard</h2>
     <p class="text-muted-foreground">
-      Manage your blockchain infrastructure
+      Manage your node infrastructure
     </p>
   </div>
 
@@ -141,7 +141,7 @@ onDestroy(() => {
               </div>
             </Card.Header>
             <Card.Footer>
-              <Button 
+              <Button
                 size="sm"
                 variant="default"
                 onclick={() => managePackage(pkg.name)}
@@ -169,12 +169,12 @@ onDestroy(() => {
         <ArrowRight class="h-4 w-4 ml-1" />
       </Button>
     </div>
-    
+
     {#if Object.keys(packagesStore.packages).length > 0}
       {@const availablePackages = Object.entries(packagesStore.packages)
         .filter(([name]) => !packagesStore.isInstalled(name))
         .slice(0, 3)}
-      
+
       {#if availablePackages.length > 0}
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {#each availablePackages as [name, pkg]}
@@ -193,9 +193,9 @@ onDestroy(() => {
                   </div>
                 </div>
               </Card.Header>
-              
+
               <Card.Footer>
-                <Button 
+                <Button
                   size="sm"
                   variant="default"
                   onclick={() => installPackage(name)}

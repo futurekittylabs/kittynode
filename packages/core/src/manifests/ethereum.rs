@@ -23,8 +23,7 @@ impl PackageDefinition for Ethereum {
 
         Ok(Package {
             name: ETHEREUM_NAME.to_string(),
-            description: "This package installs a Reth execution client and a Lighthouse consensus client with Docker."
-                .to_string(),
+            description: "This package installs an Ethereum node.".to_string(),
             network_name: "ethereum-network".to_string(),
             default_config,
             containers: Ethereum::get_containers("holesky")?,
