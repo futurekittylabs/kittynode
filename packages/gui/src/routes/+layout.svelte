@@ -16,6 +16,9 @@ import {
   Settings,
   Package2,
   Activity,
+  MessageSquare,
+  Github,
+  Users,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { page } from "$app/state";
@@ -57,13 +60,12 @@ onMount(async () => {
   <Sidebar.Provider>
     <Sidebar.Root variant="inset">
       <Sidebar.Header>
-        <div class="flex items-center gap-3 px-2">
+        <div class="flex items-center gap-2 mb-2">
           <img
-            src="/images/kittynode-logo-circle.png"
+            src={mode.current === "dark" ? "/images/kittynode-wordmark-dark.png" : "/images/kittynode-wordmark-light.png"}
             alt="Kittynode"
-            class="h-8 w-8"
+            class="h-6 w-auto"
           />
-          <span class="text-lg font-semibold">Kittynode</span>
         </div>
       </Sidebar.Header>
 
@@ -109,15 +111,54 @@ onMount(async () => {
       </Sidebar.Content>
 
       <Sidebar.Footer>
-        <div class="px-2 py-2 text-xs text-muted-foreground">
-          {#if appVersion}
-            Version {appVersion}
-          {:else if versionError}
-            <span class="opacity-50">Failed to get version</span>
-          {:else}
-            <span class="opacity-50">Loading version...</span>
-          {/if}
-        </div>
+        <Sidebar.Separator />
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <MessageSquare class="h-4 w-4" />
+                  <span>Feedback</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://github.com/blackkittylabs/kittynode"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <Github class="h-4 w-4" />
+                  <span>GitHub</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://discord.kittynode.io"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <Users class="h-4 w-4" />
+                  <span>Discord</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
       </Sidebar.Footer>
 
       <Sidebar.Rail />
@@ -129,16 +170,9 @@ onMount(async () => {
         <Sidebar.Trigger />
       </header>
 
-      <header class="flex h-14 items-center gap-4 border-b px-4 md:hidden">
+      <!-- Mobile header: keep only the toggle button -->
+      <header class="flex h-14 items-center border-b px-4 md:hidden">
         <Sidebar.Trigger />
-        <div class="flex items-center gap-2">
-          <img
-            src="/images/kittynode-logo-circle.png"
-            alt="Kittynode"
-            class="h-6 w-6"
-          />
-          <span class="text-lg font-semibold">Kittynode</span>
-        </div>
       </header>
 
       <div class="flex-1 overflow-y-auto">
