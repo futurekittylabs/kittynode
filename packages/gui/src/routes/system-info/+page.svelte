@@ -7,6 +7,7 @@ import { Skeleton } from "$lib/components/ui/skeleton";
 import { Progress } from "$lib/components/ui/progress";
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
+import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import {
   Cpu,
   HardDrive,
@@ -14,8 +15,6 @@ import {
   Server,
   WifiOff,
   RefreshCw,
-  CheckCircle2,
-  AlertCircle,
   Globe,
 } from "@lucide/svelte";
 
@@ -27,11 +26,7 @@ function fetchSystemInfo() {
   systemInfoStore.fetchSystemInfo();
 }
 
-const getUsageColor = (percentage: number) => {
-  if (percentage < 50) return "text-green-500";
-  if (percentage < 80) return "text-yellow-500";
-  return "text-red-500";
-};
+// Progress bar alone conveys usage; no percentage text needed.
 
 onMount(() => {
   if (!systemInfoStore.systemInfo) {
@@ -65,22 +60,7 @@ onMount(() => {
 
   <!-- Status Cards -->
   <div class="grid gap-4 md:grid-cols-3">
-    <Card.Root>
-      <Card.Header class="pb-3">
-        <Card.Title class="text-sm font-medium">Docker Status</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <div class="flex items-center space-x-2">
-          {#if dockerStatus.isRunning}
-            <CheckCircle2 class="h-4 w-4 text-green-500" />
-            <span class="text-sm font-medium">Running</span>
-          {:else}
-            <AlertCircle class="h-4 w-4 text-yellow-500" />
-            <span class="text-sm font-medium">Not Running</span>
-          {/if}
-        </div>
-      </Card.Content>
-    </Card.Root>
+    <DockerStatusCard />
 
     <Card.Root>
       <Card.Header class="pb-3">
@@ -185,16 +165,11 @@ onMount(() => {
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium">{disk.name}</p>
-                <p class="text-xs text-muted-foreground">{disk.mount_point} • {disk.disk_type}</p>
               </div>
-              <span class="text-sm font-medium {getUsageColor(usagePercent)}">
-                {usagePercent}%
-              </span>
             </div>
             <Progress value={usagePercent} max={100} />
             <div class="flex justify-between text-xs text-muted-foreground">
-              <span>{disk.available_display} free</span>
-              <span>{disk.total_display} total</span>
+              <span>{disk.used_display} of {disk.total_display} used</span>
             </div>
           </div>
         {/each}

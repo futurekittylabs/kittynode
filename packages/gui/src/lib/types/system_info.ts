@@ -26,6 +26,7 @@ export interface DiskInfo {
   total_bytes: number;
   available_bytes: number;
   total_display: string;
+  used_display: string;
   available_display: string;
   disk_type: string;
 }
