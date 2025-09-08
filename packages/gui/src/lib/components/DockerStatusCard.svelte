@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as Card from "$lib/components/ui/card";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
-import { CheckCircle2, AlertCircle, Server } from "@lucide/svelte";
+import { CircleCheck, CircleAlert, Server } from "@lucide/svelte";
 
 export let showServerIcon: boolean = false;
 </script>
@@ -18,13 +18,12 @@ export let showServerIcon: boolean = false;
   <Card.Content>
     <div class="flex items-center space-x-2">
       {#if dockerStatus.isRunning}
-        <CheckCircle2 class="h-4 w-4 text-green-500" />
+        <CircleCheck class="h-4 w-4 text-green-500" />
         <span class="text-sm font-medium">Running</span>
       {:else}
-        <AlertCircle class="h-4 w-4 text-yellow-500" />
+        <CircleAlert class="h-4 w-4 text-yellow-500" />
         <span class="text-sm font-medium">Not Running</span>
       {/if}
     </div>
   </Card.Content>
 </Card.Root>
-

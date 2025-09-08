@@ -9,9 +9,9 @@ import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte
 import {
   Package2,
   Download,
-  CheckCircle2,
+  CircleCheck,
+  CircleAlert,
   Settings2,
-  AlertCircle,
   Search,
 } from "@lucide/svelte";
 
@@ -49,7 +49,7 @@ onMount(() => {
   <div>
     <h2 class="text-3xl font-bold tracking-tight">Package Store</h2>
     <p class="text-muted-foreground">
-      Browse and install blockchain node packages
+      Browse and install node infrastructure packages
     </p>
   </div>
 
@@ -57,7 +57,7 @@ onMount(() => {
     <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
       <Card.Header>
         <Card.Title class="flex items-center space-x-2">
-          <AlertCircle class="h-5 w-5 text-yellow-500" />
+          <CircleAlert class="h-5 w-5 text-yellow-500" />
           <span>Docker Required</span>
         </Card.Title>
       </Card.Header>
@@ -84,7 +84,7 @@ onMount(() => {
       {#each filteredPackages() as [name, pkg]}
         {@const isInstalled = packagesStore.isInstalled(name)}
         {@const isInstallingPackage = isInstalling(name)}
-        
+
         <Card.Root>
           <Card.Header>
             <div class="flex items-start justify-between">
@@ -99,16 +99,16 @@ onMount(() => {
               </div>
               {#if isInstalled}
                 <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1">
-                  <CheckCircle2 class="h-3 w-3 text-green-500" />
+                  <CircleCheck class="h-3 w-3 text-green-500" />
                   <span class="text-xs font-medium text-green-700 dark:text-green-400">Installed</span>
                 </div>
               {/if}
             </div>
           </Card.Header>
-          
+
           <Card.Footer>
             {#if isInstalled}
-              <Button 
+              <Button
                 size="sm"
                 variant="default"
                 onclick={() => managePackage(name)}
@@ -118,7 +118,7 @@ onMount(() => {
                 Manage
               </Button>
             {:else}
-              <Button 
+              <Button
                 size="sm"
                 variant="default"
                 onclick={() => installPackage(name)}

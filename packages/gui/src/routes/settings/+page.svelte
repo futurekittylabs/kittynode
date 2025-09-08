@@ -19,7 +19,6 @@ import {
   WifiOff,
   Link2,
   Unlink,
-  ChevronDown,
 } from "@lucide/svelte";
 import { refetchStores } from "$utils/refetchStores";
 import { notifySuccess, notifyError, notifyInfo } from "$utils/notify";
@@ -149,16 +148,16 @@ function setRemote(serverUrl: string) {
         {#if remoteAccessStore.remoteAccess === null}
           <span class="text-sm text-muted-foreground">Loading...</span>
         {:else if !remoteAccessStore.remoteAccess}
-          <Button 
+          <Button
             size="sm"
-            onclick={enableRemoteAccess} 
+            onclick={enableRemoteAccess}
             disabled={["ios", "android"].includes(platform())}
           >
             <Wifi class="h-4 w-4 mr-1" />
             Enable
           </Button>
         {:else}
-          <Button 
+          <Button
             size="sm"
             variant="outline"
             onclick={disableRemoteAccess}
@@ -180,7 +179,7 @@ function setRemote(serverUrl: string) {
           </p>
         </div>
         {#if serverUrlStore.serverUrl === ""}
-          <Button 
+          <Button
             size="sm"
             variant="outline"
             onclick={connectRemote}
@@ -189,7 +188,7 @@ function setRemote(serverUrl: string) {
             Connect
           </Button>
         {:else}
-          <Button 
+          <Button
             size="sm"
             variant="outline"
             onclick={disconnectRemote}
@@ -285,10 +284,10 @@ function setRemote(serverUrl: string) {
               {updates.hasUpdate ? "A new version is ready to install" : "You're running the latest version"}
             </p>
           </div>
-          <Button 
+          <Button
             size="sm"
             variant={updates.hasUpdate ? "default" : "outline"}
-            disabled={updates.isProcessing || updates.isChecking} 
+            disabled={updates.isProcessing || updates.isChecking}
             onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
           >
             {#if updates.isProcessing}
@@ -322,14 +321,14 @@ function setRemote(serverUrl: string) {
     </Card.Header>
     <Card.Content>
       <div class="flex gap-2">
-        <Button 
+        <Button
           size="sm"
           variant="outline"
           href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
         >
           GitHub Discussions
         </Button>
-        <Button 
+        <Button
           size="sm"
           variant="outline"
           href="https://discord.kittynode.io"
@@ -359,10 +358,10 @@ function setRemote(serverUrl: string) {
             Permanently remove all Kittynode data and settings
           </p>
         </div>
-        <Button 
+        <Button
           size="sm"
-          onclick={deleteKittynode} 
-          disabled={serverUrlStore.serverUrl !== ""} 
+          onclick={deleteKittynode}
+          disabled={serverUrlStore.serverUrl !== ""}
           variant="destructive"
         >
           <Trash2 class="h-4 w-4 mr-1" />

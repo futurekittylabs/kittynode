@@ -9,7 +9,7 @@ import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { packageConfigStore } from "$stores/packageConfig.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
-import { Terminal, CheckCircle2 } from "@lucide/svelte";
+import { Terminal, CircleCheck } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
 let installLoading: string | null = $state(null);
@@ -141,7 +141,7 @@ onDestroy(() => {
         <div class="flex items-center space-x-2">
             {#if packagesStore.isInstalled(pkg.name)}
                 <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
-                    <CheckCircle2 class="h-4 w-4 text-green-500" />
+                    <CircleCheck class="h-4 w-4 text-green-500" />
                     <span class="text-sm font-medium text-green-700 dark:text-green-400">Installed</span>
                 </div>
             {/if}

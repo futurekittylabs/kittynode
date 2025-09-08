@@ -12,14 +12,14 @@ import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import {
   Terminal,
-  CheckCircle2,
+  CircleCheck,
   Trash2,
   Play,
   Square,
   Activity,
   Settings,
   FileText,
-  AlertCircle,
+  CircleAlert,
   Wifi,
   WifiOff,
 } from "@lucide/svelte";
@@ -302,7 +302,7 @@ onDestroy(() => {
     <Card.Root class="max-w-md">
       <Card.Header>
         <Card.Title class="flex items-center gap-2">
-          <AlertCircle class="h-5 w-5" />
+          <CircleAlert class="h-5 w-5" />
           Package Not Found
         </Card.Title>
       </Card.Header>
