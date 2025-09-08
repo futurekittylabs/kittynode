@@ -275,7 +275,7 @@ function setRemote(serverUrl: string) {
         </Card.Description>
       </Card.Header>
       <Card.Content>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center">
           <div>
             <p class="text-sm font-medium">
               {updates.hasUpdate ? "Update Available" : "Check for Updates"}
@@ -284,25 +284,27 @@ function setRemote(serverUrl: string) {
               {updates.hasUpdate ? "A new version is ready to install" : "You're running the latest version"}
             </p>
           </div>
-          <Button
-            size="sm"
-            variant={updates.hasUpdate ? "default" : "outline"}
-            disabled={updates.isProcessing || updates.isChecking}
-            onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
-          >
-            {#if updates.isProcessing}
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              Updating...
-            {:else if updates.isChecking}
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              Checking...
-            {:else if updates.hasUpdate}
-              <Download class="h-4 w-4 mr-1" />
-              Install Update
-            {:else}
-              Check Now
-            {/if}
-          </Button>
+          <div class="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={updates.hasUpdate ? "default" : "outline"}
+              disabled={updates.isProcessing || updates.isChecking}
+              onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
+            >
+              {#if updates.isProcessing}
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Updating...
+              {:else if updates.isChecking}
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Checking...
+              {:else if updates.hasUpdate}
+                <Download class="h-4 w-4 mr-1" />
+                Install Update
+              {:else}
+                Check Now
+              {/if}
+            </Button>
+          </div>
         </div>
       </Card.Content>
     </Card.Root>
