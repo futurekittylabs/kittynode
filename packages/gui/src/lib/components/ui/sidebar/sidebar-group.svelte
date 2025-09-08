@@ -12,12 +12,9 @@ let {
 
 <div
 	bind:this={ref}
-	data-slot="sidebar-content"
-	data-sidebar="content"
-	class={cn(
-		"flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-		className
-	)}
+	data-slot="sidebar-group"
+	data-sidebar="group"
+	class={cn("relative flex w-full min-w-0 flex-col p-2", className)}
 	{...restProps}
 >
 	{@render children?.()}

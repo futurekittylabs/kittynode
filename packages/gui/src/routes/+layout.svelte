@@ -9,17 +9,7 @@ import UpdateBanner from "./UpdateBanner.svelte";
 import { platform } from "@tauri-apps/plugin-os";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-} from "$lib/components/ui/sidebar";
+import * as Sidebar from "$lib/components/ui/sidebar";
 import {
   House,
   HeartPulse,
@@ -64,99 +54,101 @@ onMount(async () => {
 {#if !initializedStore.initialized}
   <Splash />
 {:else}
-  <SidebarProvider defaultOpen={true}>
-    <div class="flex h-screen w-full">
-      <Sidebar>
-        <SidebarHeader>
-          <div class="flex items-center gap-3 px-2">
-            <img
-              src="/images/kittynode-logo-circle.png"
-              alt="Kittynode"
-              class="h-8 w-8"
-            />
-            <span class="text-lg font-semibold">Kittynode</span>
+  <Sidebar.Provider>
+    <Sidebar.Root variant="inset">
+      <Sidebar.Header>
+        <div class="flex items-center gap-3 px-2">
+          <img
+            src="/images/kittynode-logo-circle.png"
+            alt="Kittynode"
+            class="h-8 w-8"
+          />
+          <span class="text-lg font-semibold">Kittynode</span>
+        </div>
+      </Sidebar.Header>
+
+      <Sidebar.Content>
+        <Sidebar.Menu>
+          {#each navigationItems as item}
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
+              >
+                {#snippet child({ props })}
+                  <a href={item.href} {...props}>
+                    <item.icon class="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+          {/each}
+        </Sidebar.Menu>
+
+        {#if packagesStore.installedPackages.length > 0}
+          <div class="mt-6">
+            <div class="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Installed Nodes</div>
+            <Sidebar.Menu class="mt-2">
+              {#each packagesStore.installedPackages as pkg}
+                <Sidebar.MenuItem>
+                  <Sidebar.MenuButton
+                    isActive={currentPath.startsWith(`/node/${pkg.name}`)}
+                  >
+                    {#snippet child({ props })}
+                      <a href={`/node/${pkg.name}`} {...props}>
+                        <Activity class="h-4 w-4" />
+                        <span>{pkg.name}</span>
+                      </a>
+                    {/snippet}
+                  </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
+              {/each}
+            </Sidebar.Menu>
           </div>
-        </SidebarHeader>
+        {/if}
+      </Sidebar.Content>
 
-        <SidebarContent>
-          <SidebarMenu>
-            {#each navigationItems as item}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  href={item.href}
-                  isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
-                >
-                  <item.icon class="h-4 w-4" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            {/each}
-          </SidebarMenu>
-
-          {#if packagesStore.installedPackages.length > 0}
-            <div class="mt-6">
-              <div class="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Installed Nodes</div>
-              <SidebarMenu class="mt-2">
-                {#each packagesStore.installedPackages as pkg}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      href={`/node/${pkg.name}`}
-                      isActive={currentPath.startsWith(`/node/${pkg.name}`)}
-                    >
-                      <Activity class="h-4 w-4" />
-                      <span>{pkg.name}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                {/each}
-              </SidebarMenu>
-            </div>
+      <Sidebar.Footer>
+        <div class="px-2 py-2 text-xs text-muted-foreground">
+          {#if appVersion}
+            Version {appVersion}
+          {:else if versionError}
+            <span class="opacity-50">Failed to get version</span>
+          {:else}
+            <span class="opacity-50">Loading version...</span>
           {/if}
-        </SidebarContent>
+        </div>
+      </Sidebar.Footer>
 
-        <SidebarFooter>
-          <div class="px-2 py-2 text-xs text-muted-foreground">
-            {#if appVersion}
-              Version {appVersion}
-            {:else if versionError}
-              <span class="opacity-50">Failed to get version</span>
-            {:else}
-              <span class="opacity-50">Loading version...</span>
-            {/if}
-          </div>
-        </SidebarFooter>
-      </Sidebar>
+      <Sidebar.Rail />
+    </Sidebar.Root>
 
-      <div class="flex-1 flex flex-col">
-        <header class="flex h-14 items-center gap-4 border-b px-4 md:hidden">
-          <SidebarTrigger />
-          <div class="flex items-center gap-2">
-            <img
-              src="/images/kittynode-logo-circle.png"
-              alt="Kittynode"
-              class="h-6 w-6"
-            />
-            <span class="text-lg font-semibold">Kittynode</span>
-          </div>
-        </header>
+    <Sidebar.Inset>
+      <!-- Desktop header with always-visible sidebar toggle -->
+      <header class="hidden md:flex h-12 items-center gap-4 border-b px-4">
+        <Sidebar.Trigger />
+      </header>
 
-        <main class="flex-1 overflow-y-auto">
-          <div class="container mx-auto px-4 py-6">
-            {#if !["ios", "android"].includes(platform())}
-              <UpdateBanner />
-            {/if}
-            {@render children()}
-          </div>
-        </main>
+      <header class="flex h-14 items-center gap-4 border-b px-4 md:hidden">
+        <Sidebar.Trigger />
+        <div class="flex items-center gap-2">
+          <img
+            src="/images/kittynode-logo-circle.png"
+            alt="Kittynode"
+            class="h-6 w-6"
+          />
+          <span class="text-lg font-semibold">Kittynode</span>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto">
+        <div class="container mx-auto px-4 py-6">
+          {#if !["ios", "android"].includes(platform())}
+            <UpdateBanner />
+          {/if}
+          {@render children()}
+        </div>
       </div>
-    </div>
-  </SidebarProvider>
+    </Sidebar.Inset>
+</Sidebar.Provider>
 {/if}
-
-<style>
-  :global(html, body) {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-</style>

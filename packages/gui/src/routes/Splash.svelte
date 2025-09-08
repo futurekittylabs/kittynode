@@ -131,22 +131,9 @@ onMount(() => {
 });
 </script>
 
-<style>
-  canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: -1;
-  }
-  .main-content {
-    position: relative;
-    z-index: 1;
-  }
-</style>
+<canvas class="fixed -z-10 top-0 left-0" bind:this={canvasElement}></canvas>
 
-<canvas bind:this={canvasElement}></canvas>
-
-<main class="flex flex-col justify-center items-center h-full text-center p-4 main-content">
+<main class="relative z-[1] flex flex-col justify-center items-center h-full text-center p-4">
   <Card.Root class="min-w-80 max-w-md mx-4">
     <Card.Header class="flex flex-col items-center">
       <img
@@ -169,3 +156,4 @@ onMount(() => {
     </Card.Content>
   </Card.Root>
 </main>
+
