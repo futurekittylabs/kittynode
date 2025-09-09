@@ -74,6 +74,22 @@ fn get_storage_info() -> Result<StorageInfo> {
         .list()
         .iter()
         .filter_map(|disk| {
+            // On macOS, sysinfo exposes multiple APFS system volumes (e.g.,
+            // "/" and "/System/Volumes/Data") that represent the same
+            // physical drive. These should not be shown separately in the UI.
+            // Filter out internal system mount points to avoid duplicates like
+            // "Macintosh HD" appearing twice.
+            #[cfg(target_os = "macos")]
+            {
+                let mp = match disk.mount_point().to_str() {
+                    Some(s) => s,
+                    None => return None,
+                };
+                if mp.starts_with("/System/Volumes") || mp == "/private/var/vm" {
+                    return None;
+                }
+            }
+
             if disk.total_space() < MIN_DISK_SIZE || disk.total_space() == 0 {
                 return None;
             }

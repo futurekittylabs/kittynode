@@ -310,36 +310,7 @@ function setRemote(serverUrl: string) {
     </Card.Root>
   {/if}
 
-  <!-- Support -->
-  <Card.Root>
-    <Card.Header>
-      <Card.Title class="flex items-center gap-2">
-        <MessageSquare class="h-5 w-5" />
-        Support & Feedback
-      </Card.Title>
-      <Card.Description>
-        Get help and share your thoughts
-      </Card.Description>
-    </Card.Header>
-    <Card.Content>
-      <div class="flex gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
-        >
-          GitHub Discussions
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          href="https://discord.kittynode.io"
-        >
-          Discord Community
-        </Button>
-      </div>
-    </Card.Content>
-  </Card.Root>
+  
 
   <!-- Danger Zone -->
   <Card.Root class="border-destructive/50">

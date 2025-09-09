@@ -9,23 +9,16 @@ import UpdateBanner from "./UpdateBanner.svelte";
 import { platform } from "@tauri-apps/plugin-os";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-} from "$lib/components/ui/sidebar";
+import * as Sidebar from "$lib/components/ui/sidebar";
 import {
   House,
   HeartPulse,
   Settings,
   Package2,
   Activity,
+  MessageSquare,
+  Github,
+  Users,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { page } from "$app/state";
@@ -64,99 +57,134 @@ onMount(async () => {
 {#if !initializedStore.initialized}
   <Splash />
 {:else}
-  <SidebarProvider defaultOpen={true}>
-    <div class="flex h-screen w-full">
-      <Sidebar>
-        <SidebarHeader>
-          <div class="flex items-center gap-3 px-2">
-            <img
-              src="/images/kittynode-logo-circle.png"
-              alt="Kittynode"
-              class="h-8 w-8"
-            />
-            <span class="text-lg font-semibold">Kittynode</span>
-          </div>
-        </SidebarHeader>
+  <Sidebar.Provider>
+    <Sidebar.Root variant="inset">
+      <Sidebar.Header>
+        <div class="flex items-center gap-2 pl-1 pr-2 pt-1 pb-0 mb-1">
+          <img
+            src={mode.current === "dark" ? "/images/kittynode-wordmark-dark.png" : "/images/kittynode-wordmark-light.png"}
+            alt="Kittynode"
+            class="h-6 w-auto"
+          />
+        </div>
+      </Sidebar.Header>
 
-        <SidebarContent>
-          <SidebarMenu>
+      <Sidebar.Content>
+        <Sidebar.Group class="px-2 py-2 md:p-2">
+          <Sidebar.Menu>
             {#each navigationItems as item}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  href={item.href}
+              <Sidebar.MenuItem>
+                <Sidebar.MenuButton
                   isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
                 >
-                  <item.icon class="h-4 w-4" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+                  {#snippet child({ props })}
+                    <a href={item.href} {...props}>
+                      <item.icon class="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </a>
+                  {/snippet}
+                </Sidebar.MenuButton>
+              </Sidebar.MenuItem>
             {/each}
-          </SidebarMenu>
+          </Sidebar.Menu>
+        </Sidebar.Group>
 
-          {#if packagesStore.installedPackages.length > 0}
-            <div class="mt-6">
-              <div class="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Installed Nodes</div>
-              <SidebarMenu class="mt-2">
-                {#each packagesStore.installedPackages as pkg}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      href={`/node/${pkg.name}`}
-                      isActive={currentPath.startsWith(`/node/${pkg.name}`)}
-                    >
-                      <Activity class="h-4 w-4" />
-                      <span>{pkg.name}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                {/each}
-              </SidebarMenu>
-            </div>
+        {#if packagesStore.installedPackages.length > 0}
+          <Sidebar.Group class="px-2 py-2 md:p-2">
+            <Sidebar.GroupLabel>Installed Nodes</Sidebar.GroupLabel>
+            <Sidebar.Menu>
+              {#each packagesStore.installedPackages as pkg}
+                <Sidebar.MenuItem>
+                  <Sidebar.MenuButton
+                    isActive={currentPath.startsWith(`/node/${pkg.name}`)}
+                  >
+                    {#snippet child({ props })}
+                      <a href={`/node/${pkg.name}`} {...props}>
+                        <Activity class="h-4 w-4" />
+                        <span>{pkg.name}</span>
+                      </a>
+                    {/snippet}
+                  </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
+              {/each}
+            </Sidebar.Menu>
+          </Sidebar.Group>
+        {/if}
+      </Sidebar.Content>
+
+      <Sidebar.Footer class="px-2 py-2 md:p-2">
+        <Sidebar.Separator />
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <MessageSquare class="h-4 w-4" />
+                  <span>Feedback</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://github.com/blackkittylabs/kittynode"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <Github class="h-4 w-4" />
+                  <span>GitHub</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton>
+              {#snippet child({ props })}
+                <a
+                  href="https://discord.kittynode.io"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  {...props}
+                >
+                  <Users class="h-4 w-4" />
+                  <span>Discord</span>
+                </a>
+              {/snippet}
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
+      </Sidebar.Footer>
+
+      <Sidebar.Rail />
+    </Sidebar.Root>
+
+    <Sidebar.Inset>
+      <!-- Desktop header with always-visible sidebar toggle -->
+      <header class="hidden md:flex h-12 items-center gap-4 border-b px-4">
+        <Sidebar.Trigger class="cursor-pointer" />
+      </header>
+
+      <!-- Mobile header: keep only the toggle button -->
+      <header class="flex h-14 items-center border-b px-4 md:hidden">
+        <Sidebar.Trigger class="cursor-pointer" />
+      </header>
+
+      <div class="flex-1 overflow-y-auto">
+        <div class="container mx-auto px-4 py-6">
+          {#if !["ios", "android"].includes(platform())}
+            <UpdateBanner />
           {/if}
-        </SidebarContent>
-
-        <SidebarFooter>
-          <div class="px-2 py-2 text-xs text-muted-foreground">
-            {#if appVersion}
-              Version {appVersion}
-            {:else if versionError}
-              <span class="opacity-50">Failed to get version</span>
-            {:else}
-              <span class="opacity-50">Loading version...</span>
-            {/if}
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-
-      <div class="flex-1 flex flex-col">
-        <header class="flex h-14 items-center gap-4 border-b px-4 md:hidden">
-          <SidebarTrigger />
-          <div class="flex items-center gap-2">
-            <img
-              src="/images/kittynode-logo-circle.png"
-              alt="Kittynode"
-              class="h-6 w-6"
-            />
-            <span class="text-lg font-semibold">Kittynode</span>
-          </div>
-        </header>
-
-        <main class="flex-1 overflow-y-auto">
-          <div class="container mx-auto px-4 py-6">
-            {#if !["ios", "android"].includes(platform())}
-              <UpdateBanner />
-            {/if}
-            {@render children()}
-          </div>
-        </main>
+          {@render children()}
+        </div>
       </div>
-    </div>
-  </SidebarProvider>
+    </Sidebar.Inset>
+</Sidebar.Provider>
 {/if}
-
-<style>
-  :global(html, body) {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-</style>

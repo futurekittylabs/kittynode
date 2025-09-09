@@ -140,7 +140,7 @@ onMount(() => {
     </div>
   {:else}
     <Card.Root>
-      <Card.Content class="pt-6">
+      <Card.Content>
         <p class="text-center text-muted-foreground">
           {searchQuery ? "No packages found matching your search." : "No packages available."}
         </p>

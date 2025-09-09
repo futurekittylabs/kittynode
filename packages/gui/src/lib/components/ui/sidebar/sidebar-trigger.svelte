@@ -1,28 +1,35 @@
 <script lang="ts">
-import { cn } from "$lib/utils";
-import { getContext } from "svelte";
-import { Menu } from "@lucide/svelte";
-import { Button } from "$lib/components/ui/button";
+import { Button } from "$lib/components/ui/button/index.js";
+import { cn } from "$lib/utils.js";
+import PanelLeftIcon from "@lucide/svelte/icons/panel-left";
+import type { ComponentProps } from "svelte";
+import { useSidebar } from "./context.svelte.js";
 
 let {
-  class: className = "",
+  ref = $bindable(null),
+  class: className,
+  onclick,
   ...restProps
-}: {
-  class?: string;
+}: ComponentProps<typeof Button> & {
+  onclick?: (e: MouseEvent) => void;
 } = $props();
 
-const context = getContext<{
-  toggle: () => void;
-}>("sidebar");
+const sidebar = useSidebar();
 </script>
 
 <Button
-  variant="ghost"
-  size="icon"
-  class={cn("", className)}
-  onclick={context?.toggle}
-  {...restProps}
+	data-sidebar="trigger"
+	data-slot="sidebar-trigger"
+	variant="ghost"
+	size="icon"
+	class={cn("size-7", className)}
+	type="button"
+	onclick={(e) => {
+		onclick?.(e);
+		sidebar.toggle();
+	}}
+	{...restProps}
 >
-  <Menu class="h-5 w-5" />
-  <span class="sr-only">Toggle sidebar</span>
+	<PanelLeftIcon />
+	<span class="sr-only">Toggle Sidebar</span>
 </Button>

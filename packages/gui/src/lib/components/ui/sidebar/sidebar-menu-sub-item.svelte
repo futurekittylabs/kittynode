@@ -4,21 +4,18 @@ import type { HTMLAttributes } from "svelte/elements";
 
 let {
   ref = $bindable(null),
-  class: className,
   children,
+  class: className,
   ...restProps
-}: WithElementRef<
-  HTMLAttributes<HTMLUListElement>,
-  HTMLUListElement
-> = $props();
+}: WithElementRef<HTMLAttributes<HTMLLIElement>> = $props();
 </script>
 
-<ul
+<li
 	bind:this={ref}
-	data-slot="sidebar-menu"
-	data-sidebar="menu"
-	class={cn("flex w-full min-w-0 flex-col gap-1", className)}
+	data-slot="sidebar-menu-sub-item"
+	data-sidebar="menu-sub-item"
+	class={cn("group/menu-sub-item relative", className)}
 	{...restProps}
 >
 	{@render children?.()}
-</ul>
+</li>

@@ -7,17 +7,13 @@ let {
   class: className,
   children,
   ...restProps
-}: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
+}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
 <div
 	bind:this={ref}
-	data-slot="sidebar-content"
-	data-sidebar="content"
-	class={cn(
-		"flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
-		className
-	)}
+	data-slot="sheet-header"
+	class={cn("flex flex-col gap-1.5 p-4", className)}
 	{...restProps}
 >
 	{@render children?.()}
