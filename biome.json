@@ -9,7 +9,8 @@
     "includes": [
       "**",
       "!packages/gui/src/app.css",
-      "!packages/gui/src/lib/utils.ts"
+      "!packages/gui/src/lib/utils.ts",
+      "!packages/gui/src/lib/components/ui/**"
     ],
     "ignoreUnknown": false
   },
@@ -50,12 +51,6 @@
             "noUnusedImports": "off"
           }
         }
-      }
-    },
-    {
-      "includes": ["packages/gui/src/lib/components/ui/**"],
-      "linter": {
-        "enabled": false
       }
     }
   ]
