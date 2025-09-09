@@ -71,6 +71,15 @@ lint-rs:
 lint-rs-pedantic:
   cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::too_many_lines && cargo fmt --all -- --check
 
+# release the desktop app
+release:
+  cargo set-version -p kittynode-tauri --bump minor
+  cargo generate-lockfile
+  v=$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)
+  git add packages/gui/src-tauri/Cargo.toml Cargo.lock
+  git commit -m "Release gui-$v-alpha"
+  git tag "gui-$v-alpha"
+
 # set up the project
 setup:
   bun install && just install-dev-tools && just ios-init
