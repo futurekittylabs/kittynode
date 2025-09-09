@@ -75,10 +75,9 @@ lint-rs-pedantic:
 release:
   cargo set-version -p kittynode-tauri --bump minor
   cargo generate-lockfile
-  v=$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)
   git add packages/gui/src-tauri/Cargo.toml Cargo.lock
-  git commit -m "Release gui-$v-alpha"
-  git tag "gui-$v-alpha"
+  git commit -m "Release gui-$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)-alpha"
+  git tag "gui-$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)-alpha"
 
 # set up the project
 setup:
