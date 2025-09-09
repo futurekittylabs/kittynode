@@ -4,7 +4,7 @@ build:
 
 # start the docs dev server
 docs:
-  bun -F docs dev --open
+  bun --elide-lines=0 -F docs dev --open
 
 # generate the kittynode-core docs
 docs-rs:
@@ -57,11 +57,11 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-  bun -F docs -F gui format-lint && bun -F gui check
+  bun --elide-lines=0 -F docs -F gui format-lint && bun --elide-lines=0 -F gui check
 
 # lint and fix the javascript code
 lint-js-fix:
-  bun -F docs -F gui format-lint:fix && bun -F gui check
+  bun --elide-lines=0 -F docs -F gui format-lint:fix && bun --elide-lines=0 -F gui check
 
 # lint the rust code
 lint-rs:

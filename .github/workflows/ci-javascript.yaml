@@ -21,7 +21,7 @@ jobs:
         run: bun install
 
       - name: Format and lint
-        run: bun -F docs -F gui format-lint
+        run: bun --elide-lines=0 -F docs -F gui format-lint
 
       - name: Svelte check
-        run: bun -F gui check
+        run: bun --elide-lines=0 -F gui check

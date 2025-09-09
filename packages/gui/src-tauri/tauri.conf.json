@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
   "productName": "Kittynode",
-  "identifier": "com.kittynode.app",
+  "identifier": "xyz.blackkittylabs.kittynode",
   "build": {
-    "beforeDevCommand": "bun -F gui dev",
+    "beforeDevCommand": "bun --elide-lines=0 -F gui dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun -F gui build",
+    "beforeBuildCommand": "bun --elide-lines=0 -F gui build",
     "frontendDist": "../build"
   },
   "app": {
