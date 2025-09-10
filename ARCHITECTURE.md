@@ -1,31 +1,40 @@
-# Kittynode Architecture
+Kittynode is a control center for world computer operators. It's designed so that anyone in the world can easily get started running an Ethereum node. The entire process of setting up a node is encapsulated within the Kittynode app:
 
-Control center for world computer operators.
+- Installing and starting Docker or Kubernetes for the user
+- Installing an Ethereum node in a few clicks
+- Configuring a validator all without leaving the app:
+  - Generate validator/withdrawal keys
+  - Submit 32 ETH deposit transaction
+
+After setting up a node, the operator can monitor it from anywhere with the mobile app.
 
 ## Packages
 
-| Package | Description |
-| --- | --- |
+| Package          | Description                                           |
+| ---------------- | ----------------------------------------------------- |
 | `kittynode-core` | Core Rust library powering all Kittynode applications |
-| `kittynode-cli` | Command-line interface built on the core library |
-| `kittynode-gui` | Cross-platform Tauri app with Svelte frontend |
-| `kittynode-web` | Web server binding to the core library |
+| `kittynode-cli`  | Command-line interface built on the core library      |
+| `kittynode-gui`  | Cross-platform Tauri app with Svelte frontend         |
+| `kittynode-web`  | Web server binding to the core library                |
 
 ## Technology Stack
 
+The entire technology stack was carefully selected so Kittynode can quickly and securely scale development. We plan to audit every single line of code.
+
 - **Core library**: Rust for safety, performance, and cross-platform compatibility
-- **Frontend**: Svelte for reactive UI
-- **Desktop app**: Tauri for native performance with web technologies
-- **CLI**: Pure Rust binary for minimal dependencies
+- **Frontend**: Svelte 5 with shadcn-svelte
+- **Desktop app**: Tauri for cross-platform apps
+- **CLI**: Pure Rust binary consumes the core library
 
 ## User facing apps
 
-Kittynode has two user facing apps:
+Kittynode has three user facing apps:
 
-- A command line interface (CLI).
-- A graphical user interface (GUI).
+- A command line interface available on desktop.
+- A desktop app.
+- A mobile app.
 
-These user facing apps manage your Kittynode through the core library.
+Every app uses the same core library, and the desktop/mobile app uses the same frontend codebase. By re-using components, Kittynode is easier to audit and more secure, with less lines of code.
 
 ## Capabilities
 

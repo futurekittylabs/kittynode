@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-description = "A control center for world computer operators."
+description = "Control center for world computer operators."
 license = "MIT"
 edition = "2024"
 repository = "https://github.com/blackkittylabs/kittynode"
