@@ -3,9 +3,11 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightImageZoom from "starlight-image-zoom";
 import starlightLinksValidator from "starlight-links-validator";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
+  adapter: cloudflare(),
   site: "https://kittynode.com",
   integrations: [
     starlight({
