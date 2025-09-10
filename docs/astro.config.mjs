@@ -14,7 +14,7 @@ export default defineConfig({
   integrations: [
     starlight({
       plugins: [starlightLinksValidator(), starlightImageZoom()],
-      title: "Kittynode",
+      title: "Kittynode Docs",
       logo: {
         light: "../assets/kittynode-wordmark-light.png",
         dark: "../assets/kittynode-wordmark-dark.png",
@@ -42,7 +42,12 @@ export default defineConfig({
         {
           icon: "farcaster",
           label: "Farcaster",
-          href: "https://warpcast.com/kittynode",
+          href: "https://farcaster.xyz/kittynode.eth",
+        },
+        {
+          icon: "x.com",
+          label: "X",
+          href: "https://x.com/kittynode",
         },
       ],
       sidebar: [
