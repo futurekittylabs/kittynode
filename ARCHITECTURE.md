@@ -6,7 +6,7 @@ Kittynode is a control center for world computer operators. It's designed so tha
   - Generate validator/withdrawal keys
   - Submit 32 ETH deposit transaction
 
-After setting up a node, the operator can monitor it from anywhere with the mobile app.
+After setting up a node, the operator can monitor it from anywhere in the world with the mobile app.
 
 ## Packages
 
@@ -50,28 +50,6 @@ Here are a few example capabilities related to remote access:
 ## Architecture Diagram
 
 ![Kittynode architecture diagram](./assets/diagrams/diagram.svg)
-
-## Design
-
-### Easy-to-use and secure
-
-The workflow for Kittynode is designed to make it as easy as possible for the user to get started, while making the right recommendations for them along their operator journey. For example, a user may download Kittynode and sync an Ethereum testnet node in just a few clicks to get their feet wet.
-
-However, they may later decide to become an independent staker on Ethereum mainnet, which requires a lot more security checks. Kittynode will guide the user through the necessary steps to get there, while keeping the low initial barrier to entry.
-
-### Modular core library
-
-Kittynode is architected as a backend library in Rust, providing several benefits:
-
-- **Reusable core**: The desktop application is a consumer of this core library, with Tauri used to bind commands to the library.
-- **Cross-platform support**: Kittynode supports a cross-platform desktop and mobile application as a frontend, along with a CLI that reuses the same core library.
-- **Safety and performance**: Rust was chosen for its safety, performance, and cross-platform compatibility, making Kittynode easy to run on macOS, Windows, and Linux.
-
-### Direct container access
-
-Kittynode doesn't use Docker CLI commands on the user's system directly. Instead it has its own module that directly interacts with the Docker engine with Bollard. This improves Kittynode's portability, security, and testability. It also allows for more flexible networking setups between Kittynode packages.
-
-Kittynode also plans to support other environments (eg. Kubernetes) in the future.
 
 ## Features
 
