@@ -57,11 +57,11 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-  bun -F docs -F gui format-lint && bun -F gui check
+  bun -F docs -F gui -F website format-lint && bun -F gui -F website check
 
 # lint and fix the javascript code
 lint-js-fix:
-  bun -F docs -F gui format-lint:fix && bun -F gui check
+  bun -F docs -F gui -F website format-lint:fix && bun -F gui -F website check
 
 # lint the rust code
 lint-rs:
@@ -118,3 +118,7 @@ update:
 # start the web server
 web:
   cargo run -p kittynode-web
+
+# start the website
+website:
+  bun -F website dev --open
