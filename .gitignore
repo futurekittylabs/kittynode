@@ -1,22 +1,24 @@
-# Operating system files
-.DS_Store
-Thumbs.db
-
 # Dependency directories
 node_modules
 
-# Build outputs
+# Output
+.astro
+.svelte-kit
+.output
+.vercel
+.netlify
+.wrangler
 dist
 build
 target
-
-# Generated files
-.astro
-.svelte-kit
 gen
 !**/gen-overrides/**
 
-# Environment variables
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
 .env
 .env.*
 !.env.example

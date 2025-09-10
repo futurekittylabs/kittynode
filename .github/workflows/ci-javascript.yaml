@@ -21,7 +21,7 @@ jobs:
         run: bun install
 
       - name: Format and lint
-        run: bun -F docs -F gui format-lint
+        run: bun -F docs -F gui -F website format-lint
 
       - name: Svelte check
-        run: bun -F gui check
+        run: bun -F gui -F website check
