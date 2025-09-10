@@ -2,6 +2,9 @@
 
 This file contains all development guidelines and instructions for working with the Kittynode codebase. It serves both human developers and AI assistants.
 
+## Architecture
+Read the Kittynode architecture here: `./docs/src/content/docs/reference/architecture.mdx`.
+
 ## Development Setup
 ```bash
 # Prerequisites: Rust, just, Node.js, bun
