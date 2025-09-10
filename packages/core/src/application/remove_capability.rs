@@ -1,11 +1,8 @@
-use crate::infra::config::ConfigStore;
+use crate::infra::home::Home;
 use eyre::Result;
 
 pub fn remove_capability(capability: &str) -> Result<()> {
-    let mut config = ConfigStore::load()?;
-    if let Some(pos) = config.capabilities.iter().position(|x| x == capability) {
-        config.capabilities.remove(pos);
-    }
-    ConfigStore::save(&config)?;
+    let home = Home::try_default()?;
+    home.remove_capability(capability)?;
     Ok(())
 }

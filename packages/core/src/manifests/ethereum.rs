@@ -34,6 +34,13 @@ impl PackageDefinition for Ethereum {
 impl Ethereum {
     pub(crate) fn get_containers(network: &str) -> Result<Vec<Container>> {
         let kittynode_path = kittynode_path()?;
+        Self::get_containers_with_base(&kittynode_path, network)
+    }
+
+    pub(crate) fn get_containers_with_base(
+        kittynode_path: &std::path::Path,
+        network: &str,
+    ) -> Result<Vec<Container>> {
         let jwt_path = kittynode_path.join("jwt.hex");
 
         let checkpoint_sync_url = if network == "mainnet" {
@@ -157,5 +164,37 @@ impl Ethereum {
                 ],
             },
         ])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn holesky_and_mainnet_have_expected_settings() {
+        let dir = tempdir().unwrap();
+        let base = dir.path().join(".kittynode");
+
+        let holesky = Ethereum::get_containers_with_base(&base, "holesky").expect("containers");
+        assert_eq!(holesky.len(), 2);
+        assert_eq!(holesky[0].name, "reth-node");
+        assert_eq!(holesky[1].name, "lighthouse-node");
+        // Check an expected port binding present
+        assert!(holesky[0].port_bindings.contains_key("9001/tcp"));
+        // Check JWT file bind is read-only
+        let lh_jwt = holesky[1]
+            .file_bindings
+            .iter()
+            .find(|b| b.destination.ends_with("/jwt.hex"))
+            .expect("jwt binding");
+        assert_eq!(lh_jwt.options.as_deref(), Some("ro"));
+
+        // Mainnet uses a different checkpoint URL passed via args
+        let mainnet = Ethereum::get_containers_with_base(&base, "mainnet").expect("containers");
+        let args = &mainnet[1].cmd;
+        // Ensure checkpoint arg appears
+        assert!(args.contains(&"--checkpoint-sync-url".to_string()));
     }
 }

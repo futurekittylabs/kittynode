@@ -26,3 +26,39 @@ impl fmt::Display for Container {
         writeln!(f, "  Image: {}", self.image)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bollard::models::PortBinding;
+    use std::collections::HashMap;
+
+    fn sample_container() -> Container {
+        Container {
+            name: "example".to_string(),
+            image: "alpine:latest".to_string(),
+            cmd: vec!["echo".into(), "hi".into()],
+            port_bindings: HashMap::from([(
+                "8080/tcp".to_string(),
+                vec![PortBinding {
+                    host_ip: Some("127.0.0.1".into()),
+                    host_port: Some("8080".into()),
+                }],
+            )]),
+            volume_bindings: vec![Binding {
+                source: "/data".into(),
+                destination: "/mnt".into(),
+                options: None,
+            }],
+            file_bindings: vec![],
+        }
+    }
+
+    #[test]
+    fn display_shows_name_and_image() {
+        let c = sample_container();
+        let s = format!("{}", c);
+        assert!(s.contains("- Name: example"), "output: {s}");
+        assert!(s.contains("Image: alpine:latest"), "output: {s}");
+    }
+}

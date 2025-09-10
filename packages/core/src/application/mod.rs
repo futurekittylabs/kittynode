@@ -8,6 +8,7 @@ pub mod get_package_config;
 pub mod get_packages;
 pub mod get_server_url;
 pub mod get_system_info;
+pub mod home_api;
 pub mod init_kittynode;
 pub mod install_package;
 pub mod is_docker_running;

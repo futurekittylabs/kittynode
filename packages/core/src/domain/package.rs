@@ -43,3 +43,52 @@ impl fmt::Display for Package {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::container::{Binding, Container};
+    use bollard::models::PortBinding;
+    use std::collections::HashMap;
+
+    #[test]
+    fn package_config_new_is_empty() {
+        let cfg = PackageConfig::new();
+        assert!(cfg.values.is_empty());
+    }
+
+    #[test]
+    fn package_display_includes_containers() {
+        let pkg = Package {
+            name: "Sample".into(),
+            description: "Example".into(),
+            network_name: "net".into(),
+            containers: vec![Container {
+                name: "c1".into(),
+                image: "alpine".into(),
+                cmd: vec![],
+                port_bindings: HashMap::from([(
+                    "80/tcp".to_string(),
+                    vec![PortBinding {
+                        host_ip: Some("0.0.0.0".into()),
+                        host_port: Some("80".into()),
+                    }],
+                )]),
+                volume_bindings: vec![Binding {
+                    source: "vol".into(),
+                    destination: "/data".into(),
+                    options: Some("ro".into()),
+                }],
+                file_bindings: vec![],
+            }],
+            default_config: PackageConfig::new(),
+        };
+
+        let s = format!("{}", pkg);
+        assert!(s.contains("Package: Sample"));
+        assert!(s.contains("Description: Example"));
+        assert!(s.contains("Containers:"));
+        assert!(s.contains("- Name: c1"));
+        assert!(s.contains("Image: alpine"));
+    }
+}

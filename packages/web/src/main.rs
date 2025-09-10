@@ -119,3 +119,13 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn hello_world_returns_expected() {
+        assert_eq!(hello_world().await, "Hello World!");
+    }
+}

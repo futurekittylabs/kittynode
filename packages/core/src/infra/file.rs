@@ -1,9 +1,14 @@
 use eyre::{Context, Result};
 use rand::RngCore;
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 use tracing::info;
 
 pub(crate) fn kittynode_path() -> Result<PathBuf> {
+    // Allow overriding the kittynode directory for tests and advanced users
+    if let Ok(custom) = env::var("KITTYNODE_HOME") {
+        return Ok(PathBuf::from(custom));
+    }
+
     home::home_dir()
         .map(|home| home.join(".kittynode"))
         .ok_or_else(|| eyre::eyre!("Failed to determine the .kittynode path"))

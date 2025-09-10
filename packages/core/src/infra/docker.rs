@@ -127,7 +127,7 @@ pub(crate) async fn pull_and_start_container(
     );
 
     let created_container = docker.create_container(options, config).await?;
-    info!("Container {} created successfully.", container.name);
+    info!("Container {} created successfully", container.name);
 
     docker
         .start_container(
@@ -135,7 +135,7 @@ pub(crate) async fn pull_and_start_container(
             None::<bollard::query_parameters::StartContainerOptions>,
         )
         .await?;
-    info!("Container {} started successfully.", container.name);
+    info!("Container {} started successfully", container.name);
 
     let connect_options = NetworkConnectRequest {
         container: Some(container.name.to_string()),
@@ -146,7 +146,7 @@ pub(crate) async fn pull_and_start_container(
         .connect_network(network_name, connect_options)
         .await?;
     info!(
-        "Container {} connected to network '{}'.",
+        "Container {} connected to network '{}'",
         container.name, network_name
     );
 
@@ -191,5 +191,30 @@ fn create_binding_string(binding: &Binding) -> String {
     match &binding.options {
         Some(options) => format!("{}:{}:{}", binding.source, binding.destination, options),
         None => format!("{}:{}", binding.source, binding.destination),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn binding_string_with_options() {
+        let b = Binding {
+            source: "/src".into(),
+            destination: "/dst".into(),
+            options: Some("ro".into()),
+        };
+        assert_eq!(super::create_binding_string(&b), "/src:/dst:ro");
+    }
+
+    #[test]
+    fn binding_string_without_options() {
+        let b = Binding {
+            source: "/src".into(),
+            destination: "/dst".into(),
+            options: None,
+        };
+        assert_eq!(super::create_binding_string(&b), "/src:/dst");
     }
 }
