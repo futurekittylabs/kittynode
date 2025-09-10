@@ -6,7 +6,7 @@ import starlightLinksValidator from "starlight-links-validator";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://kittynode.io",
+  site: "https://kittynode.com",
   integrations: [
     starlight({
       plugins: [starlightLinksValidator(), starlightImageZoom()],
@@ -33,7 +33,7 @@ export default defineConfig({
         {
           icon: "discord",
           label: "Discord",
-          href: "https://discord.kittynode.io",
+          href: "https://discord.kittynode.com",
         },
         {
           icon: "farcaster",

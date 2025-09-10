@@ -149,7 +149,7 @@ onMount(async () => {
             <Sidebar.MenuButton>
               {#snippet child({ props })}
                 <a
-                  href="https://discord.kittynode.io"
+                  href="https://discord.kittynode.com"
                   target="_blank"
                   rel="noreferrer noopener"
                   {...props}

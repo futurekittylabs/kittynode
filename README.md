@@ -16,7 +16,7 @@ Download Kittynode:
 
 ## Documentation
 
-Visit [kittynode.io](https://kittynode.io) for complete documentation.
+Visit [kittynode.com](https://kittynode.com) for complete documentation.
 
 ## Development
 
