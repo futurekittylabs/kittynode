@@ -10,7 +10,7 @@ export default defineConfig({
   adapter: cloudflare({
     imageService: "compile",
   }),
-  site: "https://kittynode.com",
+  site: "https://docs.kittynode.com",
   integrations: [
     starlight({
       plugins: [starlightLinksValidator(), starlightImageZoom()],
