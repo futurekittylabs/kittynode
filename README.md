@@ -23,7 +23,7 @@ Visit [kittynode.io](https://kittynode.io) for complete documentation.
 For contributing to Kittynode, see:
 
 - [AGENTS.md](AGENTS.md) - Development guidelines and setup
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture overview
+- [Architecture](./docs/src/content/docs/reference/architecture.mdx) - System architecture overview
 
 ## Community
 
