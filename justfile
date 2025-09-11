@@ -4,7 +4,7 @@ build:
 
 # start the docs dev server
 docs:
-  bun -F docs dev --open
+  bun --cwd docs dev --open
 
 # generate the kittynode-core docs
 docs-rs:
@@ -121,4 +121,4 @@ web:
 
 # start the website
 website:
-  bun -F website dev --open
+  bun --cwd website dev --open

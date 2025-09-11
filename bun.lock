@@ -58,7 +58,6 @@
     },
     "website": {
       "name": "website",
-      "version": "0.0.1",
       "devDependencies": {
         "@sveltejs/adapter-auto": "^6.0.0",
         "@sveltejs/adapter-cloudflare": "^7.2.3",

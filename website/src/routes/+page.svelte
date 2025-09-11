@@ -1,2 +1,2 @@
 <h1>Welcome to Kittynode</h1>
-<p>*meowmeow*</p>
+<a href="https://docs.kittynode.com">Docs</a>

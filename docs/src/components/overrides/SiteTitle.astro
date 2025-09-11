@@ -1,0 +1,59 @@
+---
+import docsLogo from "../../assets/docs-logo.svg?raw";
+import logoDark from "../../assets/kittynode-wordmark-dark.png";
+import logoLight from "../../assets/kittynode-wordmark-light.png";
+
+const main = "https://kittynode.com";
+const self = "/reference/architecture";
+---
+
+<span class="site-title sl-flex">
+  <a class="logo-dark" href={main} aria-label="Kittynode">
+    <img src={logoDark.src} alt="Kittynode" width={logoDark.width} height={logoDark.height} />
+  </a>
+  <a class="logo-light" href={self} aria-label="Kittynode">
+    <img src={logoLight.src} alt="Kittynode" width={logoLight.width} height={logoLight.height} />
+  </a>
+  <a class="docs-logo" href={self} set:html={docsLogo} aria-label="Docs" />
+</span>
+
+<style>
+  .site-title {
+    gap: 1rem;
+  }
+
+  .site-title a {
+    display: flex;
+  }
+
+  .logo-dark,
+  .logo-light,
+  .docs-logo {
+    --logo-height: calc(var(--sl-nav-height) - 2 * var(--sl-nav-pad-y));
+    --adjusted-height: calc(
+      var(--logo-height) * 0.9
+    ); /* Slightly smaller height */
+  }
+
+  .docs-logo {
+    color: var(--sl-color-text-accent);
+    position: relative;
+    top: 0.1rem;
+  }
+
+  .site-title :global(svg),
+  .site-title img {
+    height: var(--adjusted-height);
+    width: auto;
+  }
+
+  .site-title a:hover :global(svg),
+  .site-title a:hover img {
+    transform: translateY(-0.1rem);
+  }
+
+  :global([data-theme='light']) .logo-dark,
+  :global([data-theme='dark']) .logo-light {
+    display: none;
+  }
+</style>
