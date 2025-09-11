@@ -59,6 +59,8 @@
     "website": {
       "name": "website",
       "dependencies": {
+        "@fontsource-variable/literata": "^5.2.6",
+        "@fontsource-variable/space-grotesk": "^5.2.9",
         "mode-watcher": "^1.1.0",
       },
       "devDependencies": {
@@ -264,6 +266,10 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.7.4", "", { "dependencies": { "@floating-ui/core": "^1.7.3", "@floating-ui/utils": "^0.2.10" } }, "sha512-OOchDgh4F2CchOX94cRVqhvy7b3AFb+/rQXyswmzmGakRfkMgoWVjfnLWkRirfLEfuD4ysVW16eXzwt3jHIzKA=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
+
+    "@fontsource-variable/literata": ["@fontsource-variable/literata@5.2.6", "", {}, "sha512-9ggXmkaGKzJUvfiEX66m7iuDzkbKBN1t5ei4sHPSn5voeMeMUOi3NMuZ702mG0dXvuJVKOs4oe26AjfyHheshg=="],
+
+    "@fontsource-variable/space-grotesk": ["@fontsource-variable/space-grotesk@5.2.9", "", {}, "sha512-4VnXk51fypXV+2okrmz7s0ckBZWIhvEgSVKNgRKGLxb5wpQZi5xZuzX+MalVwCUh36Gve3uG2vqCVuQkrHccRA=="],
 
     "@img/sharp-darwin-arm64": ["@img/sharp-darwin-arm64@0.34.3", "", { "optionalDependencies": { "@img/sharp-libvips-darwin-arm64": "1.2.0" }, "os": "darwin", "cpu": "arm64" }, "sha512-ryFMfvxxpQRsgZJqBd4wsttYQbCxsJksrv9Lw/v798JcQ8+w84mBWuXwl+TT0WJ/WrYOLaYpwQXi3sA9nTIaIg=="],
 
