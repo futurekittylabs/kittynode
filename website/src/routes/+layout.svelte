@@ -1,9 +1,9 @@
 <script lang="ts">
 import "../app.css";
 import favicon from "$lib/assets/favicon.ico";
-import { ModeWatcher, toggleMode } from "mode-watcher";
+import { ModeWatcher } from "mode-watcher";
 import { Button } from "$lib/components/ui/button/index.js";
-import { Sun, Moon, Github, BookOpen } from "@lucide/svelte";
+import { Github, BookOpen } from "@lucide/svelte";
 
 let { children } = $props();
 </script>
@@ -32,16 +32,6 @@ let { children } = $props();
 				<Button href="https://docs.kittynode.com" variant="ghost" size="sm">
 					<BookOpen class="h-4 w-4" />
 					Docs
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="cursor-pointer"
-					onclick={toggleMode}
-					aria-label="Toggle theme"
-				>
-					<Sun class="h-5 w-5 dark:hidden" />
-					<Moon class="hidden h-5 w-5 dark:block" />
 				</Button>
 			</nav>
 		</div>
