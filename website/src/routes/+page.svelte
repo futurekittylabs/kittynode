@@ -1,8 +1,3 @@
-<script lang="ts">
-import { Button } from "$lib/components/ui/button/index.js";
-</script>
-
-<h1>Welcome to Kittynode</h1>
-<a href="https://docs.kittynode.com">Docs</a>
-
-<Button>Click me</Button>
+<div class="flex flex-1 items-center justify-center">
+	<h1 class="text-4xl font-bold">Hello</h1>
+</div>

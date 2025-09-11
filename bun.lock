@@ -58,6 +58,9 @@
     },
     "website": {
       "name": "website",
+      "dependencies": {
+        "mode-watcher": "^1.1.0",
+      },
       "devDependencies": {
         "@lucide/svelte": "^0.544.0",
         "@sveltejs/adapter-cloudflare": "^7.2.3",

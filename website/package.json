@@ -28,5 +28,8 @@
     "typescript": "^5.0.0",
     "vite": "^7.1.5",
     "wrangler": "^4.35.0"
+  },
+  "dependencies": {
+    "mode-watcher": "^1.1.0"
   }
 }
