@@ -45,11 +45,12 @@ const self = "/reference/architecture";
   .site-title img {
     height: var(--adjusted-height);
     width: auto;
+    transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .site-title a:hover :global(svg),
   .site-title a:hover img {
-    transform: translateY(-0.1rem);
+    transform: translateY(-0.15rem);
   }
 
   :global([data-theme='light']) .logo-dark,
