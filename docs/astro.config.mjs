@@ -1,9 +1,9 @@
 // @ts-check
+import cloudflare from "@astrojs/cloudflare";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightImageZoom from "starlight-image-zoom";
 import starlightLinksValidator from "starlight-links-validator";
-import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
@@ -25,6 +25,7 @@ export default defineConfig({
       },
       components: {
         Footer: "./src/components/overrides/Footer.astro",
+        SiteTitle: "./src/components/overrides/SiteTitle.astro",
       },
       customCss: ["./src/styles/custom.css"],
       favicon: "/images/favicon.ico",
