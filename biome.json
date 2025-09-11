@@ -9,7 +9,9 @@
     "includes": [
       "**",
       "!packages/gui/src/app.css",
-      "!packages/gui/src/lib/utils.ts"
+      "!packages/gui/src/lib/utils.ts",
+      "!website/src/app.css",
+      "!website/src/lib/utils.ts"
     ],
     "ignoreUnknown": false
   },
@@ -53,7 +55,10 @@
       }
     },
     {
-      "includes": ["packages/gui/src/lib/components/ui/**"],
+      "includes": [
+        "packages/gui/src/lib/components/ui/**",
+        "website/src/lib/components/ui/**"
+      ],
       "linter": {
         "enabled": false
       }
