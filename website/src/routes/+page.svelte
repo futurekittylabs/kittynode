@@ -13,7 +13,7 @@ import { Download } from "@lucide/svelte";
 				Kittynode is a control center for world computer operators.
 			</p>
 			<div class="mt-12 flex flex-col items-center gap-4">
-				<Button size="lg" class="gap-2">
+				<Button href="https://github.com/blackkittylabs/kittynode/releases" size="lg" class="gap-2">
 					<Download class="h-5 w-5" />
 					Download now
 				</Button>
