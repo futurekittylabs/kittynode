@@ -1,6 +1,6 @@
 <script lang="ts">
-import { Button } from "$lib/components/ui/button/index.js";
 import { Download } from "@lucide/svelte";
+import { Button } from "$lib/components/ui/button/index.js";
 </script>
 
 <div class="flex flex-1 items-center justify-center">
@@ -12,7 +12,8 @@ import { Download } from "@lucide/svelte";
 			<p class="mt-6 text-base text-muted-foreground sm:text-lg">
 				Kittynode is a control center for world computer operators.
 			</p>
-			<div class="mt-12 flex flex-col items-center gap-4">
+			<img src="/black-cat.gif" alt="Black Kitty" class="nyan-cat mt-12" />
+			<div class="mt-8 flex flex-col items-center gap-4">
 				<Button href="https://github.com/blackkittylabs/kittynode/releases" size="lg" class="gap-2">
 					<Download class="h-5 w-5" />
 					Download now
@@ -24,3 +25,20 @@ import { Download } from "@lucide/svelte";
 		</div>
 	</div>
 </div>
+
+<style>
+	.nyan-cat {
+		width: 180px;
+		height: auto;
+		image-rendering: pixelated;
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	@media (min-width: 640px) {
+		.nyan-cat {
+			width: 220px;
+		}
+	}
+</style>
