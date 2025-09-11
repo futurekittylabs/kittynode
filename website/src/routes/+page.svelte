@@ -6,8 +6,8 @@ import { Button } from "$lib/components/ui/button/index.js";
 <div class="flex flex-1 items-center justify-center">
 	<div class="container mx-auto px-4 py-16">
 		<div class="mx-auto max-w-3xl text-center">
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl md:whitespace-nowrap lg:text-6xl">
-				Operate the world computer
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+				Operate the world<br />computer
 			</h1>
 			<p class="mt-6 text-base text-muted-foreground sm:text-lg">
 				Kittynode is a control center for world computer operators.
