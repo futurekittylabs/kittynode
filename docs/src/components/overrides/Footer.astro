@@ -1,13 +1,12 @@
 ---
 import Default from "@astrojs/starlight/components/Footer.astro";
-const year = new Date().getFullYear();
 ---
 
 <Default><slot /></Default>
 
 <hr />
 
-<p>&copy; {year} Kittynode contributors – <a href="https://github.com/blackkittylabs/kittynode/blob/main/LICENSE">MIT License</a></p>
+<p>Kittynode is <a href="https://github.com/blackkittylabs/kittynode">free software</a> released under the MIT License.</p>
 
 <style>
   a {
@@ -18,7 +17,6 @@ const year = new Date().getFullYear();
   }
   p {
     text-align: center;
-    font-size: var(--sl-text-sm);
   }
   hr {
     border: 0;
