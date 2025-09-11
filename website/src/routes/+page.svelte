@@ -12,7 +12,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 			<p class="mt-6 text-base text-muted-foreground sm:text-lg">
 				Kittynode is a control center for world computer operators.
 			</p>
-			<img src="/black-cat.gif" alt="Black Kitty" class="nyan-cat mt-12" />
+			<img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
 			<div class="mt-8 flex flex-col items-center gap-4">
 				<Button href="https://github.com/blackkittylabs/kittynode/releases" size="lg" class="gap-2">
 					<Download class="h-5 w-5" />
