@@ -43,7 +43,7 @@ let { children } = $props();
 
 	<footer class="border-t py-6">
 		<div class="container mx-auto px-4 text-center text-sm text-muted-foreground">
-			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="hover:underline">free software</a> released under the MIT License.
+			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
 		</div>
 	</footer>
 </div>

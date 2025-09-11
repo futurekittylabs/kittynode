@@ -126,4 +126,9 @@
   [data-slot="button"] {
     cursor: pointer;
   }
+
+  /* Styled links */
+  .link {
+    @apply text-primary underline hover:text-zinc-900 dark:hover:text-zinc-100;
+  }
 }
