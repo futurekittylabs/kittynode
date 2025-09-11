@@ -23,13 +23,13 @@ let { children } = $props();
 				<img src="/kittynode-wordmark-light.png" alt="Kittynode" class="h-8 dark:hidden" />
 				<img src="/kittynode-wordmark-dark.png" alt="Kittynode" class="hidden h-8 dark:block" />
 			</a>
-			
+
 			<nav class="flex items-center gap-2">
 				<Button href="https://github.com/blackkittylabs/kittynode" variant="ghost" size="sm">
 					<Github class="h-4 w-4" />
 					GitHub
 				</Button>
-				<Button href="/docs" variant="ghost" size="sm">
+				<Button href="https://docs.kittynode.com" variant="ghost" size="sm">
 					<BookOpen class="h-4 w-4" />
 					Docs
 				</Button>
