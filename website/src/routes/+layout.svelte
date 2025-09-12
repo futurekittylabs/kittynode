@@ -20,7 +20,7 @@ let { children } = $props();
 	<header class="border-b">
 		<div class="container mx-auto flex h-16 items-center justify-between px-4">
 			<a href="/" class="wordmark">
-				<img src="/kittynode-logo-app.png" alt="Kittynode" class="app-logo" />
+				<img src="/kittynode-logo-app.png" alt="" class="app-logo" />
 				<span class="wordmark-text">Kittynode</span>
 			</a>
 
