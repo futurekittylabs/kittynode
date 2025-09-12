@@ -19,9 +19,9 @@ let { children } = $props();
 <div class="flex min-h-screen flex-col">
 	<header class="border-b">
 		<div class="container mx-auto flex h-16 items-center justify-between px-4">
-			<a href="/" class="flex items-center gap-2">
-				<img src="/kittynode-logo-app.png" alt="Kittynode" class="h-10 w-10" />
-				<span class="text-2xl font-semibold">Kittynode</span>
+			<a href="/" class="wordmark">
+				<img src="/kittynode-logo-app.png" alt="Kittynode" class="app-logo" />
+				<span class="wordmark-text">Kittynode</span>
 			</a>
 
 			<nav class="flex items-center gap-2">
@@ -47,3 +47,24 @@ let { children } = $props();
 		</div>
 	</footer>
 </div>
+
+<style>
+	.wordmark {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		text-decoration: none;
+	}
+
+	.app-logo {
+		height: 2.5rem;
+		width: 2.5rem;
+		position: relative;
+		top: 0.125rem;
+	}
+
+	.wordmark-text {
+		font-size: 1.5rem;
+		font-weight: 500;
+	}
+</style>

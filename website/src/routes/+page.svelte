@@ -6,10 +6,10 @@ import { Button } from "$lib/components/ui/button/index.js";
 <div class="flex flex-1 items-center justify-center">
 	<div class="container mx-auto px-4 py-16">
 		<div class="mx-auto max-w-3xl text-center">
-			<h1 class="text-4xl font-semibold tracking-tight sm:text-5xl md:text-5xl lg:text-6xl">
+			<h1 class="hero-heading">
 				Operate the world<br />computer
 			</h1>
-			<p class="mt-6 text-lg text-muted-foreground sm:text-lg">
+			<p class="hero-subtitle mt-6 text-muted-foreground">
 				Kittynode is a control center for world computer operators.
 			</p>
 			<img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
@@ -27,6 +27,26 @@ import { Button } from "$lib/components/ui/button/index.js";
 </div>
 
 <style>
+	.hero-heading {
+		font-size: 2.25rem;
+		font-weight: 500;
+	}
+	
+	.hero-subtitle {
+		font-size: 0.9rem;
+	}
+	
+	@media (min-width: 640px) {
+		.hero-heading {
+			font-size: 3.5rem;
+			font-weight: 500;
+		}
+		
+		.hero-subtitle {
+			font-size: 1.125rem;
+		}
+	}
+
 	.nyan-cat {
 		width: 180px;
 		height: auto;
