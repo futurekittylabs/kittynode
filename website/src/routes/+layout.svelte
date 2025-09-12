@@ -21,7 +21,7 @@ let { children } = $props();
 		<div class="container mx-auto flex h-16 items-center justify-between px-4">
 			<a href="/" class="flex items-center gap-2">
 				<img src="/kittynode-logo-app.png" alt="Kittynode" class="h-10 w-10" />
-				<span class="text-lg font-semibold">Kittynode</span>
+				<span class="text-2xl font-semibold">Kittynode</span>
 			</a>
 
 			<nav class="flex items-center gap-2">

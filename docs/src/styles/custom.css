@@ -1,3 +1,6 @@
+/* Import Literata font for wordmark */
+@import "@fontsource-variable/literata";
+
 /* Dark mode colors. */
 :root {
   --sl-color-accent-low: #311345;

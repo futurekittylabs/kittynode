@@ -1,18 +1,15 @@
 ---
 import docsLogo from "../../assets/docs-logo.svg?raw";
-import logoDark from "../../assets/kittynode-wordmark-dark.png";
-import logoLight from "../../assets/kittynode-wordmark-light.png";
+import appLogo from "../../assets/kittynode-logo-app.png";
 
 const main = "https://kittynode.com/";
 const self = "/";
 ---
 
 <span class="site-title sl-flex">
-  <a class="logo-dark" href={main} aria-label="Kittynode">
-    <img src={logoDark.src} alt="Kittynode" width={logoDark.width} height={logoDark.height} />
-  </a>
-  <a class="logo-light" href={main} aria-label="Kittynode">
-    <img src={logoLight.src} alt="Kittynode" width={logoLight.width} height={logoLight.height} />
+  <a class="wordmark" href={main} aria-label="Kittynode">
+    <img src={appLogo.src} alt="" class="app-logo" width={appLogo.width} height={appLogo.height} />
+    <span class="wordmark-text">Kittynode</span>
   </a>
   <a class="docs-logo" href={self} set:html={docsLogo} aria-label="Docs" />
 </span>
@@ -24,37 +21,52 @@ const self = "/";
 
   .site-title a {
     display: flex;
+    align-items: center;
   }
 
-  .logo-dark,
-  .logo-light,
+  .wordmark {
+    text-decoration: none;
+    gap: 0.5rem;
+  }
+
+  .app-logo {
+    height: 2.5rem;
+    width: 2.5rem;
+    transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    top: 0.125rem; /* Slight adjustment to vertically center with text */
+  }
+
+  .wordmark-text {
+    font-family: "Literata Variable", "Literata", Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variation-settings: "opsz" 72;
+    color: var(--sl-color-text);
+    letter-spacing: -0.01em;
+    transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .wordmark:hover .app-logo,
+  .wordmark:hover .wordmark-text {
+    transform: translateY(-0.15rem);
+  }
+
   .docs-logo {
     --logo-height: calc(var(--sl-nav-height) - 2 * var(--sl-nav-pad-y));
-    --adjusted-height: calc(
-      var(--logo-height) * 0.9
-    ); /* Slightly smaller height */
-  }
-
-  .docs-logo {
+    --adjusted-height: calc(var(--logo-height) * 0.9);
     color: var(--sl-color-text-accent);
     position: relative;
-    top: 0.1rem;
+    top: 0.2rem;
   }
 
-  .site-title :global(svg),
-  .site-title img {
+  .site-title :global(svg) {
     height: var(--adjusted-height);
     width: auto;
     transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  .site-title a:hover :global(svg),
-  .site-title a:hover img {
+  .site-title a:hover :global(svg) {
     transform: translateY(-0.15rem);
-  }
-
-  :global([data-theme='light']) .logo-dark,
-  :global([data-theme='dark']) .logo-light {
-    display: none;
   }
 </style>
