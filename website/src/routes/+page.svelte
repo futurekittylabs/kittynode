@@ -33,7 +33,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 	}
 	
 	.hero-subtitle {
-		font-size: 0.9rem;
+		font-size: 1rem;
 	}
 	
 	@media (min-width: 640px) {
