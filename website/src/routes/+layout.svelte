@@ -64,7 +64,7 @@ let { children } = $props();
 	.wordmark {
 		display: flex;
 		align-items: center;
-		gap: 0.375rem;
+		gap: 0.25rem;
 		text-decoration: none;
 	}
 
