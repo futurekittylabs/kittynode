@@ -149,7 +149,7 @@
   }
   h1 {
     font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 400;
+    font-weight: 600;
     font-variation-settings: "opsz" 72;
   }
   h2 {

@@ -6,7 +6,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 <div class="flex flex-1 items-center justify-center">
 	<div class="container mx-auto px-4 py-16">
 		<div class="mx-auto max-w-3xl text-center">
-			<h1 class="text-4xl font-normal tracking-tight sm:text-5xl md:text-5xl lg:text-6xl">
+			<h1 class="text-4xl font-semibold tracking-tight sm:text-5xl md:text-5xl lg:text-6xl">
 				Operate the world<br />computer
 			</h1>
 			<p class="mt-6 text-lg text-muted-foreground sm:text-lg">
