@@ -4,7 +4,7 @@
 
 # Kittynode
 
-Kittynode is a control center for world computer operators. It provides an easy to use desktop app, mobile app, and command line interface for operators to easily setup and maintain their node operation.
+Kittynode is a control center for world computer operators. It's available on desktop, mobile, and as a CLI tool for operators to easily setup and maintain their node operation.
 
 ## Quick start
 
