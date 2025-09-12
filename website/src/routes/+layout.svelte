@@ -12,7 +12,7 @@ let { children } = $props();
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Kittynode | Control center for world computer operators</title>
+	<title>Kittynode | Operate the world computer</title>
 	<meta name="description" content="Control center for world computer operators." />
 </svelte:head>
 
