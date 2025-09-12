@@ -15,11 +15,6 @@ export default defineConfig({
     starlight({
       plugins: [starlightLinksValidator(), starlightImageZoom()],
       title: "Kittynode Docs",
-      logo: {
-        light: "../assets/kittynode-wordmark-light.png",
-        dark: "../assets/kittynode-wordmark-dark.png",
-        replacesTitle: true,
-      },
       editLink: {
         baseUrl: "https://github.com/blackkittylabs/kittynode/edit/main/docs/",
       },
