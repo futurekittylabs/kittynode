@@ -59,8 +59,6 @@ let { children } = $props();
 	.app-logo {
 		height: 2.5rem;
 		width: 2.5rem;
-		position: relative;
-		top: 0.125rem;
 	}
 
 	.wordmark-text {

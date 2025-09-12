@@ -127,6 +127,11 @@
   button, input, select, textarea, nav {
     font-family: "Space Grotesk Variable", sans-serif;
   }
+  
+  ::selection {
+    background-color: oklch(from var(--primary) l c h / 0.5);
+    color: var(--foreground);
+  }
 }
 
 @layer components {
