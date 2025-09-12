@@ -39,6 +39,7 @@
         "svelte-sonner": "^1.0.5",
       },
       "devDependencies": {
+        "@fontsource-variable/literata": "^5.2.6",
         "@internationalized/date": "^3.9.0",
         "@lucide/svelte": "^0.543.0",
         "@sveltejs/adapter-static": "^3.0.9",

@@ -1,3 +1,5 @@
+@import "@fontsource-variable/literata";
+
 @import "tailwindcss";
 
 @import "tw-animate-css";
@@ -131,5 +133,13 @@
 @layer components {
   [data-slot="button"] {
     cursor: pointer;
+  }
+  
+  /* Brand wordmark: Literata */
+  .kittynode-brand {
+    font-family: "Literata Variable", serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1.2;
   }
 }

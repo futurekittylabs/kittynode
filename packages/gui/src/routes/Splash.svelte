@@ -138,10 +138,10 @@ onMount(() => {
     <Card.Header class="flex flex-col items-center">
       <img
       class="logo w-24"
-      src={`/images/kittynode-logo-circle.png`}
+      src={`/images/kittynode-logo-app-no-padding.png`}
       alt="Kittynode Logo"
     />
-      <Card.Title>Kittynode</Card.Title>
+      <Card.Title class="kittynode-brand mt-2">Kittynode</Card.Title>
       <Card.Description>
         <div class="mt-3">Control center for world computer operators.</div>
       </Card.Description>
