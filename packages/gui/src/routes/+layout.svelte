@@ -60,12 +60,13 @@ onMount(async () => {
   <Sidebar.Provider>
     <Sidebar.Root variant="inset">
       <Sidebar.Header>
-        <div class="flex items-center gap-2 pl-1 pr-2 pt-1 pb-0 mb-1">
+        <div class="flex items-center gap-2.5 px-2 py-1">
           <img
-            src={mode.current === "dark" ? "/images/kittynode-wordmark-dark.png" : "/images/kittynode-wordmark-light.png"}
-            alt="Kittynode"
-            class="h-6 w-auto"
+            src="/images/kittynode-logo-app-no-padding.png"
+            alt="Kittynode Logo"
+            class="h-8 w-8"
           />
+          <span class="kittynode-brand">Kittynode</span>
         </div>
       </Sidebar.Header>
 
