@@ -1,5 +1,4 @@
 ---
-import docsLogo from "../../assets/docs-logo.svg?raw";
 import appLogo from "../../assets/kittynode-logo-app.png";
 
 const main = "https://kittynode.com/";
@@ -11,7 +10,7 @@ const self = "/";
     <img src={appLogo.src} alt="" class="app-logo" width={appLogo.width} height={appLogo.height} />
     <span class="wordmark-text">Kittynode</span>
   </a>
-  <a class="docs-logo" href={self} set:html={docsLogo} aria-label="Docs" />
+  <a class="docs-text" href={self} aria-label="Docs">Docs</a>
 </span>
 
 <style>
@@ -33,17 +32,13 @@ const self = "/";
     height: 2.5rem;
     width: 2.5rem;
     transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
-    position: relative;
-    top: 0.125rem; /* Slight adjustment to vertically center with text */
   }
 
   .wordmark-text {
     font-family: "Literata Variable", "Literata", Georgia, serif;
     font-size: 1.5rem;
-    font-weight: 600;
-    font-variation-settings: "opsz" 72;
-    color: var(--sl-color-text);
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    color: var(--sl-color-gray-1);
     transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
@@ -52,21 +47,16 @@ const self = "/";
     transform: translateY(-0.15rem);
   }
 
-  .docs-logo {
-    --logo-height: calc(var(--sl-nav-height) - 2 * var(--sl-nav-pad-y));
-    --adjusted-height: calc(var(--logo-height) * 0.9);
+  .docs-text {
+    font-family: "Literata Variable", "Literata", Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
     color: var(--sl-color-text-accent);
-    position: relative;
-    top: 0.2rem;
-  }
-
-  .site-title :global(svg) {
-    height: var(--adjusted-height);
-    width: auto;
     transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+    text-decoration: none;
   }
 
-  .site-title a:hover :global(svg) {
+  .docs-text:hover {
     transform: translateY(-0.15rem);
   }
 </style>

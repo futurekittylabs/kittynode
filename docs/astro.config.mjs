@@ -7,6 +7,9 @@ import starlightLinksValidator from "starlight-links-validator";
 
 // https://astro.build/config
 export default defineConfig({
+  redirects: {
+    "/": "/reference/architecture",
+  },
   adapter: cloudflare({
     imageService: "compile",
   }),
