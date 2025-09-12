@@ -1,6 +1,5 @@
 <script lang="ts">
 import "../app.css";
-import favicon from "$lib/assets/favicon.ico";
 import { ModeWatcher } from "mode-watcher";
 import { Button } from "$lib/components/ui/button/index.js";
 import { Github, BookOpen } from "@lucide/svelte";
@@ -11,7 +10,10 @@ let { children } = $props();
 <ModeWatcher />
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 	<title>Kittynode | Operate the world computer</title>
 	<meta name="description" content="Control center for world computer operators." />
 </svelte:head>
@@ -20,7 +22,17 @@ let { children } = $props();
 	<header class="border-b">
 		<div class="container mx-auto flex h-16 items-center justify-between px-4">
 			<a href="/" class="wordmark">
-				<img src="/kittynode-logo-app.png" alt="" class="app-logo" />
+				<picture>
+					<source type="image/webp" srcset="/kittynode-logo-app-160.webp" />
+					<img 
+						src="/kittynode-logo-app-160.png" 
+						alt="Kittynode logo" 
+						class="app-logo"
+						width="40"
+						height="40"
+						decoding="async"
+					/>
+				</picture>
 				<span class="wordmark-text">Kittynode</span>
 			</a>
 
