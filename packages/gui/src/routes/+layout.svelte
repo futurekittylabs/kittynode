@@ -64,7 +64,7 @@ onMount(async () => {
           <img
             src="/images/kittynode-logo-app-no-padding.png"
             alt="Kittynode Logo"
-            class="h-6 w-6"
+            class="h-10 w-10"
           />
           <span class="kittynode-brand">Kittynode</span>
         </div>
