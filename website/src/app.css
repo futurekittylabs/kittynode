@@ -19,7 +19,7 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.574 0.178 306.638);
   --primary-foreground: oklch(0.985 0 0);
-  --link: oklch(0.574 0.178 306.638);
+  --link: oklch(0.574 0.178 306.638); /* Same as primary in light mode (good contrast on white) */
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
