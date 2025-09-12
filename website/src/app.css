@@ -19,6 +19,7 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.574 0.178 306.638);
   --primary-foreground: oklch(0.985 0 0);
+  --link: oklch(0.574 0.178 306.638);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
@@ -54,6 +55,8 @@
   /* Primary purple: WCAG AA compliant (4.5:1 contrast with white text) */
   --primary: oklch(0.54 0.185 306.638);
   --primary-foreground: oklch(0.985 0 0);
+  /* Link color: Brighter for readability against dark background */
+  --link: oklch(0.7 0.18 306.638);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -92,6 +95,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-link: var(--link);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -143,6 +147,6 @@
 
   /* Styled links */
   .link {
-    @apply text-primary underline hover:text-zinc-900 dark:hover:text-zinc-100;
+    @apply text-link underline hover:text-zinc-900 dark:hover:text-zinc-100;
   }
 }
