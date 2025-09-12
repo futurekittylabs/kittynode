@@ -60,7 +60,7 @@ onMount(async () => {
   <Sidebar.Provider>
     <Sidebar.Root variant="inset">
       <Sidebar.Header>
-        <div class="flex items-center gap-1.5 px-2 py-1">
+        <div class="flex items-center gap-2.5 px-2 py-1">
           <img
             src="/images/kittynode-logo-app-no-padding.png"
             alt="Kittynode Logo"
