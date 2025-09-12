@@ -19,9 +19,9 @@ let { children } = $props();
 <div class="flex min-h-screen flex-col">
 	<header class="border-b">
 		<div class="container mx-auto flex h-16 items-center justify-between px-4">
-			<a href="/" class="flex items-center">
-				<img src="/kittynode-wordmark-light.png" alt="Kittynode" class="h-8 dark:hidden" />
-				<img src="/kittynode-wordmark-dark.png" alt="Kittynode" class="hidden h-8 dark:block" />
+			<a href="/" class="flex items-center gap-2">
+				<img src="/kittynode-logo-app.png" alt="Kittynode" class="h-10 w-10" />
+				<span class="text-lg font-semibold">Kittynode</span>
 			</a>
 
 			<nav class="flex items-center gap-2">
@@ -43,7 +43,7 @@ let { children } = $props();
 
 	<footer class="border-t py-6">
 		<div class="container mx-auto px-4 text-center text-sm text-muted-foreground">
-			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="hover:underline">free software</a> released under the MIT License.
+			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
 		</div>
 	</footer>
 </div>

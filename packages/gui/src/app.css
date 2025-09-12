@@ -116,14 +116,15 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground select-none;
+    @apply bg-background text-foreground select-none; /* Disable text selection */
   }
-  input, textarea, code {
-    @apply select-text;
+  input,
+  textarea,
+  code {
+    @apply select-text; /* Enable text selection on some elements */
   }
 }
 
-/* shadcn component overrides */
 @layer components {
   /* Button component overrides */
   [data-slot="button"] {

@@ -30,6 +30,8 @@
     "wrangler": "^4.35.0"
   },
   "dependencies": {
+    "@fontsource-variable/literata": "^5.2.6",
+    "@fontsource-variable/space-grotesk": "^5.2.9",
     "mode-watcher": "^1.1.0"
   }
 }
