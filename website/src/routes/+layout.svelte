@@ -24,9 +24,9 @@ let { children } = $props();
 			<a href="/" class="wordmark">
 				<picture>
 					<source type="image/webp" srcset="/kittynode-logo-app-160.webp" />
-					<img 
-						src="/kittynode-logo-app-160.png" 
-						alt="Kittynode logo" 
+					<img
+						src="/kittynode-logo-app-160.png"
+						alt="Kittynode logo"
 						class="app-logo"
 						width="40"
 						height="40"
