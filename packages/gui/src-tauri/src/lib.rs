@@ -323,6 +323,12 @@ async fn update_package_config(
     }
 }
 
+#[tauri::command]
+async fn restart_app(app_handle: tauri::AppHandle) {
+    info!("Restarting application");
+    app_handle.restart();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
     let builder = tauri::Builder::default()
@@ -349,7 +355,8 @@ pub fn run() -> Result<()> {
             get_capabilities,
             get_container_logs,
             get_package_config,
-            update_package_config
+            update_package_config,
+            restart_app
         ])
         .run(tauri::generate_context!())
         .map_err(|e| eyre::eyre!(e.to_string()))?;
