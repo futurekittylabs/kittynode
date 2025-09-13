@@ -2,6 +2,14 @@
 build:
   cargo build
 
+# build the tauri app for macOS
+build-apple-gui:
+  cargo tauri build --target aarch64-apple-darwin
+
+# build the tauri app for Linux
+build-linux-gui:
+  cargo tauri build --target x86_64-unknown-linux-gnu
+
 # start the docs dev server
 docs:
   bun --cwd docs dev --open
@@ -13,14 +21,6 @@ docs-rs:
 # start the desktop app
 gui:
   cargo tauri dev
-
-# build the tauri app for macOS
-gui-build-apple:
-  cargo tauri build --target aarch64-apple-darwin
-
-# build the tauri app for Linux
-gui-build-linux:
-  cargo tauri build --target x86_64-unknown-linux-gnu
 
 # install icons
 icons:
