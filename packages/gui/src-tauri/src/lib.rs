@@ -339,6 +339,14 @@ pub fn run() -> Result<()> {
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
 
     builder
+        .setup(|app| {
+            // Ensure window is shown on startup to fix flaky visibility
+            if let Some(window) = app.get_webview_window("main") {
+                window.show().ok();
+                window.set_focus().ok();
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_packages,
             get_installed_packages,
