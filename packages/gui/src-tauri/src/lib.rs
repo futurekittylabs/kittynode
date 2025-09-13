@@ -3,6 +3,7 @@ use kittynode_core::domain::package::{Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
 use std::sync::LazyLock;
+use tauri::Manager;
 use tauri_plugin_http::reqwest;
 use tracing::info;
 
