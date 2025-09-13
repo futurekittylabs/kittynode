@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "",
+        "title": "Kittynode",
         "visible": true,
         "height": 900,
         "width": 1200
