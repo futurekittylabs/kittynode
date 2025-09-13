@@ -53,7 +53,7 @@ onMount(async () => {
 </script>
 
 <ModeWatcher />
-<Toaster closeButton position="top-right" richColors theme={mode.current} />
+<Toaster position="top-right" richColors theme={mode.current} />
 {#if !initializedStore.initialized}
   <Splash />
 {:else}
