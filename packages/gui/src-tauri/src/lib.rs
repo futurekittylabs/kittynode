@@ -3,6 +3,7 @@ use kittynode_core::domain::package::{Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
 use std::sync::LazyLock;
+use tauri::Manager;
 use tauri_plugin_http::reqwest;
 use tracing::info;
 
@@ -339,6 +340,13 @@ pub fn run() -> Result<()> {
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
 
     builder
+        .setup(|app| {
+            // Ensure window is focused to show on restart
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_focus().ok();
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_packages,
             get_installed_packages,
