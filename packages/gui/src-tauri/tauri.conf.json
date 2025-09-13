@@ -12,7 +12,7 @@
     "windows": [
       {
         "title": "",
-        "visible": false,
+        "visible": true,
         "height": 900,
         "width": 1200
       }
