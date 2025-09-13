@@ -1,6 +1,6 @@
 import { check } from "@tauri-apps/plugin-updater";
 import type { Update } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
+import { invoke } from "@tauri-apps/api/core";
 import { notifyError } from "$utils/notify";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -81,7 +81,7 @@ export const updates = {
       });
 
       console.info("Update installed.");
-      await relaunch();
+      await invoke("restart_app");
     } catch (e) {
       notifyError("Failed to update Kittynode", e);
     }
