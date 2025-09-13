@@ -14,10 +14,10 @@ import { Button } from "$lib/components/ui/button/index.js";
 			</p>
 			<img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
 			<div class="mt-8 flex flex-col items-center gap-4">
-				<Button href="https://github.com/blackkittylabs/kittynode/releases" size="lg" class="gap-2">
-					<Download class="h-5 w-5" />
-					Download now
-				</Button>
+                                <Button href="/download" size="lg" class="gap-2">
+                                        <Download class="h-5 w-5" />
+                                        Download now
+                                </Button>
 				<p class="text-sm text-muted-foreground">
 					Available for macOS, Linux, and Windows
 				</p>
