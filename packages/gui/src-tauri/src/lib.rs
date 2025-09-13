@@ -332,9 +332,7 @@ async fn restart_app(app_handle: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init());
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]

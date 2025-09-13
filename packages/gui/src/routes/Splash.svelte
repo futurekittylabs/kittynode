@@ -7,7 +7,6 @@ import { mode } from "mode-watcher";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { invoke } from "@tauri-apps/api/core";
-import { notifySuccess } from "$utils/notify";
 
 let currentPlatform = $state("");
 let canvasElement: HTMLCanvasElement;
@@ -28,7 +27,6 @@ async function initKittynode() {
 }
 
 async function testRelaunch() {
-  notifySuccess("Restarting application...");
   await invoke("restart_app");
 }
 
