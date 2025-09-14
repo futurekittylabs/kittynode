@@ -194,8 +194,8 @@ onMount(async () => {
           {#if !["ios", "android"].includes(platform()) && updates.hasUpdate && !updates.isDismissed}
             <Alert.Root class="mb-4 flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <Download class="h-4 w-4 flex-shrink-0" />
-                <Alert.Title class="!m-0">A new version of Kittynode is available!</Alert.Title>
+                <Download class="h-4 w-4" />
+                <Alert.Title>A new version of Kittynode is available!</Alert.Title>
               </div>
               <div class="flex items-center gap-2">
                 <Button
