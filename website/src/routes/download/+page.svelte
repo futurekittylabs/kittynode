@@ -66,7 +66,7 @@ const downloads = {
 	</div>
 
 	<!-- Download cards -->
-	<div class="grid gap-4 md:grid-cols-3">
+	<div class="grid gap-4 min-[900px]:grid-cols-3">
 		{#each Object.entries(downloads) as [_, info]}
 			<div class="rounded-lg border bg-card p-5">
 				<div class="flex items-center gap-3 mb-4">
