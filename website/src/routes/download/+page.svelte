@@ -73,7 +73,7 @@ const downloads = {
 						<svelte:component this={info.icon} class="h-5 w-5" />
 					</div>
 					<div>
-						<h3 class="font-medium">{info.name}</h3>
+						<h2 class="text-base font-medium">{info.name}</h2>
 						<p class="text-xs text-muted-foreground">{info.requirements}</p>
 					</div>
 				</div>
