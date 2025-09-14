@@ -23,7 +23,7 @@ Common commands include:
 ```bash
 # Build & Run
 just build                  # Build all crates  
-just gui                    # Start desktop app (dev)
+just app                    # Start desktop app (dev)
 just docs                   # Start docs server
 
 # Testing
@@ -92,7 +92,7 @@ cargo nextest run test_name # Run a specific test
 
 ## Managing Releases
 
-We push tags in format `<package-name>-0.y.z-alpha` to GitHub. CI builds and publishes draft releases with auto-generated changelogs.
+We push tags in format `<package-name>@0.y.z` to GitHub. CI builds and publishes draft releases with auto-generated changelogs.
 
 Find latest releases at: https://github.com/blackkittylabs/kittynode/releases
 

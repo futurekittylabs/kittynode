@@ -3,11 +3,11 @@ build:
   cargo build
 
 # build the tauri app for macOS
-build-apple-gui:
+build-apple-app:
   cargo tauri build --target aarch64-apple-darwin
 
 # build the tauri app for Linux
-build-linux-gui:
+build-linux-app:
   cargo tauri build --target x86_64-unknown-linux-gnu
 
 # start the docs dev server
@@ -19,14 +19,14 @@ docs-rs:
   cargo doc -p kittynode-core
 
 # start the desktop app
-gui:
+app:
   cargo tauri dev
 
 # install icons
 icons:
   cargo tauri icon assets/kittynode-logo-app.png
   cargo tauri icon assets/kittynode-logo-square.png --ios-color '#A181A7' -o tmp
-  mv tmp/ios/* packages/gui/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
+  mv tmp/ios/* packages/app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
   rm -rf tmp
 
 # install or update dev tools
@@ -44,7 +44,7 @@ ios-build:
 # init the ios app
 ios-init:
   cargo tauri ios init
-  cp -R packages/gui/src-tauri/gen-overrides/gen/* packages/gui/src-tauri/gen
+  cp -R packages/app/src-tauri/gen-overrides/gen/* packages/app/src-tauri/gen
   just icons
 
 # start the ios app on a virtual device
@@ -57,11 +57,11 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-  bun -F docs -F gui -F website format-lint && bun -F gui -F website check
+  bun -F docs -F app -F website format-lint && bun -F app -F website check
 
 # lint and fix the javascript code
 lint-js-fix:
-  bun -F docs -F gui -F website format-lint:fix && bun -F gui -F website check
+  bun -F docs -F app -F website format-lint:fix && bun -F app -F website check
 
 # lint the rust code
 lint-rs:
@@ -75,9 +75,9 @@ lint-rs-pedantic:
 release:
   cargo set-version -p kittynode-tauri --bump minor
   cargo generate-lockfile
-  git add packages/gui/src-tauri/Cargo.toml Cargo.lock
-  git commit -m "Release gui-$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)-alpha"
-  git tag "gui-$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)-alpha"
+  git add packages/app/src-tauri/Cargo.toml Cargo.lock
+  git commit -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
+  git tag "kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
 
 # set up the project
 setup:
@@ -85,11 +85,11 @@ setup:
 
 # add a shadcn component
 shadcn-add *args='':
-  cd packages/gui && bunx shadcn-svelte@latest add {{args}} && bun format-lint:fix
+  cd packages/app && bunx shadcn-svelte@latest add {{args}} && bun format-lint:fix
 
 # update shadcn components
 shadcn-update:
-  cd packages/gui && bunx shadcn-svelte@latest update -a -y && bun format-lint:fix
+  cd packages/app && bunx shadcn-svelte@latest update -a -y && bun format-lint:fix
 
 # run the unit tests
 test:

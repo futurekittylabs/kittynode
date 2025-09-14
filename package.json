@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": [
     "docs",
-    "packages/gui",
+    "packages/app",
     "website"
   ],
   "devDependencies": {

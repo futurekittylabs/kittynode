@@ -1,10 +1,10 @@
-name: Release GUI
+name: Release app
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - gui-*
+      - kittynode-app@*
 
 jobs:
   publish-tauri:
@@ -28,8 +28,8 @@ jobs:
       - name: Verify version match
         shell: bash
         run: |
-          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^gui-\([0-9.]*\).*/\1/')
-          CARGO_VERSION=$(grep '^version = ' packages/gui/src-tauri/Cargo.toml | cut -d'"' -f2)
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^kittynode-app@\([0-9.]*\).*/\1/')
+          CARGO_VERSION=$(grep '^version = ' packages/app/src-tauri/Cargo.toml | cut -d'"' -f2)
 
           if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
             echo "Version mismatch: Tag version '$TAG_VERSION' does not match Cargo.toml version '$CARGO_VERSION'"
@@ -89,6 +89,6 @@ jobs:
         with:
           releaseId: ${{ steps.create_release.outputs.id }}
           tagName: ${{ github.ref_name }}
-          projectPath: packages/gui/src-tauri
+          projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
           includeUpdaterJson: true
