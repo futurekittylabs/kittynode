@@ -192,13 +192,12 @@ onMount(async () => {
       <div class="flex-1 overflow-y-auto">
         <div class="container mx-auto px-4 py-6">
           {#if !["ios", "android"].includes(platform()) && updates.hasUpdate && !updates.isDismissed}
-            <Alert.Root class="mb-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <Download class="h-4 w-4" />
-                  <Alert.Title>A new version of Kittynode is available!</Alert.Title>
-                </div>
-                <div class="flex items-center gap-2">
+            <Alert.Root class="mb-4 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <Download class="h-4 w-4 flex-shrink-0" />
+                <Alert.Title class="!m-0">A new version of Kittynode is available!</Alert.Title>
+              </div>
+              <div class="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -223,7 +222,6 @@ onMount(async () => {
                     Install update
                   {/if}
                 </Button>
-                </div>
               </div>
             </Alert.Root>
           {/if}
