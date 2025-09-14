@@ -8,8 +8,8 @@
   "files": {
     "includes": [
       "**",
-      "!packages/gui/src/app.css",
-      "!packages/gui/src/lib/utils.ts",
+      "!packages/app/src/app.css",
+      "!packages/app/src/lib/utils.ts",
       "!website/src/app.css",
       "!website/src/lib/utils.ts"
     ],
@@ -52,7 +52,7 @@
     },
     {
       "includes": [
-        "packages/gui/src/lib/components/ui/**",
+        "packages/app/src/lib/components/ui/**",
         "website/src/lib/components/ui/**"
       ],
       "linter": {

@@ -3,9 +3,9 @@
   "productName": "Kittynode",
   "identifier": "xyz.blackkittylabs.kittynode",
   "build": {
-    "beforeDevCommand": "bun -F gui dev",
+    "beforeDevCommand": "bun -F app dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun -F gui build",
+    "beforeBuildCommand": "bun -F app build",
     "frontendDist": "../build"
   },
   "app": {
