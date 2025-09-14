@@ -3,7 +3,7 @@
 [![CI - Rust](https://github.com/blackkittylabs/kittynode/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/blackkittylabs/kittynode/actions/workflows/ci-rust.yaml)
 [![CI - JavaScript](https://github.com/blackkittylabs/kittynode/actions/workflows/ci-javascript.yaml/badge.svg)](https://github.com/blackkittylabs/kittynode/actions/workflows/ci-javascript.yaml)
 
-Kittynode is a control center for world computer operators. It's available on desktop, mobile, and as a CLI tool for operators to easily setup and maintain their node operation.
+Kittynode is a control center for world computer operators.
 
 ## Quick start
 
