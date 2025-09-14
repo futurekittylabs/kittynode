@@ -4,5 +4,5 @@
   "description": "Capability for the main window",
   "platforms": ["macOS", "windows", "linux"],
   "windows": ["main"],
-  "permissions": ["updater:default", "process:default"]
+  "permissions": ["updater:default", "process:default", "shell:allow-open"]
 }
