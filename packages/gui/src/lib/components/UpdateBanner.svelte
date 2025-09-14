@@ -7,7 +7,7 @@ const handleInstall = () => updates.installUpdate();
 const handleDismiss = () => updates.dismiss();
 </script>
 
-<div class="mb-4 p-4 border rounded-lg bg-muted flex items-center justify-between gap-4">
+<div class="mb-4 p-4 border rounded-lg bg-accent flex items-center justify-between gap-4">
   <div class="flex items-center gap-3">
     <Download class="h-4 w-4" />
     <span class="text-sm">A new version of Kittynode is available!</span>
