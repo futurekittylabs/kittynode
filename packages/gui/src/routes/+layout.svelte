@@ -9,8 +9,8 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
-import * as Alert from "$lib/components/ui/alert";
 import { Button } from "$lib/components/ui/button";
+import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
 import {
   House,
@@ -21,8 +21,6 @@ import {
   MessageSquare,
   Github,
   Users,
-  Download,
-  ExternalLink,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { page } from "$app/state";
@@ -30,7 +28,6 @@ import { page } from "$app/state";
 const { children } = $props();
 
 const currentPath = $derived(page.url?.pathname || "");
-const RELEASES_URL = "https://github.com/blackkittylabs/kittynode/releases";
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -192,38 +189,7 @@ onMount(async () => {
       <div class="flex-1 overflow-y-auto">
         <div class="container mx-auto px-4 py-6">
           {#if !["ios", "android"].includes(platform()) && updates.hasUpdate && !updates.isDismissed}
-            <Alert.Root class="mb-4 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <Download class="h-4 w-4" />
-                <Alert.Title>A new version of Kittynode is available!</Alert.Title>
-              </div>
-              <div class="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onclick={() => window.open(RELEASES_URL, "_blank")}
-                >
-                  View changelog
-                  <ExternalLink class="h-3.5 w-3.5 ml-1" />
-                </Button>
-                <Button
-                  size="sm"
-                  onclick={() => updates.installUpdate()}
-                  disabled={updates.isProcessing}
-                >
-                  {#if updates.isProcessing}
-                    <div
-                      class="h-4 w-4 mr-1.5 animate-spin rounded-full border-2 border-current border-t-transparent"
-                      aria-label="Installing update"
-                      role="status"
-                    ></div>
-                    Installing
-                  {:else}
-                    Install update
-                  {/if}
-                </Button>
-              </div>
-            </Alert.Root>
+            <UpdateBanner />
           {/if}
           {@render children()}
         </div>
