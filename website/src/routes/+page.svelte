@@ -4,7 +4,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 </script>
 
 <div class="flex flex-1 items-center justify-center">
-	<div class="container mx-auto px-4 py-16">
+	<div class="container max-w-6xl mx-auto px-6 py-16">
 		<div class="mx-auto max-w-3xl text-center">
 			<h1 class="hero-heading">
 				Operate the world<br />computer
@@ -14,7 +14,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 			</p>
 			<img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
 			<div class="mt-8 flex flex-col items-center gap-4">
-				<Button href="https://github.com/blackkittylabs/kittynode/releases" size="lg" class="gap-2">
+				<Button href="/download" size="lg" class="gap-2">
 					<Download class="h-5 w-5" />
 					Download now
 				</Button>
