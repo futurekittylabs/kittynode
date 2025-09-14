@@ -9,8 +9,8 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
-import * as Alert from "$lib/components/ui/alert";
 import { Button } from "$lib/components/ui/button";
+import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
 import {
   House,
@@ -21,9 +21,6 @@ import {
   MessageSquare,
   Github,
   Users,
-  Download,
-  ExternalLink,
-  X,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { page } from "$app/state";
@@ -31,7 +28,6 @@ import { page } from "$app/state";
 const { children } = $props();
 
 const currentPath = $derived(page.url?.pathname || "");
-const RELEASES_URL = "https://github.com/blackkittylabs/kittynode/releases";
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -193,29 +189,7 @@ onMount(async () => {
       <div class="flex-1 overflow-y-auto">
         <div class="container mx-auto px-4 py-6">
           {#if !["ios", "android"].includes(platform()) && updates.hasUpdate && !updates.isDismissed}
-            <div class="mb-4 p-4 border rounded-lg bg-primary/5 flex items-center justify-between gap-4">
-              <div class="flex items-center gap-3">
-                <Download class="h-4 w-4" />
-                <span class="text-sm">A new version is available!</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onclick={() => updates.installUpdate()}
-                  disabled={updates.isProcessing}
-                >
-                  {updates.isProcessing ? "Installing..." : "Update"}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onclick={() => updates.dismiss()}
-                  class="h-8 w-8"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <UpdateBanner />
           {/if}
           {@render children()}
         </div>
