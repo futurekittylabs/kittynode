@@ -1,32 +1,29 @@
 <script lang="ts">
 import { Button } from "$lib/components/ui/button";
-import { Download, X } from "@lucide/svelte";
+import { Download } from "@lucide/svelte";
 import { updates } from "$stores/updates.svelte";
 
 const handleInstall = () => updates.installUpdate();
 const handleDismiss = () => updates.dismiss();
 </script>
 
-<div class="mb-4 p-4 border rounded-lg bg-muted flex items-center justify-between gap-4">
+<div class="p-4 mb-4 border rounded-lg bg-muted flex items-center justify-between">
+  <span class="text-sm">A new version of Kittynode is available! ✨</span>
   <div class="flex items-center gap-3">
-    <Download class="h-4 w-4" />
-    <span class="text-sm">A new version of Kittynode is available!</span>
-  </div>
-  <div class="flex items-center gap-2">
     <Button
       size="sm"
       onclick={handleInstall}
       disabled={updates.isProcessing}
     >
-      {updates.isProcessing ? "Installing..." : "Update"}
+      <Download />
+      {updates.isProcessing ? "Installing..." : "Install update"}
     </Button>
     <Button
-      size="icon"
-      variant="ghost"
+      size="sm"
+      variant="outline"
       onclick={handleDismiss}
-      class="h-8 w-8"
     >
-      <X class="h-4 w-4" />
+      Dismiss
     </Button>
   </div>
 </div>
