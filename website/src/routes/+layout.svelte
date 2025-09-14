@@ -20,7 +20,7 @@ let { children } = $props();
 
 <div class="flex min-h-screen flex-col">
 	<header class="border-b">
-		<div class="container mx-auto flex h-16 items-center justify-between px-4">
+		<div class="container max-w-6xl mx-auto flex h-16 items-center justify-between px-6">
 			<a href="/" class="wordmark">
 				<picture>
 					<source type="image/webp" srcset="/kittynode-logo-app-160.webp" />
@@ -54,7 +54,7 @@ let { children } = $props();
 	</main>
 
 	<footer class="border-t py-6">
-		<div class="container mx-auto px-4 text-center text-sm text-muted-foreground">
+		<div class="container max-w-6xl mx-auto px-6 text-center text-sm text-muted-foreground">
 			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
 		</div>
 	</footer>

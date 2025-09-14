@@ -75,7 +75,8 @@ lint-rs-pedantic:
 release:
   cargo set-version -p kittynode-tauri --bump minor
   cargo generate-lockfile
-  git add packages/app/src-tauri/Cargo.toml Cargo.lock
+  printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
+  git add packages/app/src-tauri/Cargo.toml Cargo.lock website/src/lib/release.json
   git commit -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
   git tag "kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)" -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
 
