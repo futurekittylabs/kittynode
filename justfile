@@ -77,7 +77,7 @@ release:
   cargo generate-lockfile
   git add packages/app/src-tauri/Cargo.toml Cargo.lock
   git commit -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
-  git tag "kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
+  git tag "kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)" -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
 
 # set up the project
 setup:
