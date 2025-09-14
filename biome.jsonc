@@ -25,16 +25,12 @@
       "recommended": true
     }
   },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "double"
-    }
-  },
   "assist": {
     "enabled": true,
     "actions": {
       "source": {
-        "organizeImports": "on"
+        // Turned off until Svelte is supported in Zed
+        "organizeImports": "off"
       }
     }
   },

@@ -6,7 +6,6 @@ import { onMount } from "svelte";
 import { mode } from "mode-watcher";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
-import { invoke } from "@tauri-apps/api/core";
 
 let currentPlatform = $state("");
 let canvasElement: HTMLCanvasElement;
@@ -24,10 +23,6 @@ async function initKittynode() {
     console.error(`Failed to initialize kittynode: ${e}`);
   }
   await goto("/");
-}
-
-async function testRelaunch() {
-  await invoke("restart_app");
 }
 
 interface Node {
@@ -151,17 +146,11 @@ onMount(() => {
         <div class="mt-3">Control center for world computer operators.</div>
       </Card.Description>
     </Card.Header>
-    <Card.Content class="flex flex-col gap-3">
+    <Card.Content>
       <Button
         onclick={initKittynode}
       >
         Get Started
-      </Button>
-      <Button
-        onclick={testRelaunch}
-        variant="outline"
-      >
-        Relaunch
       </Button>
     </Card.Content>
   </Card.Root>
