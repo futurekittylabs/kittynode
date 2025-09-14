@@ -8,34 +8,49 @@ const baseUrl = "https://github.com/blackkittylabs/kittynode";
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 
 const downloads = {
-	macos: {
-		name: "macOS",
-		icon: Apple,
-		primary: { label: ".dmg", url: `${releaseUrl}/Kittynode_${version}_aarch64.dmg` },
-		alternatives: [
-			{ label: ".app.tar.gz", url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz` }
-		],
-		requirements: "Apple Silicon"
-	},
-	linux: {
-		name: "Linux",
-		icon: Terminal,
-		primary: { label: ".AppImage", url: `${releaseUrl}/Kittynode_${version}_amd64.AppImage` },
-		alternatives: [
-			{ label: ".deb", url: `${releaseUrl}/Kittynode_${version}_amd64.deb` },
-			{ label: ".rpm", url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm` }
-		],
-		requirements: "64-bit x86"
-	},
-	windows: {
-		name: "Windows",
-		icon: Monitor,
-		primary: { label: ".exe", url: `${releaseUrl}/Kittynode_${version}_x64-setup.exe` },
-		alternatives: [
-			{ label: ".msi", url: `${releaseUrl}/Kittynode_${version}_x64_en-US.msi` }
-		],
-		requirements: "Windows 10/11 (64-bit)"
-	}
+  macos: {
+    name: "macOS",
+    icon: Apple,
+    primary: {
+      label: ".dmg",
+      url: `${releaseUrl}/Kittynode_${version}_aarch64.dmg`,
+    },
+    alternatives: [
+      {
+        label: ".app.tar.gz",
+        url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz`,
+      },
+    ],
+    requirements: "macOS 10.15+ (Apple Silicon)",
+  },
+  linux: {
+    name: "Linux",
+    icon: Terminal,
+    primary: {
+      label: ".AppImage",
+      url: `${releaseUrl}/Kittynode_${version}_amd64.AppImage`,
+    },
+    alternatives: [
+      { label: ".deb", url: `${releaseUrl}/Kittynode_${version}_amd64.deb` },
+      { label: ".rpm", url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm` },
+    ],
+    requirements: "x86_64",
+  },
+  windows: {
+    name: "Windows",
+    icon: Monitor,
+    primary: {
+      label: ".exe",
+      url: `${releaseUrl}/Kittynode_${version}_x64-setup.exe`,
+    },
+    alternatives: [
+      {
+        label: ".msi",
+        url: `${releaseUrl}/Kittynode_${version}_x64_en-US.msi`,
+      },
+    ],
+    requirements: "Windows 7+ (x86_64)",
+  },
 };
 </script>
 
