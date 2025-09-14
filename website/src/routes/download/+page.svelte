@@ -1,9 +1,10 @@
 <script lang="ts">
 import { Apple, Terminal, Monitor, Download } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
+import releaseInfo from "$lib/release.json";
 
-const version = "0.39.0";
-const releaseDate = "September 13, 2025";
+const { version, date: releaseDate } = releaseInfo;
+
 const baseUrl = "https://github.com/blackkittylabs/kittynode";
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 
