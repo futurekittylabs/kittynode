@@ -80,6 +80,10 @@ export const dockerStatus = {
   },
 
   startPolling(intervalMs = 5000) {
+    // Clear any existing interval before starting a new one
+    if (interval !== null) {
+      window.clearInterval(interval);
+    }
     this.checkDocker(); // Initial check
     interval = window.setInterval(() => this.checkDocker(), intervalMs);
   },
