@@ -5,6 +5,7 @@ let isRunning = $state<boolean | null>(null);
 let isStarting = $state<boolean>(false);
 let interval: number | null = $state(null);
 let wasAutoStarted = $state<boolean>(false);
+let startingTimeout: number | null = $state(null);
 
 export const dockerStatus = {
   get isRunning() {
@@ -28,6 +29,7 @@ export const dockerStatus = {
       // If Docker is running and we were starting, clear the starting state
       if (isRunning && isStarting) {
         isStarting = false;
+        this.clearStartingTimeout();
       }
     } catch (e) {
       console.error(`Failed to check Docker status: ${e}`);
@@ -43,6 +45,9 @@ export const dockerStatus = {
         isStarting = true;
         // Start more aggressive polling while Docker starts
         this.startPolling(2000);
+
+        // Set a timeout to stop showing "starting" after 30 seconds
+        this.setStartingTimeout(30000);
       }
 
       // Check if Docker was auto-started
@@ -52,6 +57,25 @@ export const dockerStatus = {
     } catch (e) {
       console.error(`Failed to start Docker: ${e}`);
       return "error";
+    }
+  },
+
+  setStartingTimeout(duration: number) {
+    this.clearStartingTimeout();
+    startingTimeout = window.setTimeout(() => {
+      if (isStarting) {
+        console.info("Docker startup timeout reached, clearing starting state");
+        isStarting = false;
+        // Return to normal polling interval
+        this.startPolling(5000);
+      }
+    }, duration);
+  },
+
+  clearStartingTimeout() {
+    if (startingTimeout !== null) {
+      window.clearTimeout(startingTimeout);
+      startingTimeout = null;
     }
   },
 
@@ -65,5 +89,6 @@ export const dockerStatus = {
       window.clearInterval(interval);
       interval = null;
     }
+    this.clearStartingTimeout();
   },
 };

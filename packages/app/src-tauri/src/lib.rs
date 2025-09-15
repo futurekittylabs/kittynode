@@ -63,21 +63,15 @@ async fn get_capabilities(server_url: String) -> Result<Vec<String>, String> {
             .await
             .map_err(|e| e.to_string())?;
 
-        let status = res.status();
-        let error_text = res.text().await.unwrap_or_default();
-
-        if !status.is_success() {
+        if !res.status().is_success() {
+            let status = res.status();
+            let error_text = res.text().await.unwrap_or_default();
             return Err(format!(
                 "Failed to get capabilities: {} - {}",
                 status, error_text
             ));
         }
 
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
         res.json::<Vec<String>>().await.map_err(|e| e.to_string())
     } else {
         kittynode_core::application::get_capabilities().map_err(|e| e.to_string())

@@ -1,35 +1,113 @@
-use eyre::Result;
+use eyre::{Result, eyre};
 use std::process::Command;
-use tracing::info;
+use tracing::{error, info};
+
+#[cfg(target_os = "windows")]
+use std::path::Path;
 
 pub async fn start_docker() -> Result<()> {
     info!("Attempting to start Docker Desktop");
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("open").arg("-a").arg("Docker").spawn()?;
+        Command::new("open")
+            .arg("-a")
+            .arg("Docker")
+            .spawn()
+            .map_err(|e| {
+                error!("Failed to start Docker Desktop on macOS: {}", e);
+                eyre!("Failed to start Docker Desktop: {}. Please ensure Docker Desktop is installed.", e)
+            })?;
+        info!("Docker Desktop start command sent on macOS");
     }
 
     #[cfg(target_os = "linux")]
     {
-        // Try systemctl first (for systemd-based distros)
-        if Command::new("systemctl")
-            .arg("--user")
-            .arg("start")
-            .arg("docker-desktop")
-            .spawn()
-            .is_err()
-        {
-            // Fallback to direct launch
-            Command::new("docker-desktop").spawn()?;
+        let mut started = false;
+
+        // Try different installation methods
+        let attempts = [
+            // System service
+            ("systemctl", vec!["start", "docker-desktop"]),
+            // User service
+            ("systemctl", vec!["--user", "start", "docker-desktop"]),
+            // Flatpak
+            ("flatpak", vec!["run", "com.docker.DockerDesktop"]),
+            // Direct binary in common locations
+            ("docker-desktop", vec![]),
+            ("/usr/bin/docker-desktop", vec![]),
+            ("/opt/docker-desktop/docker-desktop", vec![]),
+        ];
+
+        for (cmd, args) in attempts {
+            if let Ok(_) = Command::new(cmd).args(&args).spawn() {
+                info!("Started Docker Desktop using: {} {:?}", cmd, args);
+                started = true;
+                break;
+            }
+        }
+
+        if !started {
+            error!("Failed to start Docker Desktop on Linux after trying all methods");
+            return Err(eyre!(
+                "Failed to start Docker Desktop. Please ensure Docker Desktop is installed and try starting it manually."
+            ));
         }
     }
 
     #[cfg(target_os = "windows")]
     {
-        Command::new("cmd")
+        let mut started = false;
+
+        // Try direct command first (if in PATH)
+        if Command::new("cmd")
             .args(&["/C", "start", "", "Docker Desktop.exe"])
-            .spawn()?;
+            .spawn()
+            .is_ok()
+        {
+            started = true;
+            info!("Started Docker Desktop using PATH");
+        }
+
+        // Try common installation paths
+        if !started {
+            let common_paths = [
+                "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+                "C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe",
+                "%LOCALAPPDATA%\\Docker\\Docker Desktop.exe",
+            ];
+
+            for path in common_paths {
+                let expanded_path = if path.contains('%') {
+                    // Expand environment variables
+                    std::env::var("LOCALAPPDATA")
+                        .ok()
+                        .map(|appdata| path.replace("%LOCALAPPDATA%", &appdata))
+                        .unwrap_or_else(|| path.to_string())
+                } else {
+                    path.to_string()
+                };
+
+                if Path::new(&expanded_path).exists() {
+                    if Command::new("cmd")
+                        .args(&["/C", "start", "", &expanded_path])
+                        .spawn()
+                        .is_ok()
+                    {
+                        started = true;
+                        info!("Started Docker Desktop from: {}", expanded_path);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !started {
+            error!("Failed to start Docker Desktop on Windows");
+            return Err(eyre!(
+                "Failed to start Docker Desktop. Please ensure Docker Desktop is installed and try starting it manually."
+            ));
+        }
     }
 
     Ok(())
