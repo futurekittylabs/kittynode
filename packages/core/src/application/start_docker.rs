@@ -40,7 +40,7 @@ pub async fn start_docker() -> Result<()> {
         ];
 
         for (cmd, args) in attempts {
-            if let Ok(_) = Command::new(cmd).args(&args).spawn() {
+            if Command::new(cmd).args(&args).spawn().is_ok() {
                 info!("Started Docker Desktop using: {} {:?}", cmd, args);
                 started = true;
                 break;
