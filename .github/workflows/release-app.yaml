@@ -126,6 +126,7 @@ jobs:
       - name: Commit changes
         uses: iarekylew00t/verified-bot-commit@v2
         with:
+          ref: refs/heads/main  # Explicitly target main branch, not the tag
           token: ${{ secrets.RELEASE_BOT_PAT }}  # Required to bypass branch protection
           message: Update website version to ${{ steps.update.outputs.version }}
           files: website/src/lib/release.json
