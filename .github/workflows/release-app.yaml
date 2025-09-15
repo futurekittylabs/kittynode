@@ -112,6 +112,8 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Requires RELEASE_BOT_PAT secret with Contents: Write permission
+      # to push past branch protection rules on main branch
       - uses: actions/checkout@v5
         with:
           ref: main
@@ -130,5 +132,8 @@ jobs:
           else
             git add website/src/lib/release.json
             git commit -m "Update website version to $VERSION"
+
+            # Pull latest changes before pushing to avoid non-fast-forward errors
+            git pull --rebase origin main
             git push
           fi
