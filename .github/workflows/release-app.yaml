@@ -112,28 +112,23 @@ jobs:
     permissions:
       contents: write
     steps:
-      # Requires RELEASE_BOT_PAT secret with Contents: Write permission
-      # to push past branch protection rules on main branch
       - uses: actions/checkout@v5
         with:
           ref: main
-          token: ${{ secrets.RELEASE_BOT_PAT }}
+          # Use GITHUB_TOKEN for the checkout since verified-bot-commit will handle the push
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update and commit version
+      - name: Update version file
+        id: update_version
         run: |
           VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app@}"
           printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$VERSION" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if git diff --quiet website/src/lib/release.json; then
-            echo "No changes to commit"
-          else
-            git add website/src/lib/release.json
-            git commit -m "Update website version to $VERSION"
-
-            # Pull latest changes before pushing to avoid non-fast-forward errors
-            git pull --rebase origin main
-            git push
-          fi
+      - name: Commit changes with verified signature
+        uses: iarekylew00t/verified-bot-commit@v2
+        with:
+          token: ${{ secrets.RELEASE_BOT_PAT }}  # Use PAT to bypass branch protection
+          message: Update website version to ${{ steps.update_version.outputs.version }}
+          files: |
+            website/src/lib/release.json
