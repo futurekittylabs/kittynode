@@ -92,3 +92,31 @@ jobs:
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
           includeUpdaterJson: true
+
+  update-website-version:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_BOT_PAT }}
+
+      - name: Update and commit version
+        run: |
+          VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app@}"
+          printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$VERSION" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet website/src/lib/release.json; then
+            echo "No changes to commit"
+          else
+            git add website/src/lib/release.json
+            git commit -m "Update website version to $VERSION"
+            git push origin HEAD:main
+          fi
