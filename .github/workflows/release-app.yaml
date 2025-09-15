@@ -113,22 +113,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: main
-          # Use GITHUB_TOKEN for the checkout since verified-bot-commit will handle the push
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update version file
-        id: update_version
+        id: update
         run: |
-          VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app@}"
+          VERSION="${VERSION#kittynode-app@}"
           printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$VERSION" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ github.ref_name }}
 
-      - name: Commit changes with verified signature
+      - name: Commit changes
         uses: iarekylew00t/verified-bot-commit@v2
         with:
-          token: ${{ secrets.RELEASE_BOT_PAT }}  # Use PAT to bypass branch protection
-          message: Update website version to ${{ steps.update_version.outputs.version }}
-          files: |
-            website/src/lib/release.json
+          token: ${{ secrets.RELEASE_BOT_PAT }}  # Required to bypass branch protection
+          message: Update website version to ${{ steps.update.outputs.version }}
+          files: website/src/lib/release.json
