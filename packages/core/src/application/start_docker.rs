@@ -59,44 +59,49 @@ pub async fn start_docker() -> Result<()> {
     {
         let mut started = false;
 
-        // Try direct command first (if in PATH)
-        if Command::new("cmd")
-            .args(&["/C", "start", "", "Docker Desktop.exe"])
-            .spawn()
-            .is_ok()
-        {
-            started = true;
-            info!("Started Docker Desktop using PATH");
+        // Try common installation paths first (more reliable than PATH check)
+        let common_paths = [
+            "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+            "C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe",
+            "%LOCALAPPDATA%\\Docker\\Docker Desktop.exe",
+        ];
+
+        for path in common_paths {
+            let expanded_path = if path.contains('%') {
+                // Expand environment variables
+                std::env::var("LOCALAPPDATA")
+                    .ok()
+                    .map(|appdata| path.replace("%LOCALAPPDATA%", &appdata))
+                    .unwrap_or_else(|| path.to_string())
+            } else {
+                path.to_string()
+            };
+
+            if Path::new(&expanded_path).exists() {
+                if Command::new("cmd")
+                    .args(&["/C", "start", "", &expanded_path])
+                    .spawn()
+                    .is_ok()
+                {
+                    started = true;
+                    info!("Started Docker Desktop from: {}", expanded_path);
+                    break;
+                }
+            }
         }
 
-        // Try common installation paths
+        // Only try PATH as a last resort with a check for existence
         if !started {
-            let common_paths = [
-                "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
-                "C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe",
-                "%LOCALAPPDATA%\\Docker\\Docker Desktop.exe",
-            ];
-
-            for path in common_paths {
-                let expanded_path = if path.contains('%') {
-                    // Expand environment variables
-                    std::env::var("LOCALAPPDATA")
-                        .ok()
-                        .map(|appdata| path.replace("%LOCALAPPDATA%", &appdata))
-                        .unwrap_or_else(|| path.to_string())
-                } else {
-                    path.to_string()
-                };
-
-                if Path::new(&expanded_path).exists() {
+            // Use 'where' command to check if Docker Desktop.exe is in PATH
+            if let Ok(output) = Command::new("where").arg("Docker Desktop.exe").output() {
+                if output.status.success() {
                     if Command::new("cmd")
-                        .args(&["/C", "start", "", &expanded_path])
+                        .args(&["/C", "start", "", "Docker Desktop.exe"])
                         .spawn()
                         .is_ok()
                     {
                         started = true;
-                        info!("Started Docker Desktop from: {}", expanded_path);
-                        break;
+                        info!("Started Docker Desktop using PATH");
                     }
                 }
             }
