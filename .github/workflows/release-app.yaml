@@ -101,8 +101,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.ref }}
-          fetch-depth: 0
+          ref: main
           token: ${{ secrets.RELEASE_BOT_PAT }}
 
       - name: Update and commit version
@@ -118,5 +117,5 @@ jobs:
           else
             git add website/src/lib/release.json
             git commit -m "Update website version to $VERSION"
-            git push origin HEAD:main
+            git push
           fi
