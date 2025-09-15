@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Apple, Terminal, Monitor, Download } from "@lucide/svelte";
+import { Terminal, Monitor, Download, AppWindowMac } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
 import releaseInfo from "$lib/release.json";
 
@@ -11,7 +11,7 @@ const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 const downloads = {
   macos: {
     name: "macOS",
-    icon: Apple,
+    icon: AppWindowMac,
     primary: {
       label: ".dmg",
       url: `${releaseUrl}/Kittynode_${version}_aarch64.dmg`,

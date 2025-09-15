@@ -54,8 +54,23 @@ let { children } = $props();
 	</main>
 
 	<footer class="border-t py-6">
-		<div class="container max-w-6xl mx-auto px-6 text-center text-sm text-muted-foreground">
-			Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
+		<div class="container max-w-6xl mx-auto px-6">
+			<div class="flex flex-col items-center gap-4">
+				<div class="flex items-center gap-2">
+					<Button href="https://discord.kittynode.com" variant="ghost" size="sm">
+						Discord
+					</Button>
+					<Button href="https://farcaster.xyz/kittynode.eth" variant="ghost" size="sm">
+						Farcaster
+					</Button>
+					<Button href="https://x.com/kittynode" variant="ghost" size="sm">
+						X
+					</Button>
+				</div>
+				<div class="text-center text-sm text-muted-foreground">
+					Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
+				</div>
+			</div>
 		</div>
 	</footer>
 </div>
