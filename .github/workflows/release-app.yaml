@@ -74,6 +74,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          generate_release_notes: true
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0.5.23
@@ -92,3 +93,47 @@ jobs:
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
           includeUpdaterJson: true
+
+  publish-release:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false
+
+  update-website-version:
+    needs: publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Requires RELEASE_BOT_PAT secret with Contents: Write permission
+      # to push past branch protection rules on main branch
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          token: ${{ secrets.RELEASE_BOT_PAT }}
+
+      - name: Update and commit version
+        run: |
+          VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app@}"
+          printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$VERSION" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet website/src/lib/release.json; then
+            echo "No changes to commit"
+          else
+            git add website/src/lib/release.json
+            git commit -m "Update website version to $VERSION"
+
+            # Pull latest changes before pushing to avoid non-fast-forward errors
+            git pull --rebase origin main
+            git push
+          fi
