@@ -2,12 +2,14 @@ use eyre::Result;
 use kittynode_core::domain::package::{Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock, Mutex};
 use tauri::Manager;
 use tauri_plugin_http::reqwest;
 use tracing::info;
 
 pub static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
+pub static DOCKER_AUTO_STARTED: LazyLock<Arc<Mutex<bool>>> =
+    LazyLock::new(|| Arc::new(Mutex::new(false)));
 
 #[tauri::command]
 async fn add_capability(name: String, server_url: String) -> Result<(), String> {
@@ -134,6 +136,43 @@ async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, Stri
 async fn is_docker_running() -> bool {
     info!("Checking if Docker is running");
     kittynode_core::application::is_docker_running().await
+}
+
+#[tauri::command]
+async fn start_docker_if_needed() -> Result<String, String> {
+    info!("Checking if Docker needs to be started");
+
+    // Check if we've already auto-started Docker this session
+    {
+        let auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
+        if *auto_started {
+            return Ok("already_started".to_string());
+        }
+    }
+
+    // Check if Docker is already running
+    if kittynode_core::application::is_docker_running().await {
+        return Ok("running".to_string());
+    }
+
+    // Try to start Docker
+    info!("Starting Docker Desktop");
+    kittynode_core::application::start_docker()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Mark that we've auto-started Docker
+    {
+        let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
+        *auto_started = true;
+    }
+
+    Ok("starting".to_string())
+}
+
+#[tauri::command]
+fn was_docker_auto_started() -> bool {
+    *DOCKER_AUTO_STARTED.lock().unwrap()
 }
 
 #[tauri::command]
@@ -352,6 +391,8 @@ pub fn run() -> Result<()> {
             get_packages,
             get_installed_packages,
             is_docker_running,
+            start_docker_if_needed,
+            was_docker_auto_started,
             install_package,
             delete_package,
             delete_kittynode,
