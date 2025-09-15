@@ -57,10 +57,10 @@ let { children } = $props();
 		<div class="container max-w-6xl mx-auto px-6">
 			<div class="flex flex-col items-center gap-4">
 				<div class="flex items-center gap-2">
-					<Button href="https://discord.gg/kittynode" variant="ghost" size="sm">
+					<Button href="https://discord.kittynode.com" variant="ghost" size="sm">
 						Discord
 					</Button>
-					<Button href="https://warpcast.com/kittynode" variant="ghost" size="sm">
+					<Button href="https://farcaster.xyz/kittynode.eth" variant="ghost" size="sm">
 						Farcaster
 					</Button>
 					<Button href="https://x.com/kittynode" variant="ghost" size="sm">
