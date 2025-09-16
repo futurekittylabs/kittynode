@@ -21,6 +21,7 @@ import {
   FileText,
   CircleAlert,
   Wifi,
+  WifiOff,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
@@ -126,26 +127,13 @@ onDestroy(() => {
       {/if}
     </div>
 
-    {#if dockerStatus.status !== "running"}
-      {@const status = dockerStatus.status}
+    {#if !dockerStatus.isRunning}
       <Alert.Root>
         <Terminal class="size-4" />
-        {#if status === "starting"}
-          <Alert.Title>Starting Docker Desktop</Alert.Title>
-          <Alert.Description>
-            Kittynode is starting Docker Desktop. Node actions will become available once Docker is ready.
-          </Alert.Description>
-        {:else if status === "not_installed"}
-          <Alert.Title>Install Docker Desktop</Alert.Title>
-          <Alert.Description>
-            Install Docker Desktop to manage this node. After installing, restart Kittynode and return here.
-          </Alert.Description>
-        {:else}
-          <Alert.Title>Docker is not running</Alert.Title>
-          <Alert.Description>
-            Start Docker Desktop to manage this node.
-          </Alert.Description>
-        {/if}
+        <Alert.Title>Docker is not running</Alert.Title>
+        <Alert.Description>
+          Start Docker Desktop to manage this node.
+        </Alert.Description>
       </Alert.Root>
     {:else if !isInstalled}
       <Card.Root>

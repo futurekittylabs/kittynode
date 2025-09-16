@@ -11,8 +11,6 @@ import {
   Download,
   CircleCheck,
   CircleAlert,
-  CircleX,
-  Loader2,
   Settings2,
   Search,
 } from "@lucide/svelte";
@@ -55,45 +53,18 @@ onMount(() => {
     </p>
   </div>
 
-  {#if dockerStatus.status !== "running"}
-    {@const status = dockerStatus.status}
-    <Card.Root
-      class={`${
-        status === "not_installed"
-          ? "border-red-500/50 bg-red-500/10"
-          : status === "starting"
-            ? "border-blue-500/50 bg-blue-500/10"
-            : "border-yellow-500/50 bg-yellow-500/10"
-      }`}
-    >
+  {#if !dockerStatus.isRunning}
+    <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
       <Card.Header>
         <Card.Title class="flex items-center space-x-2">
-          {#if status === "starting"}
-            <Loader2 class="h-5 w-5 text-blue-500 animate-spin" />
-            <span>Starting Docker Desktop</span>
-          {:else if status === "not_installed"}
-            <CircleX class="h-5 w-5 text-red-500" />
-            <span>Docker Desktop required</span>
-          {:else}
-            <CircleAlert class="h-5 w-5 text-yellow-500" />
-            <span>Docker not running</span>
-          {/if}
+          <CircleAlert class="h-5 w-5 text-yellow-500" />
+          <span>Docker Required</span>
         </Card.Title>
       </Card.Header>
       <Card.Content>
-        {#if status === "starting"}
-          <p class="text-sm">
-            Kittynode is starting Docker Desktop for you. Packages will be available once Docker is ready.
-          </p>
-        {:else if status === "not_installed"}
-          <p class="text-sm">
-            Install Docker Desktop to install packages. After installation, restart Kittynode to continue.
-          </p>
-        {:else}
-          <p class="text-sm">
-            Start Docker Desktop to install packages, then refresh this page.
-          </p>
-        {/if}
+        <p class="text-sm">
+          Docker needs to be running to install packages. Please start Docker Desktop.
+        </p>
       </Card.Content>
     </Card.Root>
   {/if}

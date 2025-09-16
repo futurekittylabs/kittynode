@@ -221,45 +221,17 @@ onDestroy(() => {
           </Card.Content>
         </Card.Root>
       {/if}
-    {:else if dockerStatus.status === "starting"}
+    {:else if !dockerStatus.isRunning}
       <Card.Root>
         <Card.Header>
           <Card.Title class="flex items-center space-x-2">
             <Info class="h-5 w-5" />
-            <span>Starting Docker Desktop</span>
+            <span>Docker Required</span>
           </Card.Title>
         </Card.Header>
         <Card.Content>
           <p class="text-sm text-muted-foreground">
-            Kittynode is starting Docker Desktop in the background. This can take a minute the first time it runs.
-          </p>
-        </Card.Content>
-      </Card.Root>
-    {:else if dockerStatus.status === "not_installed"}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center space-x-2">
-            <Info class="h-5 w-5" />
-            <span>Docker Desktop required</span>
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <p class="text-sm text-muted-foreground">
-            Install Docker Desktop to manage packages. Once installed, restart Kittynode to continue.
-          </p>
-        </Card.Content>
-      </Card.Root>
-    {:else if dockerStatus.status === "not_running" || dockerStatus.status === "unknown"}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center space-x-2">
-            <Info class="h-5 w-5" />
-            <span>Docker not running</span>
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <p class="text-sm text-muted-foreground">
-            Start Docker Desktop and refresh this page to manage packages.
+            Docker needs to be running to view and manage packages. Please start Docker Desktop and refresh this page.
           </p>
         </Card.Content>
       </Card.Root>
