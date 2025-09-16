@@ -1,9 +1,12 @@
+mod docker;
+
+use docker::{DockerManager, DockerStatus};
 use eyre::Result;
 use kittynode_core::domain::package::{Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use tauri::Manager;
+use tauri::{Manager, State};
 use tauri_plugin_http::reqwest;
 use tracing::info;
 
@@ -134,6 +137,13 @@ async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, Stri
 async fn is_docker_running() -> bool {
     info!("Checking if Docker is running");
     kittynode_core::application::is_docker_running().await
+}
+
+#[tauri::command]
+async fn get_docker_status(
+    manager: State<'_, DockerManager>,
+) -> std::result::Result<DockerStatus, String> {
+    Ok(manager.current_status().await)
 }
 
 #[tauri::command]
@@ -333,6 +343,7 @@ async fn restart_app(app_handle: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
     let builder = tauri::Builder::default()
+        .manage(DockerManager::default())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init());
@@ -346,12 +357,20 @@ pub fn run() -> Result<()> {
             if let Some(window) = app.get_webview_window("main") {
                 window.set_focus().ok();
             }
+            let manager = {
+                let state = app.state::<DockerManager>();
+                state.inner().clone()
+            };
+            tauri::async_runtime::spawn(async move {
+                manager.ensure_initialized().await;
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_packages,
             get_installed_packages,
             is_docker_running,
+            get_docker_status,
             install_package,
             delete_package,
             delete_kittynode,
