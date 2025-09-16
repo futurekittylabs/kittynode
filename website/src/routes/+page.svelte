@@ -50,6 +50,8 @@ import { Button } from "$lib/components/ui/button/index.js";
 	.nyan-cat {
 		width: 180px;
 		height: auto;
+		min-width: 180px;
+		max-width: none;
 		image-rendering: pixelated;
 		display: block;
 		margin-left: auto;
@@ -59,6 +61,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 	@media (min-width: 640px) {
 		.nyan-cat {
 			width: 220px;
+			min-width: 220px;
 		}
 	}
 </style>
