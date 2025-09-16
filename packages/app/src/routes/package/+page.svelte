@@ -152,11 +152,20 @@ onDestroy(() => {
     <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight my-4">
         Lifecycle
     </h3>
-    {#if !dockerStatus.isRunning}
+    {#if dockerStatus.status !== "running"}
+        {@const status = dockerStatus.status}
         <Alert.Root>
           <Terminal class="size-4" />
-          <Alert.Title>Start Docker to use this package</Alert.Title>
-          <Alert.Description>If you need to install Docker, follow the installation guide <Link href="https://docs.docker.com/engine/install" targetBlank text="here" />.</Alert.Description>
+          {#if status === "starting"}
+            <Alert.Title>Starting Docker Desktop</Alert.Title>
+            <Alert.Description>Kittynode is starting Docker Desktop. Actions will be available once Docker is ready.</Alert.Description>
+          {:else if status === "not_installed"}
+            <Alert.Title>Install Docker Desktop</Alert.Title>
+            <Alert.Description>Install Docker Desktop to manage this package. Follow the installation guide <Link href="https://docs.docker.com/engine/install" targetBlank text="here" />.</Alert.Description>
+          {:else}
+            <Alert.Title>Docker not running</Alert.Title>
+            <Alert.Description>Start Docker Desktop to manage this package and refresh once it is running.</Alert.Description>
+          {/if}
         </Alert.Root>
         <br />
     {:else}

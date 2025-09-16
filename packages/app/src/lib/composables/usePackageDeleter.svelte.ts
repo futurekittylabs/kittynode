@@ -1,5 +1,8 @@
 import { packagesStore } from "$stores/packages.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import {
+  dockerStatus,
+  type DockerStatusValue,
+} from "$stores/dockerStatus.svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 import { goto } from "$app/navigation";
 
@@ -14,8 +17,21 @@ export function usePackageDeleter() {
     packageName: string,
     options?: { redirectToDashboard?: boolean },
   ): Promise<boolean> {
-    if (!dockerStatus.isRunning) {
-      notifyError("Docker must be running to delete packages");
+    const status = dockerStatus.status;
+    if (status !== "running") {
+      const messageByStatus: Record<DockerStatusValue, string> = {
+        running: "",
+        starting: "Docker Desktop is still starting. Try again in a moment.",
+        not_installed: "Install Docker Desktop to manage packages.",
+        not_running: "Docker must be running to delete packages.",
+        unknown: "Docker must be running to delete packages.",
+      };
+
+      const message =
+        messageByStatus[status] || "Docker must be running to delete packages.";
+      if (message) {
+        notifyError(message);
+      }
       return false;
     }
 

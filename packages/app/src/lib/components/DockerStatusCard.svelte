@@ -1,9 +1,56 @@
 <script lang="ts">
 import * as Card from "$lib/components/ui/card";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
-import { CircleCheck, CircleAlert, Server } from "@lucide/svelte";
+import {
+  dockerStatus,
+  type DockerStatusValue,
+} from "$stores/dockerStatus.svelte";
+import {
+  CircleCheck,
+  CircleAlert,
+  CircleX,
+  Loader2,
+  Server,
+} from "@lucide/svelte";
 
-export let showServerIcon: boolean = false;
+const props = $props<{ showServerIcon?: boolean }>();
+const showServerIcon = $derived(props.showServerIcon ?? false);
+
+type StatusDescriptor = {
+  label: string;
+  icon: typeof CircleCheck;
+  className: string;
+  spinning?: boolean;
+};
+
+const statusCopy: Record<DockerStatusValue, StatusDescriptor> = {
+  running: { label: "Running", icon: CircleCheck, className: "text-green-500" },
+  starting: {
+    label: "Starting Docker Desktop",
+    icon: Loader2,
+    className: "text-blue-500",
+    spinning: true,
+  },
+  not_installed: {
+    label: "Docker Desktop not installed",
+    icon: CircleX,
+    className: "text-red-500",
+  },
+  not_running: {
+    label: "Docker Desktop not running",
+    icon: CircleAlert,
+    className: "text-yellow-500",
+  },
+  unknown: {
+    label: "Checking Docker status",
+    icon: Loader2,
+    className: "text-muted-foreground",
+    spinning: true,
+  },
+};
+
+const statusDescriptor = $derived(
+  statusCopy[dockerStatus.status] ?? statusCopy.unknown,
+);
 </script>
 
 <Card.Root>
@@ -16,14 +63,12 @@ export let showServerIcon: boolean = false;
     </Card.Title>
   </Card.Header>
   <Card.Content>
+    {@const Icon = statusDescriptor.icon}
     <div class="flex items-center space-x-2">
-      {#if dockerStatus.isRunning}
-        <CircleCheck class="h-4 w-4 text-green-500" />
-        <span class="text-sm font-medium">Running</span>
-      {:else}
-        <CircleAlert class="h-4 w-4 text-yellow-500" />
-        <span class="text-sm font-medium">Not Running</span>
-      {/if}
+      <Icon
+        class={`h-4 w-4 ${statusDescriptor.className} ${statusDescriptor.spinning ? "animate-spin" : ""}`}
+      />
+      <span class="text-sm font-medium">{statusDescriptor.label}</span>
     </div>
   </Card.Content>
 </Card.Root>
