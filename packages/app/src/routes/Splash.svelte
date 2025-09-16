@@ -2,6 +2,7 @@
 import { initializedStore } from "$stores/initialized.svelte";
 import { goto } from "$app/navigation";
 import { platform } from "@tauri-apps/plugin-os";
+import { invoke } from "@tauri-apps/api/core";
 import { onMount } from "svelte";
 import { mode } from "mode-watcher";
 import { Button } from "$lib/components/ui/button";
@@ -19,6 +20,8 @@ async function initKittynode() {
     } else {
       await initializedStore.initialize();
     }
+    // Mark onboarding as completed
+    await invoke("set_onboarding_completed", { completed: true });
   } catch (e) {
     console.error(`Failed to initialize kittynode: ${e}`);
   }

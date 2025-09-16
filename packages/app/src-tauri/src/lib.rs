@@ -358,6 +358,18 @@ async fn update_package_config(
 }
 
 #[tauri::command]
+fn get_onboarding_completed() -> Result<bool, String> {
+    info!("Getting onboarding completed status");
+    kittynode_core::application::get_onboarding_completed().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_onboarding_completed(completed: bool) -> Result<(), String> {
+    info!("Setting onboarding completed to: {}", completed);
+    kittynode_core::application::set_onboarding_completed(completed).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn restart_app(app_handle: tauri::AppHandle) {
     info!("Restarting application");
     app_handle.restart();
@@ -398,6 +410,8 @@ pub fn run() -> Result<()> {
             get_container_logs,
             get_package_config,
             update_package_config,
+            get_onboarding_completed,
+            set_onboarding_completed,
             restart_app
         ])
         .run(tauri::generate_context!())

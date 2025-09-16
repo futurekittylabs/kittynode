@@ -4,4 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub capabilities: Vec<String>,
     pub server_url: String,
+    #[serde(default)]
+    pub onboarding_completed: bool,
 }
