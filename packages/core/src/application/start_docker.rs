@@ -78,8 +78,11 @@ pub async fn start_docker() -> Result<()> {
             };
 
             if Path::new(&expanded_path).exists() {
-                // Start Docker Desktop silently without opening a command window
-                if Command::new(&expanded_path).spawn().is_ok() {
+                if Command::new("cmd")
+                    .args(&["/C", "start", "", &expanded_path])
+                    .spawn()
+                    .is_ok()
+                {
                     started = true;
                     info!("Started Docker Desktop from: {}", expanded_path);
                     break;
@@ -92,8 +95,11 @@ pub async fn start_docker() -> Result<()> {
             // Use 'where' command to check if Docker Desktop.exe is in PATH
             if let Ok(output) = Command::new("where").arg("Docker Desktop.exe").output() {
                 if output.status.success() {
-                    // Start directly without cmd window
-                    if Command::new("Docker Desktop.exe").spawn().is_ok() {
+                    if Command::new("cmd")
+                        .args(&["/C", "start", "", "Docker Desktop.exe"])
+                        .spawn()
+                        .is_ok()
+                    {
                         started = true;
                         info!("Started Docker Desktop using PATH");
                     }
