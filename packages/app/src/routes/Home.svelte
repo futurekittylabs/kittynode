@@ -37,17 +37,7 @@ function isMobileAndLocal() {
 
 onMount(async () => {
   if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();
-
-  // Start Docker if needed (only on first app startup)
-  if (!isMobileAndLocal()) {
-    const result = await dockerStatus.startDockerIfNeeded();
-    // Only start polling if Docker wasn't just started (which already starts polling)
-    if (result !== "starting") {
-      dockerStatus.startPolling();
-    }
-  } else {
-    dockerStatus.startPolling();
-  }
+  dockerStatus.startPolling();
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();

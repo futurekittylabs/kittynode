@@ -13,7 +13,6 @@ pub mod install_package;
 pub mod is_docker_running;
 pub mod remove_capability;
 pub mod set_server_url;
-pub mod start_docker;
 pub mod update_package_config;
 
 pub use add_capability::add_capability;
@@ -31,5 +30,4 @@ pub use install_package::install_package;
 pub use is_docker_running::is_docker_running;
 pub use remove_capability::remove_capability;
 pub use set_server_url::set_server_url;
-pub use start_docker::start_docker;
 pub use update_package_config::update_package_config;
