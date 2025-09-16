@@ -81,11 +81,16 @@ let { children } = $props();
 		align-items: center;
 		gap: 0.375rem;
 		text-decoration: none;
+		flex-shrink: 0;
 	}
 
 	.app-logo {
 		height: 2.5rem;
 		width: 2.5rem;
+		min-height: 2.5rem;
+		min-width: 2.5rem;
+		max-width: none;
+		flex-shrink: 0;
 	}
 
 	.wordmark-text {
