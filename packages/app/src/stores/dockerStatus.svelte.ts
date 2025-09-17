@@ -4,7 +4,6 @@ import { platform } from "@tauri-apps/plugin-os";
 let isRunning = $state<boolean | null>(null);
 let isStarting = $state<boolean>(false);
 let interval: number | null = $state(null);
-let wasAutoStarted = $state<boolean>(false);
 let startingTimeout: number | null = $state(null);
 
 export const dockerStatus = {
@@ -14,10 +13,6 @@ export const dockerStatus = {
 
   get isStarting() {
     return isStarting;
-  },
-
-  get wasAutoStarted() {
-    return wasAutoStarted;
   },
 
   async checkDocker() {
@@ -49,9 +44,6 @@ export const dockerStatus = {
         // Set a timeout to stop showing "starting" after 30 seconds
         this.setStartingTimeout(30000);
       }
-
-      // Check if Docker was auto-started
-      wasAutoStarted = await invoke<boolean>("was_docker_auto_started");
 
       return result;
     } catch (e) {
