@@ -120,12 +120,6 @@ async function updateConfig() {
 }
 
 $effect(() => {
-  if (dockerStatus.isRunning) {
-    packagesStore.loadInstalledPackages();
-  }
-});
-
-$effect(() => {
   if (isInstalled) {
     loadConfig();
   }
@@ -133,6 +127,7 @@ $effect(() => {
 
 onMount(async () => {
   dockerStatus.startPolling();
+  await packagesStore.loadInstalledPackages({ force: true });
 });
 
 onDestroy(() => {
