@@ -9,6 +9,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "$lib/components/ui/button";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -38,9 +39,27 @@ const navigationItems = [
 
 let appVersion = $state("");
 let versionError = $state(false);
+let onboardingCompleted = $state(false);
+let checkingOnboarding = $state(true);
 
 onMount(async () => {
   await windowShownStore.show();
+
+  // Check if onboarding has been completed
+  try {
+    onboardingCompleted = await invoke("get_onboarding_completed");
+    if (onboardingCompleted) {
+      // Skip splash screen without re-initializing config
+      // Just set the initialized flag to bypass the splash
+      await initializedStore.fakeInitialize();
+    }
+  } catch (e) {
+    console.error(`Failed to check onboarding status: ${e}`);
+    // Treat as not completed if we can't check
+    onboardingCompleted = false;
+  }
+  checkingOnboarding = false;
+
   await packagesStore.loadPackages();
   await packagesStore.loadInstalledPackages();
 
@@ -62,7 +81,9 @@ onMount(async () => {
 
 <ModeWatcher />
 <Toaster position="top-right" richColors theme={mode.current} />
-{#if !initializedStore.initialized}
+{#if checkingOnboarding}
+  <!-- Show nothing while checking onboarding status -->
+{:else if !onboardingCompleted && !initializedStore.initialized}
   <Splash />
 {:else}
   <Sidebar.Provider>

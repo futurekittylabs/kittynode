@@ -78,10 +78,8 @@ async function disconnectRemote() {
 async function deleteKittynode() {
   try {
     await invoke("delete_kittynode", { serverUrl: serverUrlStore.serverUrl });
-    await initializedStore.uninitialize();
-    notifySuccess("Kittynode data deleted", {
-      description: "All data has been removed successfully.",
-    });
+    // Immediately restart the app with fresh config
+    await invoke("restart_app");
   } catch (e) {
     notifyError("Failed to delete Kittynode data", e);
   }
