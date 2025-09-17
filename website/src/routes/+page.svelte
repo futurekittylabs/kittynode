@@ -19,7 +19,7 @@ import { Button } from "$lib/components/ui/button/index.js";
 					Download now
 				</Button>
 				<p class="text-sm text-muted-foreground">
-					Available for macOS, Linux, and Windows
+					Available for Linux, macOS, and Windows
 				</p>
 			</div>
 		</div>
@@ -31,17 +31,17 @@ import { Button } from "$lib/components/ui/button/index.js";
 		font-size: 2.25rem;
 		font-weight: 500;
 	}
-	
+
 	.hero-subtitle {
 		font-size: 1rem;
 	}
-	
+
 	@media (min-width: 640px) {
 		.hero-heading {
 			font-size: 3.5rem;
 			font-weight: 500;
 		}
-		
+
 		.hero-subtitle {
 			font-size: 1.125rem;
 		}

@@ -9,6 +9,19 @@ const baseUrl = "https://github.com/blackkittylabs/kittynode";
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 
 const downloads = {
+  linux: {
+    name: "Linux",
+    icon: Terminal,
+    primary: {
+      label: ".AppImage",
+      url: `${releaseUrl}/Kittynode_${version}_amd64.AppImage`,
+    },
+    alternatives: [
+      { label: ".deb", url: `${releaseUrl}/Kittynode_${version}_amd64.deb` },
+      { label: ".rpm", url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm` },
+    ],
+    requirements: "x86_64",
+  },
   macos: {
     name: "macOS",
     icon: AppWindowMac,
@@ -23,19 +36,6 @@ const downloads = {
       },
     ],
     requirements: "macOS 10.15+ (Apple Silicon)",
-  },
-  linux: {
-    name: "Linux",
-    icon: Terminal,
-    primary: {
-      label: ".AppImage",
-      url: `${releaseUrl}/Kittynode_${version}_amd64.AppImage`,
-    },
-    alternatives: [
-      { label: ".deb", url: `${releaseUrl}/Kittynode_${version}_amd64.deb` },
-      { label: ".rpm", url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm` },
-    ],
-    requirements: "x86_64",
   },
   windows: {
     name: "Windows",

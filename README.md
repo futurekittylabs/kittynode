@@ -7,19 +7,13 @@ Kittynode is a control center for world computer operators.
 
 ## Quick start
 
-Download Kittynode:
-
-- [macOS](https://github.com/blackkittylabs/kittynode/releases/latest)
-- [Windows](https://github.com/blackkittylabs/kittynode/releases/latest)
-- [Linux](https://github.com/blackkittylabs/kittynode/releases/latest)
+Download Kittynode at [kittynode.com](https://kittynode.com).
 
 ## Documentation
 
-Visit [docs.kittynode.com](https://docs.kittynode.com) for complete documentation.
+View the documentation at [docs.kittynode.com](https://docs.kittynode.com).
 
-## Development
-
-For contributing to Kittynode, see:
+## Contribute
 
 - [AGENTS.md](AGENTS.md) - Development guidelines and setup
 - [Architecture](./docs/src/content/docs/reference/architecture.mdx) - System architecture overview
