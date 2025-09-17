@@ -37,7 +37,7 @@ const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
 );
 
-let activeLogType = $state<null | "execution" | "consensus">(null);
+let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
 let selectedNetwork = $state("holesky");
 let currentNetwork = $state("holesky");
@@ -46,6 +46,21 @@ const networks = [
   { value: "mainnet", label: "Mainnet" },
   { value: "holesky", label: "Holesky" },
 ];
+
+const logSources = {
+  execution: {
+    description: "Execution client logs",
+    containerName: "reth-node",
+  },
+  consensus: {
+    description: "Consensus client logs",
+    containerName: "lighthouse-node",
+  },
+} as const;
+
+const activeLogSource = $derived(
+  activeLogType ? logSources[activeLogType] : null,
+);
 
 const networkTriggerContent = $derived(
   networks.find((n) => n.value === selectedNetwork)?.label || "Holesky",
@@ -117,9 +132,9 @@ onDestroy(() => {
 </script>
 
 {#if pkg}
-  <div class="space-y-6">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight">{pkg.name}</h2>
         <p class="text-muted-foreground">{pkg.description}</p>
@@ -183,7 +198,7 @@ onDestroy(() => {
       </Card.Root>
     {:else}
       <!-- Quick Actions -->
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card.Root>
           <Card.Header class="pb-3">
             <Card.Title class="text-sm font-medium">Node Status</Card.Title>
@@ -248,7 +263,7 @@ onDestroy(() => {
             <div class="space-y-2">
               <label for="network" class="text-sm font-medium">Network</label>
               <Select.Root type="single" name="network" bind:value={selectedNetwork}>
-                <Select.Trigger class="w-full md:w-[200px]">
+                <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
                   {networkTriggerContent}
                 </Select.Trigger>
                 <Select.Content>
@@ -274,7 +289,7 @@ onDestroy(() => {
       </Card.Root>
 
       <!-- Logs -->
-      <Card.Root>
+      <Card.Root class="min-w-0">
         <Card.Header>
           <Card.Title class="flex items-center gap-2">
             <FileText class="h-5 w-5" />
@@ -284,8 +299,8 @@ onDestroy(() => {
             View real-time logs from your node
           </Card.Description>
         </Card.Header>
-        <Card.Content>
-          <div class="flex gap-2 mb-4">
+        <Card.Content class="space-y-4">
+          <div class="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant={activeLogType === 'execution' ? 'default' : 'outline'}
@@ -302,26 +317,15 @@ onDestroy(() => {
             </Button>
           </div>
 
-          {#if activeLogType === 'execution'}
+          {#if activeLogSource}
             <div class="space-y-2">
-              <div class="text-sm text-muted-foreground">Execution client logs:</div>
-              <div class="rounded-lg border bg-muted/50 p-4">
-                <DockerLogs containerName="reth-node" tailLines={1000} />
+              <div class="text-sm text-muted-foreground">
+                {activeLogSource.description}:
               </div>
+              <DockerLogs containerName={activeLogSource.containerName} tailLines={1000} />
             </div>
-          {/if}
-
-          {#if activeLogType === 'consensus'}
-            <div class="space-y-2">
-              <div class="text-sm text-muted-foreground">Consensus client logs:</div>
-              <div class="rounded-lg border bg-muted/50 p-4">
-                <DockerLogs containerName="lighthouse-node" tailLines={1000} />
-              </div>
-            </div>
-          {/if}
-
-          {#if !activeLogType}
-            <div class="text-center py-8 text-muted-foreground">
+          {:else}
+            <div class="rounded-lg border border-dashed bg-muted/30 py-10 text-center text-muted-foreground">
               Select a log type to view real-time logs
             </div>
           {/if}

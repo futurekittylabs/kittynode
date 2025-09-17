@@ -61,20 +61,22 @@ function handleScroll(e: Event) {
 }
 </script>
 
-<div class="flex flex-col gap-2">
-    <div
-        bind:this={logsElement}
-        onscroll={handleScroll}
-        class="h-[400px] overflow-y-auto overflow-x-hidden border p-4 font-mono text-sm rounded-md"
-    >
-        {#each logs as log}
-            <div class="whitespace-pre-line break-words">
-                {@html log}
-            </div>
-        {/each}
-
-        {#if logs.length === 0}
-            <div class="text-muted-foreground">No logs available</div>
-        {/if}
-    </div>
+<div class="flex min-w-0 flex-col gap-3">
+	<div
+		bind:this={logsElement}
+		onscroll={handleScroll}
+		class="h-[400px] w-full overflow-y-auto overflow-x-auto rounded-lg border bg-background/60"
+	>
+		<div class="flex min-w-0 flex-col gap-2 p-4 font-mono text-sm leading-6 text-muted-foreground">
+			{#if logs.length === 0}
+				<div class="text-muted-foreground">No logs available</div>
+			{:else}
+				{#each logs as log}
+					<div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+						{@html log}
+					</div>
+				{/each}
+			{/if}
+		</div>
+	</div>
 </div>
