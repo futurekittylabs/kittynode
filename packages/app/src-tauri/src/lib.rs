@@ -165,11 +165,6 @@ async fn start_docker_if_needed() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn was_docker_auto_started() -> bool {
-    *DOCKER_AUTO_STARTED.lock().unwrap()
-}
-
-#[tauri::command]
 async fn install_package(name: String, server_url: String) -> Result<(), String> {
     if !server_url.is_empty() {
         let url = format!("{}/install_package/{}", server_url, name);
@@ -386,7 +381,6 @@ pub fn run() -> Result<()> {
             get_installed_packages,
             is_docker_running,
             start_docker_if_needed,
-            was_docker_auto_started,
             install_package,
             delete_package,
             delete_kittynode,
