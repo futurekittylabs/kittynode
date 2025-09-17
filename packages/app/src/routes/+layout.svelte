@@ -49,12 +49,9 @@ onMount(async () => {
   try {
     onboardingCompleted = await invoke("get_onboarding_completed");
     if (onboardingCompleted) {
-      // Auto-initialize if onboarding was completed before
-      if (!["ios", "android"].includes(platform())) {
-        await initializedStore.initialize();
-      } else {
-        await initializedStore.fakeInitialize();
-      }
+      // Skip splash screen without re-initializing config
+      // Just set the initialized flag to bypass the splash
+      await initializedStore.fakeInitialize();
     }
   } catch (e) {
     console.error(`Failed to check onboarding status: ${e}`);
