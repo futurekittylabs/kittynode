@@ -131,24 +131,41 @@ async fn is_docker_running() -> bool {
 async fn start_docker_if_needed() -> Result<String, String> {
     info!("Checking if Docker needs to be started");
 
-    let already_auto_started = {
+    let already_attempted = {
         let auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         *auto_started
     };
-    if already_auto_started {
+
+    if already_attempted {
+        if kittynode_core::application::is_docker_running().await {
+            return Ok("running".to_string());
+        }
+
         return Ok("already_started".to_string());
     }
 
     if kittynode_core::application::is_docker_running().await {
+        let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
+        *auto_started = true;
         return Ok("running".to_string());
     }
 
-    {
+    let should_attempt_start = {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         if *auto_started {
-            return Ok("already_started".to_string());
+            false
+        } else {
+            *auto_started = true;
+            true
         }
-        *auto_started = true;
+    };
+
+    if !should_attempt_start {
+        if kittynode_core::application::is_docker_running().await {
+            return Ok("running".to_string());
+        }
+
+        return Ok("already_started".to_string());
     }
 
     info!("Starting Docker Desktop");
