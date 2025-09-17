@@ -65,14 +65,11 @@ onMount(async () => {
 
   // Start Docker if needed (only on first app startup)
   if (!isMobileAndLocal()) {
-    const result = await dockerStatus.startDockerIfNeeded();
-    // Only start polling if Docker wasn't just started (which already starts polling)
-    if (result !== "starting") {
-      dockerStatus.startPolling();
-    }
-  } else {
-    dockerStatus.startPolling();
+    await dockerStatus.startDockerIfNeeded();
   }
+
+  const pollingInterval = dockerStatus.isStarting ? 2000 : 5000;
+  dockerStatus.startPolling(pollingInterval);
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();
