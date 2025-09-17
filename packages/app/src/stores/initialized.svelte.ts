@@ -1,36 +1,40 @@
 import { invoke } from "@tauri-apps/api/core";
 import { serverUrlStore } from "./serverUrl.svelte";
 
-let initialized = $state(false);
-let initializing = $state(false);
+type InitState = 'idle' | 'initializing' | 'initialized';
+
+let state = $state<InitState>('idle');
 
 export const initializedStore = {
+  get state() {
+    return state;
+  },
   get initialized() {
-    return initialized;
+    return state === 'initialized';
   },
   get initializing() {
-    return initializing;
+    return state === 'initializing';
   },
   async initialize() {
-    if (initializing || initialized) {
+    if (state !== 'idle') {
       return;
     }
-    initializing = true;
+    state = 'initializing';
     try {
       await invoke("init_kittynode", { serverUrl: serverUrlStore.serverUrl });
-      initialized = true;
-    } finally {
-      initializing = false;
+      state = 'initialized';
+    } catch (error) {
+      state = 'idle';
+      throw error;
     }
   },
   async fakeInitialize() {
-    if (initializing || initialized) {
+    if (state !== 'idle') {
       return;
     }
-    initialized = true;
+    state = 'initialized';
   },
   async uninitialize() {
-    initialized = false;
-    initializing = false;
+    state = 'idle';
   },
 };
