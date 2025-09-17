@@ -2,9 +2,7 @@
 
 ## Git instructions
 
-- ALWAYS do work under a git worktree. Create a worktree with the same branch name that describes the feature/fix with `git worktree add .worktrees/<branch_name> <branch_name>`.
 - NEVER use conventional commits like `feat`, `fix`, etc. Use descriptive commit messages instead.
-- NEVER push to main directly, when I say to push changes, always do your changes in a worktree and then push to the remote branch.
 
 ## Architecture
 
