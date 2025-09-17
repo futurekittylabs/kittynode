@@ -4,7 +4,7 @@ import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { packagesStore } from "$stores/packages.svelte";
 import { onDestroy, onMount } from "svelte";
-import DockerLogs from "../../package/DockerLogs.svelte";
+import DockerLogs from "$lib/components/DockerLogs.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { packageConfigStore } from "$stores/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
