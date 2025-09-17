@@ -299,7 +299,12 @@ onDestroy(() => {
               <Button
                 size="sm"
                 variant="default"
-                onclick={() => installPackage(name)}
+                onclick={async () => {
+                  const installed = await installPackage(name);
+                  if (installed) {
+                    managePackage(name);
+                  }
+                }}
                 disabled={disabled}
                 class="w-full"
               >
