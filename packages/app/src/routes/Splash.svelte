@@ -5,6 +5,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { invoke } from "@tauri-apps/api/core";
 import { onMount } from "svelte";
 import { mode } from "mode-watcher";
+import { toast } from "svelte-sonner";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 
@@ -21,9 +22,16 @@ async function initKittynode() {
       await initializedStore.initialize();
     }
     // Mark onboarding as completed
-    await invoke("set_onboarding_completed", { completed: true });
+    try {
+      await invoke("set_onboarding_completed", { completed: true });
+    } catch (e) {
+      console.error(`Failed to save onboarding state: ${e}`);
+      toast.error("Failed to save onboarding progress");
+    }
   } catch (e) {
     console.error(`Failed to initialize kittynode: ${e}`);
+    toast.error("Failed to initialize Kittynode");
+    return; // Don't navigate if initialization failed
   }
   await goto("/");
 }
