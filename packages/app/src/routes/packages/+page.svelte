@@ -19,7 +19,14 @@ const { isInstalling, installPackage } = usePackageInstaller();
 
 let searchQuery = $state("");
 
+const catalogState = $derived(packagesStore.catalogState);
+const installedState = $derived(packagesStore.installedState);
+
 const filteredPackages = $derived(() => {
+  if (catalogState.status !== "ready") {
+    return [];
+  }
+
   const query = searchQuery.toLowerCase();
   return Object.entries(packagesStore.packages)
     .filter(
@@ -53,7 +60,35 @@ onMount(() => {
     </p>
   </div>
 
-  {#if !dockerStatus.isRunning}
+  <div class="relative">
+    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <input
+      type="text"
+      placeholder="Search packages..."
+      bind:value={searchQuery}
+      class="w-full rounded-md border bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+    />
+  </div>
+
+  {#if catalogState.status === "error"}
+    <Card.Root>
+      <Card.Content class="flex items-center justify-between">
+        <p class="text-sm text-muted-foreground">Failed to load packages.</p>
+        <Button size="sm" variant="outline" onclick={() => packagesStore.loadPackages({ force: true })}>
+          Retry
+        </Button>
+      </Card.Content>
+    </Card.Root>
+  {:else if installedState.status === "error"}
+    <Card.Root>
+      <Card.Content class="flex items-center justify-between">
+        <p class="text-sm text-muted-foreground">Failed to confirm installed packages.</p>
+        <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+          Retry
+        </Button>
+      </Card.Content>
+    </Card.Root>
+  {:else if installedState.status === "unavailable"}
     <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
       <Card.Header>
         <Card.Title class="flex items-center space-x-2">
@@ -67,22 +102,16 @@ onMount(() => {
         </p>
       </Card.Content>
     </Card.Root>
-  {/if}
-
-  <div class="relative">
-    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-    <input
-      type="text"
-      placeholder="Search packages..."
-      bind:value={searchQuery}
-      class="w-full rounded-md border bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-    />
-  </div>
-
-  {#if filteredPackages().length > 0}
+  {:else if catalogState.status !== "ready" || installedState.status === "loading" || installedState.status === "idle"}
+    <Card.Root>
+      <Card.Content>
+        <p class="text-sm text-muted-foreground">Loading packages...</p>
+      </Card.Content>
+    </Card.Root>
+  {:else if filteredPackages().length > 0}
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each filteredPackages() as [name, pkg]}
-        {@const isInstalled = packagesStore.isInstalled(name)}
+        {@const status = packagesStore.installationStatus(name)}
         {@const isInstallingPackage = isInstalling(name)}
 
         <Card.Root>
@@ -97,7 +126,7 @@ onMount(() => {
                   </Card.Description>
                 </div>
               </div>
-              {#if isInstalled}
+              {#if status === "installed"}
                 <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1">
                   <CircleCheck class="h-3 w-3 text-green-500" />
                   <span class="text-xs font-medium text-green-700 dark:text-green-400">Installed</span>
@@ -107,7 +136,7 @@ onMount(() => {
           </Card.Header>
 
           <Card.Footer>
-            {#if isInstalled}
+            {#if status === "installed"}
               <Button
                 size="sm"
                 variant="default"
@@ -117,12 +146,12 @@ onMount(() => {
                 <Settings2 class="h-4 w-4 mr-1" />
                 Manage
               </Button>
-            {:else}
+            {:else if status === "available"}
               <Button
                 size="sm"
                 variant="default"
                 onclick={() => installPackage(name)}
-                disabled={!dockerStatus.isRunning || isInstallingPackage}
+                disabled={dockerStatus.isRunning !== true || isInstallingPackage}
                 class="w-full"
               >
                 {#if isInstallingPackage}
@@ -132,6 +161,10 @@ onMount(() => {
                   <Download class="h-4 w-4 mr-1" />
                   Install
                 {/if}
+              </Button>
+            {:else}
+              <Button size="sm" variant="outline" disabled class="w-full">
+                Checking status...
               </Button>
             {/if}
           </Card.Footer>

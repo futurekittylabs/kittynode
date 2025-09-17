@@ -32,6 +32,11 @@ const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
 
+const installedState = $derived(packagesStore.installedState);
+const packageStatus = $derived(
+  pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
+);
+
 let activeLogType = $state<null | "execution" | "consensus">(null);
 let configLoading = $state(false);
 let selectedNetwork = $state("holesky");
@@ -50,7 +55,8 @@ const currentNetworkDisplay = $derived(
   networks.find((n) => n.value === currentNetwork)?.label || "Holesky",
 );
 
-const isInstalled = $derived(pkg ? packagesStore.isInstalled(pkg.name) : false);
+const installedStatus = $derived(installedState.status);
+const isInstalled = $derived(packageStatus === "installed");
 const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
 
 async function handleDeletePackage(name: string) {
@@ -97,6 +103,12 @@ $effect(() => {
   }
 });
 
+$effect(() => {
+  if (isInstalled && packageName) {
+    loadConfig();
+  }
+});
+
 onMount(async () => {
   dockerStatus.startPolling();
   if (isInstalled) {
@@ -135,6 +147,31 @@ onDestroy(() => {
           Start Docker Desktop to manage this node.
         </Alert.Description>
       </Alert.Root>
+    {:else if installedStatus === "error"}
+      <Card.Root>
+        <Card.Content class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            Failed to load node status.
+          </p>
+          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+            Retry
+          </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedStatus === "unavailable"}
+      <Alert.Root>
+        <Terminal class="size-4" />
+        <Alert.Title>Docker is not available</Alert.Title>
+        <Alert.Description>
+          Start Docker Desktop to manage this node.
+        </Alert.Description>
+      </Alert.Root>
+    {:else if packageStatus === "unknown"}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">Checking node status...</p>
+        </Card.Content>
+      </Card.Root>
     {:else if !isInstalled}
       <Card.Root>
         <Card.Header>
