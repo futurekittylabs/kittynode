@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post},
 };
 use kittynode_core::domain::logs::LogsQuery;
-use kittynode_core::domain::package::Package;
+use kittynode_core::domain::package::InstalledPackage;
 use kittynode_core::domain::system_info::SystemInfo;
 
 pub(crate) async fn hello_world() -> &'static str {
@@ -53,7 +53,8 @@ pub(crate) async fn delete_package(
     Ok(StatusCode::OK)
 }
 
-pub(crate) async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
+pub(crate) async fn get_installed_packages()
+-> Result<Json<Vec<InstalledPackage>>, (StatusCode, String)> {
     kittynode_core::application::get_installed_packages()
         .await
         .map(Json)

@@ -12,10 +12,7 @@ import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import {
   Terminal,
-  CircleCheck,
   Trash2,
-  Play,
-  Square,
   Activity,
   Settings,
   FileText,
@@ -31,6 +28,13 @@ const packageName = $derived(page.params.name || "");
 const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
+
+const installedState = $derived(packagesStore.installedState);
+const packageStatus = $derived(
+  pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
+);
+const isRunning = $derived(packageStatus === "running");
+const isStopped = $derived(packageStatus === "stopped");
 
 let activeLogType = $state<null | "execution" | "consensus">(null);
 let configLoading = $state(false);
@@ -50,7 +54,8 @@ const currentNetworkDisplay = $derived(
   networks.find((n) => n.value === currentNetwork)?.label || "Holesky",
 );
 
-const isInstalled = $derived(pkg ? packagesStore.isInstalled(pkg.name) : false);
+const installedStatus = $derived(installedState.status);
+const isInstalled = $derived(isRunning || isStopped);
 const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
 
 async function handleDeletePackage(name: string) {
@@ -92,13 +97,14 @@ async function updateConfig() {
 }
 
 $effect(() => {
-  if (dockerStatus.isRunning) {
-    packagesStore.loadInstalledPackages();
+  if (isInstalled && packageName) {
+    loadConfig();
   }
 });
 
 onMount(async () => {
   dockerStatus.startPolling();
+  await packagesStore.loadInstalledPackages({ force: true });
   if (isInstalled) {
     await loadConfig();
   }
@@ -117,11 +123,18 @@ onDestroy(() => {
         <h2 class="text-3xl font-bold tracking-tight">{pkg.name}</h2>
         <p class="text-muted-foreground">{pkg.description}</p>
       </div>
-      {#if isInstalled}
+      {#if isRunning}
         <div class="flex items-center space-x-2">
           <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
             <Activity class="h-4 w-4 text-green-500 animate-pulse" />
             <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
+          </div>
+        </div>
+      {:else if isStopped}
+        <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-1 rounded-full bg-yellow-500/10 px-3 py-1.5">
+            <Activity class="h-4 w-4 text-yellow-500" />
+            <span class="text-sm font-medium text-yellow-700 dark:text-yellow-400">Stopped</span>
           </div>
         </div>
       {/if}
@@ -135,6 +148,31 @@ onDestroy(() => {
           Start Docker Desktop to manage this node.
         </Alert.Description>
       </Alert.Root>
+    {:else if installedStatus === "error"}
+      <Card.Root>
+        <Card.Content class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            Failed to load node status.
+          </p>
+          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+            Retry
+          </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedStatus === "unavailable"}
+      <Alert.Root>
+        <Terminal class="size-4" />
+        <Alert.Title>Docker is not available</Alert.Title>
+        <Alert.Description>
+          Start Docker Desktop to manage this node.
+        </Alert.Description>
+      </Alert.Root>
+    {:else if packageStatus === "unknown"}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">Checking node status...</p>
+        </Card.Content>
+      </Card.Root>
     {:else if !isInstalled}
       <Card.Root>
         <Card.Header>
@@ -150,6 +188,16 @@ onDestroy(() => {
         </Card.Footer>
       </Card.Root>
     {:else}
+      {#if isStopped}
+        <Alert.Root>
+          <WifiOff class="size-4" />
+          <Alert.Title>Node containers are stopped</Alert.Title>
+          <Alert.Description>
+            Start the containers in Docker Desktop or delete and reinstall the node from the Package Store.
+          </Alert.Description>
+        </Alert.Root>
+      {/if}
+
       <!-- Quick Actions -->
       <div class="grid gap-4 md:grid-cols-3">
         <Card.Root>
@@ -158,8 +206,13 @@ onDestroy(() => {
           </Card.Header>
           <Card.Content>
             <div class="flex items-center space-x-2">
-              <Wifi class="h-4 w-4 text-green-500" />
-              <span class="text-sm font-medium">Connected</span>
+              {#if isRunning}
+                <Wifi class="h-4 w-4 text-green-500" />
+                <span class="text-sm font-medium">Connected</span>
+              {:else}
+                <WifiOff class="h-4 w-4 text-yellow-500" />
+                <span class="text-sm font-medium">Containers stopped</span>
+              {/if}
             </div>
           </Card.Content>
         </Card.Root>

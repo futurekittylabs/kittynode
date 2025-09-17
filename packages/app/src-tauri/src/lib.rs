@@ -1,5 +1,5 @@
 use eyre::Result;
-use kittynode_core::domain::package::{Package, PackageConfig};
+use kittynode_core::domain::package::{InstalledPackage, Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
@@ -8,6 +8,7 @@ use tauri_plugin_http::reqwest;
 use tracing::info;
 
 pub static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
+// Tracks whether we've already attempted to start Docker automatically this session
 pub static DOCKER_AUTO_STARTED: LazyLock<Arc<Mutex<bool>>> =
     LazyLock::new(|| Arc::new(Mutex::new(false)));
 
@@ -92,7 +93,7 @@ fn get_packages() -> Result<HashMap<String, Package>, String> {
 }
 
 #[tauri::command]
-async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, String> {
+async fn get_installed_packages(server_url: String) -> Result<Vec<InstalledPackage>, String> {
     info!("Getting installed packages");
 
     if !server_url.is_empty() {
@@ -104,21 +105,17 @@ async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, Stri
             .map_err(|e| e.to_string())?;
 
         let status = res.status();
-        let error_text = res.text().await.unwrap_or_default();
-
         if !status.is_success() {
+            let error_text = res.text().await.unwrap_or_default();
             return Err(format!(
                 "Failed to get installed packages: {} - {}",
                 status, error_text
             ));
         }
 
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
+        res.json::<Vec<InstalledPackage>>()
             .await
-            .map_err(|e| e.to_string())?;
-        res.json::<Vec<Package>>().await.map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())
     } else {
         kittynode_core::application::get_installed_packages()
             .await
@@ -136,29 +133,32 @@ async fn is_docker_running() -> bool {
 async fn start_docker_if_needed() -> Result<String, String> {
     info!("Checking if Docker needs to be started");
 
-    // Check if we've already auto-started Docker this session
-    {
+    let already_auto_started = {
         let auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
-        if *auto_started {
-            return Ok("already_started".to_string());
-        }
+        *auto_started
+    };
+    if already_auto_started {
+        return Ok("already_started".to_string());
     }
 
-    // Check if Docker is already running
     if kittynode_core::application::is_docker_running().await {
         return Ok("running".to_string());
     }
 
-    // Try to start Docker
-    info!("Starting Docker Desktop");
-    kittynode_core::application::start_docker()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    // Mark that we've auto-started Docker
     {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
+        if *auto_started {
+            return Ok("already_started".to_string());
+        }
         *auto_started = true;
+    }
+
+    info!("Starting Docker Desktop");
+
+    if let Err(err) = kittynode_core::application::start_docker().await {
+        let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
+        *auto_started = false;
+        return Err(err.to_string());
     }
 
     Ok("starting".to_string())

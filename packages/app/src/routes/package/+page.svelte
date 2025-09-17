@@ -19,6 +19,17 @@ let configLoading = $state(false);
 let selectedNetwork = $state("holesky");
 let currentNetwork = $state("holesky");
 
+const packageStatus = $derived(
+  selectedPackageStore.package
+    ? packagesStore.installationStatus(selectedPackageStore.package.name)
+    : "unknown",
+);
+const isRunning = $derived(packageStatus === "running");
+const isStopped = $derived(packageStatus === "stopped");
+const isInstalled = $derived(isRunning || isStopped);
+const installedState = $derived(packagesStore.installedState);
+const installedStatus = $derived(installedState.status);
+
 const networks = [
   { value: "mainnet", label: "Mainnet" },
   { value: "holesky", label: "Holesky" },
@@ -33,13 +44,20 @@ function canInstallPackage(packageName: string): boolean {
     (dockerStatus.isRunning ?? false) &&
     !installLoading &&
     !deleteLoading &&
-    !packagesStore.isInstalled(packageName)
+    packagesStore.installationStatus(packageName) === "available"
   );
 }
 
 async function installPackage(name: string) {
   if (!dockerStatus.isRunning) {
     notifyError("Docker must be running to install packages");
+    return;
+  }
+
+  if (packagesStore.installationStatus(name) === "stopped") {
+    notifyError(
+      `${name} is installed but stopped. Start the containers in Docker Desktop or delete the package before reinstalling.`,
+    );
     return;
   }
 
@@ -111,14 +129,14 @@ async function updateConfig() {
 }
 
 $effect(() => {
-  if (dockerStatus.isRunning) {
-    packagesStore.loadInstalledPackages();
+  if (isInstalled) {
+    loadConfig();
   }
 });
 
 onMount(async () => {
   dockerStatus.startPolling();
-  await loadConfig();
+  await packagesStore.loadInstalledPackages({ force: true });
 });
 
 onDestroy(() => {
@@ -139,10 +157,15 @@ onDestroy(() => {
             <p class="text-muted-foreground">{pkg.description}</p>
         </div>
         <div class="flex items-center space-x-2">
-            {#if packagesStore.isInstalled(pkg.name)}
+            {#if isRunning}
                 <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
                     <CircleCheck class="h-4 w-4 text-green-500" />
-                    <span class="text-sm font-medium text-green-700 dark:text-green-400">Installed</span>
+                    <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
+                </div>
+            {:else if isStopped}
+                <div class="flex items-center space-x-1 rounded-full bg-yellow-500/10 px-3 py-1.5">
+                    <CircleCheck class="h-4 w-4 text-yellow-500" />
+                    <span class="text-sm font-medium text-yellow-700 dark:text-yellow-400">Stopped</span>
                 </div>
             {/if}
         </div>
@@ -159,8 +182,28 @@ onDestroy(() => {
           <Alert.Description>If you need to install Docker, follow the installation guide <Link href="https://docs.docker.com/engine/install" targetBlank text="here" />.</Alert.Description>
         </Alert.Root>
         <br />
+    {:else if installedStatus === "error"}
+        <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+            >
+                Retry status check
+            </Button>
+            <span class="text-sm text-muted-foreground">Failed to load package status.</span>
+        </div>
+    {:else if installedStatus === "unavailable"}
+        <Alert.Root>
+          <Terminal class="size-4" />
+          <Alert.Title>Docker is not available</Alert.Title>
+          <Alert.Description>Start Docker Desktop to manage this package.</Alert.Description>
+        </Alert.Root>
+        <br />
+    {:else if packageStatus === "unknown"}
+        <Button disabled variant="outline">Checking package status...</Button>
     {:else}
-        {#if !packagesStore.isInstalled(pkg.name)}
+        {#if !isInstalled}
             <Button
                 onclick={() => installPackage(pkg.name)}
                 disabled={!canInstallPackage(pkg.name)}
@@ -168,6 +211,14 @@ onDestroy(() => {
                 {installLoading === pkg.name ? "Installing..." : "Install"}
             </Button>
         {:else}
+            {#if isStopped}
+                <Alert.Root>
+                  <Terminal class="size-4" />
+                  <Alert.Title>Node containers are stopped</Alert.Title>
+                  <Alert.Description>Start the containers in Docker Desktop or delete the package to reinstall it.</Alert.Description>
+                </Alert.Root>
+                <br />
+            {/if}
             <Button
                 variant="destructive"
                 onclick={() => deletePackage(pkg.name)}
@@ -181,7 +232,7 @@ onDestroy(() => {
     <br />
 
     <!-- Configuration -->
-    {#if packagesStore.isInstalled(pkg.name)}
+    {#if isInstalled}
         <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight my-4">
             Configuration
         </h3>
@@ -215,7 +266,7 @@ onDestroy(() => {
     <br />
 
     <!-- Logging -->
-    {#if packagesStore.isInstalled(pkg.name)}
+    {#if isInstalled}
         <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight my-4">
             Logging
         </h3>

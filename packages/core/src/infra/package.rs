@@ -1,9 +1,10 @@
-use crate::domain::package::{Package, PackageDefinition};
+use crate::domain::package::{InstalledPackage, Package, PackageDefinition};
 use crate::infra::docker::{
     create_or_recreate_network, find_container, get_docker_instance, pull_and_start_container,
     remove_container,
 };
 use crate::manifests::ethereum::Ethereum;
+use bollard::secret::ContainerSummaryStateEnum;
 use eyre::Result;
 use std::{
     collections::{HashMap, HashSet},
@@ -19,23 +20,39 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
 }
 
 /// Gets a list of installed packages by checking their container states
-pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Result<Vec<Package>> {
+pub async fn get_installed_packages(
+    packages: &HashMap<String, Package>,
+) -> Result<Vec<InstalledPackage>> {
     let docker = get_docker_instance()?;
     let mut installed = Vec::new();
 
     for package in packages.values() {
         let mut all_containers_exist = true;
+        let mut all_containers_running = true;
 
         for container in &package.containers {
             info!("Checking container '{}'...", container.name);
-            if find_container(&docker, &container.name).await?.is_empty() {
+            let summaries = find_container(&docker, &container.name).await?;
+
+            if summaries.is_empty() {
                 all_containers_exist = false;
                 break;
+            }
+
+            let container_running = summaries
+                .iter()
+                .any(|summary| matches!(summary.state, Some(ContainerSummaryStateEnum::RUNNING)));
+
+            if !container_running {
+                all_containers_running = false;
             }
         }
 
         if all_containers_exist {
-            installed.push(package.clone());
+            installed.push(InstalledPackage {
+                package: package.clone(),
+                is_running: all_containers_running,
+            });
         }
     }
 

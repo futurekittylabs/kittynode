@@ -15,6 +15,27 @@ export function usePackageInstaller() {
       return false;
     }
 
+    const status = packagesStore.installationStatus(packageName);
+
+    if (status === "unknown") {
+      notifyError(
+        "Package status is still loading. Try again once it finishes.",
+      );
+      return false;
+    }
+
+    if (status === "running") {
+      notifyError(`${packageName} is already installed and running`);
+      return false;
+    }
+
+    if (status === "stopped") {
+      notifyError(
+        `${packageName} is installed but stopped. Start the containers in Docker Desktop or delete the package before reinstalling.`,
+      );
+      return false;
+    }
+
     if (installingPackages.has(packageName)) {
       return false;
     }

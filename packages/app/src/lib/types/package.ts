@@ -5,6 +5,16 @@ export interface Package {
   containers: Container[];
 }
 
+export interface InstalledPackage {
+  package: Package;
+  isRunning: boolean;
+}
+
+export interface InstalledPackageApi {
+  package: Package;
+  is_running: boolean;
+}
+
 export interface Container {
   name: string;
   image: string;

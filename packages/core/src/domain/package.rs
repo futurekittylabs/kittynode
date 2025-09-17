@@ -32,6 +32,12 @@ pub struct Package {
     pub(crate) default_config: PackageConfig,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct InstalledPackage {
+    pub package: Package,
+    pub is_running: bool,
+}
+
 impl fmt::Display for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Package: {}", self.name)?;

@@ -24,11 +24,23 @@ import {
   Users,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
+import { dockerStatus } from "$stores/dockerStatus.svelte";
 import { page } from "$app/state";
 
 const { children } = $props();
 
 const currentPath = $derived(page.url?.pathname || "");
+
+const installedState = $derived(packagesStore.installedState);
+const runningNodes = $derived(
+  installedState.status === "ready"
+    ? packagesStore.installedPackages.filter((entry) => entry.isRunning)
+    : [],
+);
+
+$effect(() => {
+  packagesStore.handleDockerStateChange(dockerStatus.isRunning);
+});
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -119,11 +131,12 @@ onMount(async () => {
           </Sidebar.Menu>
         </Sidebar.Group>
 
-        {#if packagesStore.installedPackages.length > 0}
+        {#if installedState.status === "ready" && runningNodes.length > 0}
           <Sidebar.Group class="px-2 py-2 md:p-2">
-            <Sidebar.GroupLabel>Installed Nodes</Sidebar.GroupLabel>
+          <Sidebar.GroupLabel>Running Nodes</Sidebar.GroupLabel>
             <Sidebar.Menu>
-              {#each packagesStore.installedPackages as pkg}
+              {#each runningNodes as entry}
+                {@const pkg = entry.package}
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton
                     isActive={currentPath.startsWith(`/node/${pkg.name}`)}
