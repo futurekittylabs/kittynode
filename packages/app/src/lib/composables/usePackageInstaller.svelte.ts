@@ -15,6 +15,20 @@ export function usePackageInstaller() {
       return false;
     }
 
+    const status = packagesStore.installationStatus(packageName);
+
+    if (status === "unknown") {
+      notifyError(
+        "Package status is still loading. Try again once it finishes.",
+      );
+      return false;
+    }
+
+    if (status === "installed") {
+      notifyError(`${packageName} is already installed`);
+      return false;
+    }
+
     if (installingPackages.has(packageName)) {
       return false;
     }

@@ -23,6 +23,33 @@ import {
 
 const { isInstalling, installPackage } = usePackageInstaller();
 
+const catalogState = $derived(packagesStore.catalogState);
+const installedState = $derived(packagesStore.installedState);
+
+const totalPackageCount = $derived(
+  catalogState.status === "ready"
+    ? Object.keys(packagesStore.packages).length
+    : null,
+);
+
+const installedPackageCount = $derived(
+  installedState.status === "ready"
+    ? packagesStore.installedPackages.length
+    : null,
+);
+
+const runningNodes = $derived(
+  installedState.status === "ready" ? packagesStore.installedPackages : [],
+);
+
+const featuredAvailablePackages = $derived(
+  catalogState.status !== "ready" || installedState.status !== "ready"
+    ? null
+    : Object.entries(catalogState.packages)
+        .filter(([name]) => !Object.hasOwn(installedState.packages, name))
+        .slice(0, 3),
+);
+
 function managePackage(packageName: string) {
   goto(`/node/${packageName}`);
 }
@@ -32,8 +59,6 @@ function isMobileAndLocal() {
     ["ios", "android"].includes(platform()) && serverUrlStore.serverUrl === ""
   );
 }
-
-// Removed unused helpers to keep file tidy
 
 onMount(async () => {
   if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();
@@ -78,12 +103,12 @@ onDestroy(() => {
           <Package2 class="h-4 w-4 text-muted-foreground" />
         </Card.Title>
       </Card.Header>
-      <Card.Content>
+        <Card.Content>
         <div class="text-2xl font-bold">
-          {packagesStore.installedPackages.length}
+          {installedPackageCount ?? "--"}
         </div>
         <p class="text-xs text-muted-foreground">
-          of {Object.keys(packagesStore.packages).length} available
+          of {totalPackageCount ?? "--"} available
         </p>
       </Card.Content>
     </Card.Root>
@@ -125,11 +150,37 @@ onDestroy(() => {
     {/if}
   </div>
 
-  {#if packagesStore.installedPackages.length > 0}
-    <div class="space-y-4">
-      <h3 class="text-xl font-semibold">Running Nodes</h3>
+  <div class="space-y-4">
+    <h3 class="text-xl font-semibold">Running Nodes</h3>
+
+    {#if installedState.status === "loading" || installedState.status === "idle"}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">Checking installed packages...</p>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedState.status === "unavailable"}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">
+            Docker needs to be running to manage installed nodes. Start Docker Desktop to continue.
+          </p>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedState.status === "error"}
+      <Card.Root>
+        <Card.Content class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            Failed to load installed packages.
+          </p>
+          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+            Retry
+          </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if runningNodes.length > 0}
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {#each packagesStore.installedPackages as pkg}
+        {#each runningNodes as pkg}
           <Card.Root>
             <Card.Header>
               <div class="flex items-start justify-between">
@@ -164,8 +215,14 @@ onDestroy(() => {
           </Card.Root>
         {/each}
       </div>
-    </div>
-  {/if}
+    {:else}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">No nodes installed yet.</p>
+        </Card.Content>
+      </Card.Root>
+    {/if}
+  </div>
 
   <div class="space-y-4">
     <div class="flex items-center justify-between">
@@ -180,58 +237,25 @@ onDestroy(() => {
       </Button>
     </div>
 
-    {#if Object.keys(packagesStore.packages).length > 0}
-      {@const availablePackages = Object.entries(packagesStore.packages)
-        .filter(([name]) => !packagesStore.isInstalled(name))
-        .slice(0, 3)}
-
-      {#if availablePackages.length > 0}
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {#each availablePackages as [name, pkg]}
-            {@const isInstallingPackage = isInstalling(name)}
-            <Card.Root>
-              <Card.Header>
-                <div class="flex items-start gap-3">
-                  <div class="shrink-0">
-                    <Package2 class="w-5 h-5 text-muted-foreground mt-0.5" />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <Card.Title class="text-base">{name}</Card.Title>
-                    <Card.Description class="mt-1">
-                      {pkg.description}
-                    </Card.Description>
-                  </div>
-                </div>
-              </Card.Header>
-
-              <Card.Footer>
-                <Button
-                  size="sm"
-                  variant="default"
-                  onclick={() => installPackage(name)}
-                  disabled={!dockerStatus.isRunning || isInstallingPackage}
-                  class="w-full"
-                >
-                  {#if isInstallingPackage}
-                    <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                    Installing...
-                  {:else}
-                    <Download class="h-4 w-4 mr-1" />
-                    Install
-                  {/if}
-                </Button>
-              </Card.Footer>
-            </Card.Root>
-          {/each}
-        </div>
-      {:else}
-        <Card.Root>
-          <Card.Content>
-            <p class="text-center text-muted-foreground">All available packages are installed!</p>
-          </Card.Content>
-        </Card.Root>
-      {/if}
-    {:else if !dockerStatus.isRunning}
+    {#if catalogState.status === "error"}
+      <Card.Root>
+        <Card.Content class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">Failed to load available packages.</p>
+          <Button size="sm" variant="outline" onclick={() => packagesStore.loadPackages({ force: true })}>
+            Retry
+          </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedState.status === "error"}
+      <Card.Root>
+        <Card.Content class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">Failed to confirm installed packages.</p>
+          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+            Retry
+          </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedState.status === "unavailable"}
       <Card.Root>
         <Card.Header>
           <Card.Title class="flex items-center space-x-2">
@@ -241,14 +265,63 @@ onDestroy(() => {
         </Card.Header>
         <Card.Content>
           <p class="text-sm text-muted-foreground">
-            Docker needs to be running to view and manage packages. Please start Docker Desktop and refresh this page.
+            Docker needs to be running to view and manage packages. Please start Docker Desktop and return to this page.
           </p>
         </Card.Content>
       </Card.Root>
+    {:else if catalogState.status !== "ready" || installedState.status !== "ready"}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">Loading packages...</p>
+        </Card.Content>
+      </Card.Root>
+    {:else if featuredAvailablePackages && featuredAvailablePackages.length > 0}
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {#each featuredAvailablePackages as [name, pkg]}
+          {@const status = packagesStore.installationStatus(name)}
+          {@const isInstallingPackage = isInstalling(name)}
+          {@const disabled =
+            dockerStatus.isRunning !== true || status !== "available" || isInstallingPackage}
+
+          <Card.Root>
+            <Card.Header>
+              <div class="flex items-start gap-3">
+                <div class="shrink-0">
+                  <Package2 class="w-5 h-5 text-muted-foreground mt-0.5" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <Card.Title class="text-base">{name}</Card.Title>
+                  <Card.Description class="mt-1">
+                    {pkg.description}
+                  </Card.Description>
+                </div>
+              </div>
+            </Card.Header>
+
+            <Card.Footer>
+              <Button
+                size="sm"
+                variant="default"
+                onclick={() => installPackage(name)}
+                disabled={disabled}
+                class="w-full"
+              >
+                {#if isInstallingPackage}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Installing...
+                {:else}
+                  <Download class="h-4 w-4 mr-1" />
+                  Install
+                {/if}
+              </Button>
+            </Card.Footer>
+          </Card.Root>
+        {/each}
+      </div>
     {:else}
       <Card.Root>
         <Card.Content>
-          <p class="text-center text-muted-foreground">No packages available.</p>
+          <p class="text-center text-muted-foreground">All available packages are installed!</p>
         </Card.Content>
       </Card.Root>
     {/if}

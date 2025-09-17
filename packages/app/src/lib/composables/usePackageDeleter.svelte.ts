@@ -19,6 +19,20 @@ export function usePackageDeleter() {
       return false;
     }
 
+    const status = packagesStore.installationStatus(packageName);
+
+    if (status === "unknown") {
+      notifyError(
+        "Package status is still loading. Try again once it finishes.",
+      );
+      return false;
+    }
+
+    if (status !== "installed") {
+      notifyError(`${packageName} is not currently installed`);
+      return false;
+    }
+
     if (deletingPackages.has(packageName)) {
       return false;
     }
