@@ -248,7 +248,7 @@ onDestroy(() => {
         <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight my-4">
             Logging
         </h3>
-        <div class="flex gap-2">
+		<div class="flex flex-wrap gap-2">
             <Button
                 variant="default"
                 onclick={() => toggleLogs('execution')}
