@@ -37,7 +37,7 @@ const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
 );
 
-let activeLogType = $state<null | "execution" | "consensus">(null);
+let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
 let selectedNetwork = $state("holesky");
 let currentNetwork = $state("holesky");
