@@ -2,7 +2,6 @@
 import "../app.css";
 import { ModeWatcher } from "mode-watcher";
 import { Button } from "$lib/components/ui/button/index.js";
-import { Github, BookOpen } from "@lucide/svelte";
 
 let { children } = $props();
 </script>
@@ -38,11 +37,9 @@ let { children } = $props();
 
 			<nav class="flex items-center gap-2">
 				<Button href="https://github.com/blackkittylabs/kittynode" variant="ghost" size="sm">
-					<Github class="h-4 w-4" />
 					GitHub
 				</Button>
 				<Button href="https://docs.kittynode.com" variant="ghost" size="sm">
-					<BookOpen class="h-4 w-4" />
 					Docs
 				</Button>
 			</nav>
