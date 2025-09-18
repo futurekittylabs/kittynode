@@ -20,7 +20,7 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
 
 /// Gets a list of installed packages by checking their container states
 pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Result<Vec<Package>> {
-    let docker = get_docker_instance()?;
+    let docker = get_docker_instance().await?;
     let mut installed = Vec::new();
 
     for package in packages.values() {
@@ -44,7 +44,7 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
 
 /// Installs a package with the given network configuration
 pub async fn install_package(package: &Package, network: Option<&str>) -> Result<()> {
-    let docker = get_docker_instance()?;
+    let docker = get_docker_instance().await?;
     let containers = match package.name.as_str() {
         "Ethereum" => Ethereum::get_containers(network.unwrap_or("holesky"))?,
         _ => package.containers.clone(),
@@ -64,7 +64,7 @@ pub async fn install_package(package: &Package, network: Option<&str>) -> Result
 
 /// Deletes a package and its associated resources
 pub async fn delete_package(package: &Package, include_images: bool) -> Result<()> {
-    let docker = get_docker_instance()?;
+    let docker = get_docker_instance().await?;
 
     // Clean up containers and collect resources to remove
     let mut image_names = Vec::new();
