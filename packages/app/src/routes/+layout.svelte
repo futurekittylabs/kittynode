@@ -3,6 +3,7 @@ import "../app.css";
 import { onMount } from "svelte";
 import { windowShownStore } from "$stores/windowShown.svelte.ts";
 import { initializedStore } from "$stores/initialized.svelte";
+import { appConfigStore } from "$stores/appConfig.svelte";
 import { ModeWatcher, mode } from "mode-watcher";
 import Splash from "./Splash.svelte";
 import { platform } from "@tauri-apps/plugin-os";
@@ -54,6 +55,12 @@ let checkingOnboarding = $state(true);
 
 onMount(async () => {
   await windowShownStore.show();
+
+  try {
+    await appConfigStore.load();
+  } catch (e) {
+    console.error(`Failed to load Kittynode config: ${e}`);
+  }
 
   // Check if onboarding has been completed
   try {

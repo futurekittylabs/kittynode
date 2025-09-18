@@ -6,6 +6,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { systemInfoStore } from "$stores/systemInfo.svelte";
 import { packagesStore } from "$stores/packages.svelte";
+import { appConfigStore } from "$stores/appConfig.svelte";
 import { dockerStatus } from "$stores/dockerStatus.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
@@ -60,11 +61,23 @@ function isMobileAndLocal() {
   );
 }
 
+function isLocalDesktop() {
+  return (
+    !["ios", "android"].includes(platform()) && serverUrlStore.serverUrl === ""
+  );
+}
+
 onMount(async () => {
   if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();
 
+  try {
+    await appConfigStore.load();
+  } catch (e) {
+    console.error(`Failed to load Kittynode config: ${e}`);
+  }
+
   // Start Docker if needed (only on first app startup)
-  if (!isMobileAndLocal()) {
+  if (isLocalDesktop() && appConfigStore.autoStartDocker) {
     await dockerStatus.startDockerIfNeeded();
   }
 
