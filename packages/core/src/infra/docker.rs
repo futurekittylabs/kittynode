@@ -1,4 +1,6 @@
 use crate::domain::container::{Binding, Container};
+#[cfg(target_os = "linux")]
+use bollard::API_DEFAULT_VERSION;
 use bollard::{
     Docker,
     models::{ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest},
@@ -8,13 +10,133 @@ use bollard::{
     },
     secret::{ContainerSummary, HostConfig},
 };
+#[cfg(target_os = "linux")]
+use eyre::eyre;
 use eyre::{Report, Result};
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
+use std::{
+    collections::HashSet,
+    env,
+    path::{Path, PathBuf},
+};
 use tokio_stream::StreamExt;
 use tracing::{error, info};
 
-pub(crate) fn get_docker_instance() -> Result<Docker> {
-    Docker::connect_with_local_defaults().map_err(Report::from)
+#[cfg(target_os = "linux")]
+pub(crate) async fn get_docker_instance() -> Result<Docker> {
+    let mut attempted = Vec::new();
+    let mut last_error: Option<Report> = None;
+
+    if let Ok(host) = env::var("DOCKER_HOST") {
+        if host.starts_with("unix://") {
+            let path = PathBuf::from(host.trim_start_matches("unix://"));
+            attempted.push(path.display().to_string());
+            return try_unix_socket(&path)
+                .await
+                .map_err(|err| annotate_error(err, &attempted));
+        } else {
+            attempted.push(host.clone());
+            let docker = Docker::connect_with_defaults().map_err(Report::from)?;
+            match docker.version().await {
+                Ok(_) => {
+                    info!("Connected to Docker using host {}", host);
+                    return Ok(docker);
+                }
+                Err(err) => {
+                    return Err(annotate_error(Report::from(err), &attempted));
+                }
+            }
+        }
+    }
+
+    for socket in linux_socket_candidates() {
+        if !socket.exists() {
+            continue;
+        }
+
+        attempted.push(socket.display().to_string());
+        match try_unix_socket(&socket).await {
+            Ok(docker) => return Ok(docker),
+            Err(err) => last_error = Some(err),
+        }
+    }
+
+    let err = last_error.unwrap_or_else(|| eyre!("Failed to connect to Docker"));
+    Err(annotate_error(err, &attempted))
+}
+
+#[cfg(not(target_os = "linux"))]
+pub(crate) async fn get_docker_instance() -> Result<Docker> {
+    let docker = Docker::connect_with_local_defaults().map_err(Report::from)?;
+    docker.version().await.map_err(Report::from)?;
+    Ok(docker)
+}
+
+#[cfg(target_os = "linux")]
+fn linux_socket_candidates() -> Vec<PathBuf> {
+    let mut sockets = Vec::new();
+    let mut seen = HashSet::new();
+
+    if let Ok(home_dir) = env::var("HOME") {
+        let home = PathBuf::from(home_dir);
+        for rel in [
+            ".docker/desktop/docker.sock",
+            ".docker/run/docker.sock",
+            ".docker/docker.sock",
+        ] {
+            let path = home.join(rel);
+            if seen.insert(path.clone()) {
+                sockets.push(path);
+            }
+        }
+    }
+
+    if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
+        let runtime = PathBuf::from(runtime_dir);
+        // Order matches Docker Desktop defaults where the proxy socket sits in docker.sock.
+        for rel in ["docker.sock", "docker-desktop.sock"] {
+            let path = runtime.join(rel);
+            if seen.insert(path.clone()) {
+                sockets.push(path);
+            }
+        }
+    }
+
+    for path in [
+        PathBuf::from("/var/run/docker.sock"),
+        PathBuf::from("/run/docker.sock"),
+    ] {
+        if seen.insert(path.clone()) {
+            sockets.push(path);
+        }
+    }
+
+    sockets
+}
+
+#[cfg(target_os = "linux")]
+async fn try_unix_socket(path: &Path) -> Result<Docker> {
+    let host = format!("unix://{}", path.to_string_lossy());
+    match Docker::connect_with_unix(host.as_str(), 120, API_DEFAULT_VERSION) {
+        Ok(docker) => match docker.version().await {
+            Ok(_) => {
+                info!("Connected to Docker using socket {}", path.display());
+                Ok(docker)
+            }
+            Err(err) => Err(Report::from(err)),
+        },
+        Err(err) => Err(Report::from(err)),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn annotate_error(err: Report, attempted: &[String]) -> Report {
+    if attempted.is_empty() {
+        err
+    } else {
+        err.wrap_err(format!("Attempted endpoints: {}", attempted.join(", ")))
+    }
 }
 
 pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &str) -> Result<()> {
