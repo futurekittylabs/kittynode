@@ -6,4 +6,6 @@ pub struct Config {
     pub server_url: String,
     #[serde(default)]
     pub onboarding_completed: bool,
+    #[serde(default)]
+    pub auto_start_docker: bool,
 }

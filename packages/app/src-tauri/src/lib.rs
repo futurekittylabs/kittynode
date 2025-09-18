@@ -1,4 +1,5 @@
 use eyre::Result;
+use kittynode_core::domain::config::Config;
 use kittynode_core::domain::package::{Package, PackageConfig};
 use kittynode_core::domain::system_info::SystemInfo;
 use std::collections::HashMap;
@@ -148,6 +149,12 @@ async fn start_docker_if_needed() -> Result<String, String> {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         *auto_started = true;
         return Ok("running".to_string());
+    }
+
+    let config = kittynode_core::application::get_config().map_err(|e| e.to_string())?;
+    if !config.auto_start_docker {
+        info!("Skipping Docker auto-start due to user preference");
+        return Ok("disabled".to_string());
     }
 
     let should_attempt_start = {
@@ -380,6 +387,18 @@ fn set_onboarding_completed(completed: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_config() -> Result<Config, String> {
+    info!("Loading Kittynode configuration");
+    kittynode_core::application::get_config().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_auto_start_docker(enabled: bool) -> Result<(), String> {
+    info!("Updating auto start docker preference to: {}", enabled);
+    kittynode_core::application::set_auto_start_docker(enabled).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn restart_app(app_handle: tauri::AppHandle) {
     info!("Restarting application");
     app_handle.restart();
@@ -421,6 +440,8 @@ pub fn run() -> Result<()> {
             update_package_config,
             get_onboarding_completed,
             set_onboarding_completed,
+            get_config,
+            set_auto_start_docker,
             restart_app
         ])
         .run(tauri::generate_context!())

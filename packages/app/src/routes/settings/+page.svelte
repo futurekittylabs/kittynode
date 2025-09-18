@@ -1,17 +1,20 @@
 <script lang="ts">
 import { invoke } from "@tauri-apps/api/core";
-import { initializedStore } from "$stores/initialized.svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { updates } from "$stores/updates.svelte";
+import { appConfigStore } from "$stores/appConfig.svelte";
+import { onMount } from "svelte";
+import { Checkbox } from "$lib/components/ui/checkbox";
 import {
   Globe,
   Moon,
   Sun,
   Monitor,
+  HardDrive,
   Download,
   MessageSquare,
   Trash2,
@@ -26,6 +29,48 @@ import { setMode, userPrefersMode } from "mode-watcher";
 import * as Select from "$lib/components/ui/select";
 
 let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
+let updatingAutoStartDocker = $state(false);
+
+const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
+const configInitialized = $derived(appConfigStore.initialized);
+const configLoading = $derived(appConfigStore.loading);
+
+onMount(() => {
+  void appConfigStore.load().catch((e) => {
+    console.error(`Failed to load Kittynode config: ${e}`);
+  });
+});
+
+async function handleAutoStartDockerChange(enabled: boolean) {
+  if (!configInitialized) {
+    return;
+  }
+
+  if (enabled === autoStartDockerEnabled) {
+    return;
+  }
+
+  if (updatingAutoStartDocker) {
+    return;
+  }
+
+  updatingAutoStartDocker = true;
+  try {
+    await appConfigStore.setAutoStartDocker(enabled);
+    notifySuccess(
+      enabled ? "Docker auto-start enabled" : "Docker auto-start disabled",
+    );
+  } catch (e) {
+    notifyError("Failed to update Docker auto-start preference", e);
+    try {
+      await appConfigStore.reload();
+    } catch (reloadError) {
+      console.error(`Failed to reload Kittynode config: ${reloadError}`);
+    }
+  } finally {
+    updatingAutoStartDocker = false;
+  }
+}
 
 async function enableRemoteAccess() {
   try {
@@ -196,6 +241,49 @@ function setRemote(serverUrl: string) {
           </Button>
         {/if}
       </div>
+    </Card.Content>
+  </Card.Root>
+
+  <!-- Docker -->
+  <Card.Root>
+    <Card.Header>
+      <Card.Title class="flex items-center gap-2">
+        <HardDrive class="h-5 w-5" />
+        Docker
+      </Card.Title>
+      <Card.Description>
+        Control how Kittynode interacts with Docker Desktop
+      </Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Auto-start Docker</p>
+          <p class="text-xs text-muted-foreground">
+            Start Docker Desktop when Kittynode launches
+          </p>
+        </div>
+        {#if configLoading && !configInitialized}
+          <span class="text-sm text-muted-foreground">Loading...</span>
+        {:else if !configInitialized}
+          <span class="text-sm text-destructive">Failed to load</span>
+        {:else}
+          <label class="flex items-center gap-2">
+            <Checkbox
+              id="auto-start-docker"
+              checked={autoStartDockerEnabled}
+              onCheckedChange={handleAutoStartDockerChange}
+              disabled={!configInitialized || updatingAutoStartDocker}
+            />
+            <span class="text-sm text-muted-foreground">
+              {autoStartDockerEnabled ? "Enabled" : "Disabled"}
+            </span>
+          </label>
+        {/if}
+      </div>
+      <p class="mt-3 text-xs text-muted-foreground">
+        Enabling this may prompt for your system password on Linux the next time Kittynode starts.
+      </p>
     </Card.Content>
   </Card.Root>
 
