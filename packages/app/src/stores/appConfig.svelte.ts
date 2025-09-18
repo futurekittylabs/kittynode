@@ -8,31 +8,18 @@ type RawKittynodeConfig = {
   auto_start_docker?: boolean;
 };
 
-function defaultConfig(): KittynodeConfig {
-  return {
-    capabilities: [],
-    serverUrl: "",
-    onboardingCompleted: false,
-    autoStartDocker: false,
-  };
-}
-
 function normalizeConfig(
   raw: RawKittynodeConfig | null | undefined,
 ): KittynodeConfig {
-  if (!raw) {
-    return defaultConfig();
-  }
-
   return {
-    capabilities: raw.capabilities ?? [],
-    serverUrl: raw.server_url ?? "",
-    onboardingCompleted: raw.onboarding_completed ?? false,
-    autoStartDocker: raw.auto_start_docker ?? false,
+    capabilities: raw?.capabilities ?? [],
+    serverUrl: raw?.server_url ?? "",
+    onboardingCompleted: raw?.onboarding_completed ?? false,
+    autoStartDocker: raw?.auto_start_docker ?? false,
   };
 }
 
-let config = $state<KittynodeConfig>(defaultConfig());
+let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);
 let initialized = $state(false);
 let loadPromise: Promise<void> | null = null;
@@ -63,7 +50,7 @@ export const appConfigStore = {
     return initialized;
   },
   get autoStartDocker() {
-    return config.autoStartDocker;
+    return config?.autoStartDocker ?? false;
   },
   async load() {
     if (initialized) {
@@ -86,7 +73,9 @@ export const appConfigStore = {
   async setAutoStartDocker(enabled: boolean) {
     try {
       await invoke("set_auto_start_docker", { enabled });
-      config = { ...config, autoStartDocker: enabled };
+      if (config) {
+        config = { ...config, autoStartDocker: enabled };
+      }
     } catch (e) {
       console.error(`Failed to update Docker auto-start preference: ${e}`);
       throw e;
