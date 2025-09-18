@@ -78,6 +78,7 @@ onMount(async () => {
 
   // Start Docker if needed (only on first app startup)
   if (isLocalDesktop() && appConfigStore.autoStartDocker) {
+    console.info("Attempting Docker auto-start based on user preference");
     await dockerStatus.startDockerIfNeeded();
   }
 
