@@ -36,7 +36,7 @@ let { children } = $props();
 			</a>
 
 			<nav class="flex items-center gap-2">
-				<Button href="https://github.com/blackkittylabs/kittynode" variant="ghost" size="sm">
+				<Button href="https://github.com/futurekittylabs/kittynode" variant="ghost" size="sm">
 					GitHub
 				</Button>
 				<Button href="https://docs.kittynode.com" variant="ghost" size="sm">
@@ -65,7 +65,7 @@ let { children } = $props();
 					</Button>
 				</div>
 				<div class="text-center text-sm text-muted-foreground">
-					Kittynode is <a href="https://github.com/blackkittylabs/kittynode" class="link">free software</a> released under the MIT License.
+					Kittynode is <a href="https://github.com/futurekittylabs/kittynode" class="link">free software</a> released under the MIT License.
 				</div>
 			</div>
 		</div>

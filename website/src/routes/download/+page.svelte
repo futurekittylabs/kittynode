@@ -5,7 +5,7 @@ import releaseInfo from "$lib/release.json";
 
 const { version, date: releaseDate } = releaseInfo;
 
-const baseUrl = "https://github.com/blackkittylabs/kittynode";
+const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 
 const downloads = {

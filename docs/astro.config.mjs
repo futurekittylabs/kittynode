@@ -19,7 +19,7 @@ export default defineConfig({
       plugins: [starlightLinksValidator(), starlightImageZoom()],
       title: "Kittynode Docs",
       editLink: {
-        baseUrl: "https://github.com/blackkittylabs/kittynode/edit/main/docs/",
+        baseUrl: "https://github.com/futurekittylabs/kittynode/edit/main/docs/",
       },
       components: {
         Footer: "./src/components/overrides/Footer.astro",
@@ -59,7 +59,7 @@ export default defineConfig({
         {
           icon: "github",
           label: "GitHub",
-          href: "https://github.com/blackkittylabs/kittynode",
+          href: "https://github.com/futurekittylabs/kittynode",
         },
         {
           icon: "discord",

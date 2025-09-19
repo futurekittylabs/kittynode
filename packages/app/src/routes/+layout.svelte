@@ -166,7 +166,7 @@ onMount(async () => {
             <Sidebar.MenuButton>
               {#snippet child({ props })}
                 <a
-                  href="https://github.com/blackkittylabs/kittynode/discussions/new?category=feedback"
+                  href="https://github.com/futurekittylabs/kittynode/discussions/new?category=feedback"
                   target="_blank"
                   rel="noreferrer noopener"
                   {...props}
@@ -181,7 +181,7 @@ onMount(async () => {
             <Sidebar.MenuButton>
               {#snippet child({ props })}
                 <a
-                  href="https://github.com/blackkittylabs/kittynode"
+                  href="https://github.com/futurekittylabs/kittynode"
                   target="_blank"
                   rel="noreferrer noopener"
                   {...props}
