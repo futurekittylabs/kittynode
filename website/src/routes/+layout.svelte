@@ -14,6 +14,7 @@ let { children } = $props();
 	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 	<title>Kittynode | Operate the world computer</title>
+	<meta property="og:site_name" content="Kittynode" />
 	<meta name="description" content="Control center for world computer operators." />
 </svelte:head>
 
