@@ -4,7 +4,7 @@ import {
   Monitor,
   Download,
   AppWindowMac,
-  CircleHelp,
+  CircleQuestionMark,
   ChevronDown,
 } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
@@ -37,7 +37,7 @@ const downloads = {
       { label: ".AppImage", url: appImageUrl },
       { label: ".rpm", url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm` },
     ],
-    requirements: "x86_64 Linux",
+    requirements: "Linux (x86_64)",
   },
   macos: {
     name: "macOS",
@@ -131,22 +131,18 @@ const downloads = {
 		<div class="overflow-hidden rounded-lg border">
 			<CollapsibleTrigger class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60">
 				<span class="flex items-center gap-2">
-					<CircleHelp class="h-4 w-4 text-link" />
+					<CircleQuestionMark class="h-4 w-4 text-link" />
 					Looking for another Linux package format?
 				</span>
 				<ChevronDown class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`} />
 			</CollapsibleTrigger>
 			<CollapsibleContent class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground">
 				<p>
-					We're expanding our Linux packaging support beyond the options listed above (AUR is next on the list).
+					We're expanding our Linux packaging support beyond the options listed above. Please reach out on <a href={discordUrl} class="link">Discord</a> or
+					<a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
 				</p>
 				<p>
-					Please reach out on <a href={discordUrl} class="link">Discord</a> or
-					<a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it.
-				</p>
-				<p>
-					Need more guidance? <a href={linuxDocsUrl} class="link">Read the Linux installation guide</a> or download the
-					<a href={appImageUrl} class="link">AppImage</a> and build Kittynode from <a href={baseUrl} class="link">source</a>.
+					Need more guidance? Read the <a href={linuxDocsUrl} class="link">Linux installation guide</a>.
 				</p>
 			</CollapsibleContent>
 		</div>
