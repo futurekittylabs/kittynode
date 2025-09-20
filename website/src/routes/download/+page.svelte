@@ -76,7 +76,7 @@ let linuxHelpOpen = false;
 <div class="container max-w-6xl mx-auto px-6 py-16">
 	<!-- Header -->
 	<div class="mb-8 text-center">
-		<h1 class="text-3xl font-medium mb-2">Download Kittynode App</h1>
+		<h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>
 		<p class="text-sm text-muted-foreground mb-4">Version {version} • {releaseDate}</p>
 		<a href="{baseUrl}/releases" class="link text-sm">
 			View changelog
