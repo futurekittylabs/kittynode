@@ -16,6 +16,7 @@ import {
   Monitor,
   HardDrive,
   Download,
+  ArrowUpRight,
   MessageSquare,
   Trash2,
   Wifi,
@@ -34,6 +35,8 @@ let updatingAutoStartDocker = $state(false);
 const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
 const configInitialized = $derived(appConfigStore.initialized);
 const configLoading = $derived(appConfigStore.loading);
+const isLinux = platform() === "linux";
+const downloadsUrl = "https://kittynode.com/download";
 
 onMount(() => {
   void appConfigStore.load().catch((e) => {
@@ -146,7 +149,9 @@ async function checkForUpdates() {
       });
     } else {
       notifyInfo("Update available!", {
-        description: "A new version of Kittynode is ready to install.",
+        description: isLinux
+          ? "Download the latest version from kittynode.com/download."
+          : "A new version of Kittynode is ready to install.",
       });
     }
   } catch (e) {
@@ -367,25 +372,59 @@ function setRemote(serverUrl: string) {
               {updates.hasUpdate ? "Update Available" : "Check for Updates"}
             </p>
             <p class="text-xs text-muted-foreground">
-              {updates.hasUpdate ? "A new version is ready to install" : "You're running the latest version"}
+              {#if updates.hasUpdate}
+                {#if isLinux}
+                  A new version is available! Download it from
+                  <a
+                    href={downloadsUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="link"
+                  >
+                    kittynode.com/download
+                  </a>. ✨
+                {:else}
+                  A new version is ready to install
+                {/if}
+              {:else}
+                You're running the latest version
+              {/if}
             </p>
           </div>
           <div class="ml-auto flex items-center gap-2">
             <Button
               size="sm"
               variant={updates.hasUpdate ? "default" : "outline"}
-              disabled={updates.isProcessing || updates.isChecking}
-              onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
+              disabled={
+                updates.hasUpdate && isLinux
+                  ? updates.isChecking
+                  : updates.isProcessing || updates.isChecking
+              }
+              onclick={
+                updates.hasUpdate
+                  ? isLinux
+                    ? undefined
+                    : handleUpdate
+                  : checkForUpdates
+              }
+              href={updates.hasUpdate && isLinux ? downloadsUrl : undefined}
+              target={updates.hasUpdate && isLinux ? "_blank" : undefined}
+              rel={updates.hasUpdate && isLinux ? "noreferrer noopener" : undefined}
             >
-              {#if updates.isProcessing}
+              {#if updates.isProcessing && !isLinux}
                 <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                 Updating...
               {:else if updates.isChecking}
                 <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                 Checking...
               {:else if updates.hasUpdate}
-                <Download class="h-4 w-4 mr-1" />
-                Install Update
+                {#if isLinux}
+                  Open Downloads
+                  <ArrowUpRight class="h-4 w-4" />
+                {:else}
+                  <Download class="h-4 w-4 mr-1" />
+                  Install Update
+                {/if}
               {:else}
                 Check Now
               {/if}
@@ -396,7 +435,7 @@ function setRemote(serverUrl: string) {
     </Card.Root>
   {/if}
 
-  
+
 
   <!-- Danger Zone -->
   <Card.Root class="border-destructive/50">

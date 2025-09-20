@@ -135,6 +135,10 @@
     cursor: pointer;
   }
 
+  .link {
+    @apply text-link underline hover:text-zinc-900 dark:hover:text-zinc-100;
+  }
+
   /* Brand wordmark: Literata */
   .kittynode-brand {
     font-family: "Literata Variable", serif;
