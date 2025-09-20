@@ -20,7 +20,6 @@ const { version, date: releaseDate } = releaseInfo;
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 const discordUrl = "https://discord.kittynode.com";
-const linuxDocsUrl = "/docs/linux-installation-options";
 
 const downloads = [
   {
@@ -141,11 +140,10 @@ let linuxHelpOpen = false;
 			</CollapsibleTrigger>
 			<CollapsibleContent class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground">
 				<p>
-					We're expanding our Linux packaging support beyond the options listed above. Please reach out on <a href={discordUrl} class="link">Discord</a> or
-					<a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
+					We're expanding our Linux packaging support beyond the options listed above.
 				</p>
 				<p>
-					Need more guidance? Read the <a href={linuxDocsUrl} class="link">Linux installation guide</a>.
+					Please reach out on <a href={discordUrl} class="link">Discord</a> or <a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
 				</p>
 			</CollapsibleContent>
 		</div>
