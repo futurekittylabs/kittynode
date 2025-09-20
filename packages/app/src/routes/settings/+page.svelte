@@ -16,6 +16,7 @@ import {
   Monitor,
   HardDrive,
   Download,
+  ArrowUpRight,
   MessageSquare,
   Trash2,
   Wifi,
@@ -34,6 +35,8 @@ let updatingAutoStartDocker = $state(false);
 const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
 const configInitialized = $derived(appConfigStore.initialized);
 const configLoading = $derived(appConfigStore.loading);
+const isLinux = platform() === "linux";
+const downloadsUrl = "https://kittynode.com/download";
 
 onMount(() => {
   void appConfigStore.load().catch((e) => {
@@ -146,7 +149,9 @@ async function checkForUpdates() {
       });
     } else {
       notifyInfo("Update available!", {
-        description: "A new version of Kittynode is ready to install.",
+        description: isLinux
+          ? "Download the latest version from kittynode.com/download."
+          : "A new version of Kittynode is ready to install.",
       });
     }
   } catch (e) {
@@ -367,36 +372,84 @@ function setRemote(serverUrl: string) {
               {updates.hasUpdate ? "Update Available" : "Check for Updates"}
             </p>
             <p class="text-xs text-muted-foreground">
-              {updates.hasUpdate ? "A new version is ready to install" : "You're running the latest version"}
+              {#if updates.hasUpdate}
+                {#if isLinux}
+                  A new version is available! Download it from
+                  <a
+                    href={downloadsUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="link"
+                  >
+                    kittynode.com/download
+                  </a>. ✨
+                {:else}
+                  A new version is ready to install
+                {/if}
+              {:else}
+                You're running the latest version
+              {/if}
             </p>
           </div>
           <div class="ml-auto flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={updates.hasUpdate ? "default" : "outline"}
-              disabled={updates.isProcessing || updates.isChecking}
-              onclick={updates.hasUpdate ? handleUpdate : checkForUpdates}
-            >
-              {#if updates.isProcessing}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Updating...
-              {:else if updates.isChecking}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Checking...
-              {:else if updates.hasUpdate}
-                <Download class="h-4 w-4 mr-1" />
-                Install Update
-              {:else}
-                Check Now
-              {/if}
-            </Button>
+            {#if updates.hasUpdate && isLinux}
+              <Button
+                size="sm"
+                variant="default"
+                href={downloadsUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                disabled={updates.isChecking}
+                class="gap-2"
+              >
+                {#if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
+                {:else}
+                  Open Downloads
+                  <ArrowUpRight class="h-4 w-4" />
+                {/if}
+              </Button>
+            {:else if updates.hasUpdate}
+              <Button
+                size="sm"
+                variant="default"
+                onclick={handleUpdate}
+                disabled={updates.isProcessing || updates.isChecking}
+              >
+                {#if updates.isProcessing}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Updating...
+                {:else if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
+                {:else}
+                  <Download class="h-4 w-4 mr-1" />
+                  Install Update
+                {/if}
+              </Button>
+            {:else}
+              <Button
+                size="sm"
+                variant="outline"
+                onclick={checkForUpdates}
+                disabled={updates.isChecking}
+              >
+                {#if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
+                {:else}
+                  Check Now
+                {/if}
+              </Button>
+            {/if}
           </div>
         </div>
       </Card.Content>
     </Card.Root>
   {/if}
 
-  
+
 
   <!-- Danger Zone -->
   <Card.Root class="border-destructive/50">
