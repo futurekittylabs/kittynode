@@ -392,43 +392,57 @@ function setRemote(serverUrl: string) {
             </p>
           </div>
           <div class="ml-auto flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={updates.hasUpdate ? "default" : "outline"}
-              disabled={
-                updates.hasUpdate && isLinux
-                  ? updates.isChecking
-                  : updates.isProcessing || updates.isChecking
-              }
-              onclick={
-                updates.hasUpdate
-                  ? isLinux
-                    ? undefined
-                    : handleUpdate
-                  : checkForUpdates
-              }
-              href={updates.hasUpdate && isLinux ? downloadsUrl : undefined}
-              target={updates.hasUpdate && isLinux ? "_blank" : undefined}
-              rel={updates.hasUpdate && isLinux ? "noreferrer noopener" : undefined}
-            >
-              {#if updates.isProcessing && !isLinux}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Updating...
-              {:else if updates.isChecking}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Checking...
-              {:else if updates.hasUpdate}
-                {#if isLinux}
+            {#if updates.hasUpdate && isLinux}
+              <Button
+                size="sm"
+                variant="default"
+                href={downloadsUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                disabled={updates.isChecking}
+                class="gap-2"
+              >
+                {#if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
+                {:else}
                   Open Downloads
                   <ArrowUpRight class="h-4 w-4" />
+                {/if}
+              </Button>
+            {:else if updates.hasUpdate}
+              <Button
+                size="sm"
+                variant="default"
+                onclick={handleUpdate}
+                disabled={updates.isProcessing || updates.isChecking}
+              >
+                {#if updates.isProcessing}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Updating...
+                {:else if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
                 {:else}
                   <Download class="h-4 w-4 mr-1" />
                   Install Update
                 {/if}
-              {:else}
-                Check Now
-              {/if}
-            </Button>
+              </Button>
+            {:else}
+              <Button
+                size="sm"
+                variant="outline"
+                onclick={checkForUpdates}
+                disabled={updates.isChecking}
+              >
+                {#if updates.isChecking}
+                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Checking...
+                {:else}
+                  Check Now
+                {/if}
+              </Button>
+            {/if}
           </div>
         </div>
       </Card.Content>
