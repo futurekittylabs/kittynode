@@ -17,7 +17,7 @@ jobs:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
           - platform: ubuntu-22.04
-            args: ""
+            args: --bundles deb rpm
           - platform: windows-latest
             args: ""
     runs-on: ${{ matrix.platform }}
