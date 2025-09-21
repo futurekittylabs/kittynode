@@ -10,7 +10,6 @@ use kittynode_core::api::types::{
 use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Write as _;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use tauri::{Manager, State};
@@ -268,67 +267,21 @@ async fn create_validator_deposit_data(
     args: CreateDepositDataArgs,
     client_state: State<'_, CoreClientManager>,
 ) -> Result<DepositData, String> {
-    let fork_version = parse_fork_version(&args.fork_version)?;
-    let genesis_root = parse_genesis_root(&args.genesis_root)?;
+    let params = CreateDepositDataParams::from_hex_inputs(
+        PathBuf::from(&args.key_path),
+        PathBuf::from(&args.output_path),
+        args.withdrawal_credentials,
+        args.amount_gwei,
+        &args.fork_version,
+        &args.genesis_root,
+        args.overwrite,
+    )
+    .map_err(|err| err.to_string())?;
     let client = client_state.client();
-    let params = CreateDepositDataParams {
-        key_path: PathBuf::from(&args.key_path),
-        output_path: PathBuf::from(&args.output_path),
-        withdrawal_credentials: args.withdrawal_credentials,
-        amount_gwei: args.amount_gwei,
-        fork_version,
-        genesis_validators_root: genesis_root,
-        overwrite: args.overwrite,
-    };
     client
         .create_validator_deposit_data(params)
         .await
         .map_err(|e| e.to_string())
-}
-
-fn parse_fork_version(input: &str) -> Result<[u8; 4], String> {
-    let trimmed = input.trim().trim_start_matches("0x");
-    if trimmed.len() != 8 {
-        return Err(format!(
-            "fork version must be 4 bytes (8 hex characters), received {}",
-            input
-        ));
-    }
-
-    let mut bytes = [0u8; 4];
-    for (idx, chunk) in trimmed.as_bytes().chunks(2).enumerate() {
-        let hex =
-            std::str::from_utf8(chunk).map_err(|_| "invalid UTF-8 in fork version".to_string())?;
-        bytes[idx] = u8::from_str_radix(hex, 16)
-            .map_err(|_| format!("invalid hex in fork version: {hex}"))?;
-    }
-    Ok(bytes)
-}
-
-fn parse_genesis_root(input: &str) -> Result<String, String> {
-    let trimmed = input.trim();
-    let without_prefix = trimmed.strip_prefix("0x").unwrap_or(trimmed);
-    if without_prefix.len() != 64 {
-        return Err(format!(
-            "genesis validators root must be 32 bytes (64 hex characters), received {}",
-            input
-        ));
-    }
-
-    let mut bytes = [0u8; 32];
-    for (idx, chunk) in without_prefix.as_bytes().chunks(2).enumerate() {
-        let hex = std::str::from_utf8(chunk)
-            .map_err(|_| "invalid UTF-8 in genesis validators root".to_string())?;
-        bytes[idx] = u8::from_str_radix(hex, 16)
-            .map_err(|_| format!("invalid hex in genesis validators root: {hex}"))?;
-    }
-
-    let mut output = String::with_capacity(66);
-    output.push_str("0x");
-    for byte in &bytes {
-        write!(&mut output, "{:02x}", byte).expect("write to string");
-    }
-    Ok(output)
 }
 
 #[tauri::command]

@@ -1,5 +1,6 @@
 mod create_deposit_data;
 mod generate_keys;
+mod input;
 pub mod ports;
 
 pub use create_deposit_data::{CreateDepositDataParams, create_deposit_data};

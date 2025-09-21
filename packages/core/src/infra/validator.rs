@@ -77,6 +77,10 @@ impl CryptoProvider for SimpleCryptoProvider {
     }
 }
 
+/// Derives a BLS secret key deterministically from the provided entropy.
+///
+/// Callers must ensure the entropy is sourced from a high-quality RNG in
+/// production contexts—this helper does not add additional randomness.
 fn derive_secret_key(entropy: &str) -> Result<SecretKey> {
     let mut hasher = Sha256::new();
     hasher.update(entropy.as_bytes());
@@ -92,7 +96,10 @@ fn decode_hex(input: &str) -> Result<Vec<u8>> {
     let trimmed = input.trim();
     let without_prefix = trimmed.strip_prefix("0x").unwrap_or(trimmed);
     if without_prefix.len() % 2 != 0 {
-        return Err(eyre!("hex value must have an even length"));
+        return Err(eyre!(
+            "hex value must have an even length, got {} characters",
+            without_prefix.len()
+        ));
     }
     hex::decode(without_prefix).map_err(|err| eyre!("invalid hex: {err}"))
 }

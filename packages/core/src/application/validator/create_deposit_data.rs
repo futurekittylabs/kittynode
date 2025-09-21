@@ -1,4 +1,7 @@
 use super::ports::{CryptoProvider, ValidatorFilesystem};
+use crate::application::validator::input::{
+    parse_fork_version_hex, parse_genesis_validators_root_hex,
+};
 use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
 use eyre::{Context, Result};
@@ -16,23 +19,26 @@ pub struct CreateDepositDataParams {
 }
 
 impl CreateDepositDataParams {
-    pub fn new(
+    pub fn from_hex_inputs(
         key_path: PathBuf,
         output_path: PathBuf,
         withdrawal_credentials: String,
         amount_gwei: u64,
-        fork_version: [u8; 4],
-        genesis_validators_root: String,
-    ) -> Self {
-        Self {
+        fork_version_hex: &str,
+        genesis_root_hex: &str,
+        overwrite: bool,
+    ) -> Result<Self> {
+        let fork_version = parse_fork_version_hex(fork_version_hex)?;
+        let genesis_validators_root = parse_genesis_validators_root_hex(genesis_root_hex)?;
+        Ok(Self {
             key_path,
             output_path,
             withdrawal_credentials,
             amount_gwei,
             fork_version,
             genesis_validators_root,
-            overwrite: false,
-        }
+            overwrite,
+        })
     }
 }
 

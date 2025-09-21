@@ -1,10 +1,9 @@
-use eyre::{Result, WrapErr, eyre};
+use eyre::{Result, WrapErr};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
 };
 use kittynode_core::api::{self, CreateDepositDataParams, GenerateKeysParams};
 use std::collections::HashMap;
-use std::fmt::Write as _;
 use std::path::PathBuf;
 
 pub async fn get_packages() -> Result<()> {
@@ -248,68 +247,18 @@ pub fn validator_create_deposit_data(
     genesis_root_hex: String,
     overwrite: bool,
 ) -> Result<()> {
-    let fork_version = parse_fork_version(&fork_version_hex)?;
-    let genesis_root_bytes = parse_hex_32(&genesis_root_hex)?;
-    let genesis_root = canonicalize_hex(&genesis_root_bytes);
-    let params = CreateDepositDataParams {
+    let params = CreateDepositDataParams::from_hex_inputs(
         key_path,
-        output_path: output_path.clone(),
+        output_path.clone(),
         withdrawal_credentials,
         amount_gwei,
-        fork_version,
-        genesis_validators_root: genesis_root,
+        &fork_version_hex,
+        &genesis_root_hex,
         overwrite,
-    };
+    )?;
 
     let deposit = api::create_deposit_data(params)?;
     println!("Stored deposit data at {}", output_path.display());
     println!("Deposit data root: {}", deposit.deposit_data_root);
     Ok(())
-}
-
-fn parse_fork_version(input: &str) -> Result<[u8; 4]> {
-    let trimmed = input.trim().trim_start_matches("0x");
-    if trimmed.len() != 8 {
-        return Err(eyre!(
-            "fork version must be 4 bytes (8 hex characters), received {}",
-            input
-        ));
-    }
-
-    let mut bytes = [0u8; 4];
-    for (idx, chunk) in trimmed.as_bytes().chunks(2).enumerate() {
-        let hex = std::str::from_utf8(chunk).map_err(|_| eyre!("invalid UTF-8 in fork version"))?;
-        bytes[idx] =
-            u8::from_str_radix(hex, 16).map_err(|_| eyre!("invalid hex in fork version: {hex}"))?;
-    }
-    Ok(bytes)
-}
-
-fn parse_hex_32(input: &str) -> Result<[u8; 32]> {
-    let trimmed = input.trim();
-    let without_prefix = trimmed.strip_prefix("0x").unwrap_or(trimmed);
-    if without_prefix.len() != 64 {
-        return Err(eyre!(
-            "genesis validators root must be 32 bytes (64 hex characters), received {}",
-            input
-        ));
-    }
-
-    let mut bytes = [0u8; 32];
-    for (idx, chunk) in without_prefix.as_bytes().chunks(2).enumerate() {
-        let hex = std::str::from_utf8(chunk)
-            .map_err(|_| eyre!("invalid UTF-8 in genesis validators root"))?;
-        bytes[idx] = u8::from_str_radix(hex, 16)
-            .map_err(|_| eyre!("invalid hex in genesis validators root: {hex}"))?;
-    }
-    Ok(bytes)
-}
-
-fn canonicalize_hex(bytes: &[u8]) -> String {
-    let mut output = String::with_capacity(2 + bytes.len() * 2);
-    output.push_str("0x");
-    for byte in bytes {
-        write!(&mut output, "{:02x}", byte).expect("write to string");
-    }
-    output
 }
