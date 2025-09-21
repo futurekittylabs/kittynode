@@ -35,7 +35,6 @@ let updatingAutoStartDocker = $state(false);
 const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
 const configInitialized = $derived(appConfigStore.initialized);
 const configLoading = $derived(appConfigStore.loading);
-const isLinux = platform() === "linux";
 const downloadsUrl = "https://kittynode.com/download";
 
 onMount(() => {
@@ -149,7 +148,7 @@ async function checkForUpdates() {
       });
     } else {
       notifyInfo("Update available!", {
-        description: isLinux
+        description: updates.requiresManualInstall
           ? "Download the latest version from kittynode.com/download."
           : "A new version of Kittynode is ready to install.",
       });
@@ -373,7 +372,7 @@ function setRemote(serverUrl: string) {
             </p>
             <p class="text-xs text-muted-foreground">
               {#if updates.hasUpdate}
-                {#if isLinux}
+                {#if updates.requiresManualInstall}
                   A new version is available! Download it from
                   <a
                     href={downloadsUrl}
@@ -392,7 +391,7 @@ function setRemote(serverUrl: string) {
             </p>
           </div>
           <div class="ml-auto flex items-center gap-2">
-            {#if updates.hasUpdate && isLinux}
+            {#if updates.requiresManualInstall}
               <Button
                 size="sm"
                 variant="default"

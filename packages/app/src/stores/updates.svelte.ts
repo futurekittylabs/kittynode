@@ -1,15 +1,25 @@
 import { check } from "@tauri-apps/plugin-updater";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { invoke } from "@tauri-apps/api/core";
-import { notifyError } from "$utils/notify";
+import { getVersion } from "@tauri-apps/api/app";
+import { platform } from "@tauri-apps/plugin-os";
+import { clean as semverClean, gt as semverGt } from "semver";
+import { notifyError, notifyInfo } from "$utils/notify";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const LATEST_MANIFEST_URL =
+  "https://github.com/futurekittylabs/kittynode/releases/latest/download/latest.json";
+
+type LatestManifest = {
+  version: string;
+};
 
 let currentUpdate = $state<Update | null>(null);
 let dismissedTime = $state<number | null>(null);
 let lastChecked = $state(0);
 let processingUpdate = $state(false);
 let checkingForUpdate = $state(false);
+let linuxManualUpdateAvailable = $state(false);
 
 export const updates = {
   async getUpdate(forceCheck = false) {
@@ -17,7 +27,14 @@ export const updates = {
     if (forceCheck || now > lastChecked + TWENTY_FOUR_HOURS) {
       checkingForUpdate = true;
       try {
-        currentUpdate = await check();
+        const currentPlatform = await platform();
+        if (currentPlatform === "linux") {
+          linuxManualUpdateAvailable = await checkLinuxManifest();
+          currentUpdate = null;
+        } else {
+          currentUpdate = await check();
+          linuxManualUpdateAvailable = false;
+        }
         lastChecked = now;
         console.info("Successfully checked for update.");
       } catch (e) {
@@ -32,7 +49,11 @@ export const updates = {
   },
 
   get hasUpdate() {
-    return currentUpdate !== null;
+    return currentUpdate !== null || linuxManualUpdateAvailable;
+  },
+
+  get requiresManualInstall() {
+    return linuxManualUpdateAvailable;
   },
 
   get isDismissed() {
@@ -53,6 +74,13 @@ export const updates = {
   },
 
   async installUpdate() {
+    if (linuxManualUpdateAvailable) {
+      notifyInfo("Download the latest Kittynode", {
+        description: "Open kittynode.com/download to install Linux updates.",
+      });
+      return;
+    }
+
     if (!currentUpdate || processingUpdate) {
       return;
     }
@@ -88,3 +116,37 @@ export const updates = {
     processingUpdate = false;
   },
 };
+async function checkLinuxManifest(): Promise<boolean> {
+  const response = await fetch(LATEST_MANIFEST_URL, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch latest manifest: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const manifest = (await response.json()) as LatestManifest;
+
+  if (!manifest.version) {
+    throw new Error("Latest manifest is missing the version property");
+  }
+
+  const manifestVersion = semverClean(manifest.version);
+  if (!manifestVersion) {
+    throw new Error(
+      `Latest manifest contains an invalid semver version: ${manifest.version}`,
+    );
+  }
+
+  const appVersionRaw = await getVersion();
+  const appVersion = semverClean(appVersionRaw);
+  if (!appVersion) {
+    throw new Error(`Unable to parse current app version: ${appVersionRaw}`);
+  }
+
+  return semverGt(manifestVersion, appVersion);
+}

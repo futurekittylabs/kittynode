@@ -2,10 +2,8 @@
 import { Button } from "$lib/components/ui/button";
 import { ArrowUpRight, Download } from "@lucide/svelte";
 import { updates } from "$stores/updates.svelte";
-import { platform } from "@tauri-apps/plugin-os";
 
 const downloadsUrl = "https://kittynode.com/download";
-const isLinux = platform() === "linux";
 
 const handleInstall = () => updates.installUpdate();
 const handleDismiss = () => updates.dismiss();
@@ -13,7 +11,7 @@ const handleDismiss = () => updates.dismiss();
 
 <div class="p-4 mb-4 border rounded-lg bg-muted flex items-center justify-between">
   <span class="text-sm">
-    {#if isLinux}
+    {#if updates.requiresManualInstall}
       A new version of Kittynode is available! Download it from
       <a
         href={downloadsUrl}
@@ -28,7 +26,7 @@ const handleDismiss = () => updates.dismiss();
     {/if}
   </span>
   <div class="flex items-center gap-3">
-    {#if isLinux}
+    {#if updates.requiresManualInstall}
       <Button
         size="sm"
         href={downloadsUrl}
