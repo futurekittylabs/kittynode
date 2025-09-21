@@ -39,12 +39,12 @@ const packageStatus = $derived(
 
 let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
-let selectedNetwork = $state("holesky");
-let currentNetwork = $state("holesky");
+let selectedNetwork = $state("hoodi");
+let currentNetwork = $state("hoodi");
 
 const networks = [
   { value: "mainnet", label: "Mainnet" },
-  { value: "holesky", label: "Holesky" },
+  { value: "hoodi", label: "Hoodi" },
 ];
 
 const logSources = {
@@ -63,11 +63,11 @@ const activeLogSource = $derived(
 );
 
 const networkTriggerContent = $derived(
-  networks.find((n) => n.value === selectedNetwork)?.label || "Holesky",
+  networks.find((n) => n.value === selectedNetwork)?.label || "Hoodi",
 );
 
 const currentNetworkDisplay = $derived(
-  networks.find((n) => n.value === currentNetwork)?.label || "Holesky",
+  networks.find((n) => n.value === currentNetwork)?.label || "Hoodi",
 );
 
 const installedStatus = $derived(installedState.status);
@@ -86,7 +86,7 @@ async function loadConfig() {
   if (!packageName) return;
   try {
     const config = await packageConfigStore.getConfig(packageName);
-    const network = config.values.network || "holesky";
+    const network = config.values.network || "hoodi";
     currentNetwork = selectedNetwork = network;
   } catch (e) {
     notifyError("Failed to get package config", e);

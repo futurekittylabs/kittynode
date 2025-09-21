@@ -19,14 +19,14 @@ impl PackageDefinition for Ethereum {
         let mut default_config = PackageConfig::new();
         default_config
             .values
-            .insert("network".to_string(), "holesky".to_string());
+            .insert("network".to_string(), "hoodi".to_string());
 
         Ok(Package {
             name: ETHEREUM_NAME.to_string(),
             description: "This package installs an Ethereum node.".to_string(),
             network_name: "ethereum-network".to_string(),
             default_config,
-            containers: Ethereum::get_containers("holesky")?,
+            containers: Ethereum::get_containers("hoodi")?,
         })
     }
 }
@@ -39,7 +39,7 @@ impl Ethereum {
         let checkpoint_sync_url = if network == "mainnet" {
             "https://mainnet.checkpoint.sigp.io/"
         } else {
-            "https://checkpoint-sync.holesky.ethpandaops.io"
+            "https://checkpoint-sync.hoodi.ethpandaops.io"
         };
 
         Ok(vec![

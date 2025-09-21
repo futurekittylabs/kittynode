@@ -46,7 +46,7 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
 pub async fn install_package(package: &Package, network: Option<&str>) -> Result<()> {
     let docker = get_docker_instance().await?;
     let containers = match package.name.as_str() {
-        "Ethereum" => Ethereum::get_containers(network.unwrap_or("holesky"))?,
+        "Ethereum" => Ethereum::get_containers(network.unwrap_or("hoodi"))?,
         _ => package.containers.clone(),
     };
 
