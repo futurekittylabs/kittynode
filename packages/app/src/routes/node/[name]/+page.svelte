@@ -5,7 +5,7 @@ import * as Card from "$lib/components/ui/card";
 import { packagesStore } from "$stores/packages.svelte";
 import { onDestroy, onMount } from "svelte";
 import DockerLogs from "$lib/components/DockerLogs.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { packageConfigStore } from "$stores/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
@@ -119,7 +119,8 @@ $effect(() => {
 });
 
 onMount(async () => {
-  dockerStatus.startPolling();
+  operationalStateStore.startPolling();
+  await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages({ force: true });
   if (isInstalled) {
     await loadConfig();
@@ -127,7 +128,7 @@ onMount(async () => {
 });
 
 onDestroy(() => {
-  dockerStatus.stopPolling();
+  operationalStateStore.stopPolling();
 });
 </script>
 
@@ -149,7 +150,7 @@ onDestroy(() => {
       {/if}
     </div>
 
-    {#if !dockerStatus.isRunning}
+    {#if operationalStateStore.state?.mode === "local" && operationalStateStore.dockerRunning === false}
       <Alert.Root>
         <Terminal class="size-4" />
         <Alert.Title>Docker is not running</Alert.Title>

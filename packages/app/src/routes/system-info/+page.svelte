@@ -2,7 +2,7 @@
 import { onMount } from "svelte";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { systemInfoStore } from "$stores/systemInfo.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { Skeleton } from "$lib/components/ui/skeleton";
 import { Progress } from "$lib/components/ui/progress";
 import * as Card from "$lib/components/ui/card";
@@ -32,10 +32,10 @@ onMount(() => {
   if (!systemInfoStore.systemInfo) {
     fetchSystemInfo();
   }
-  dockerStatus.startPolling();
+  operationalStateStore.startPolling();
 
   return () => {
-    dockerStatus.stopPolling();
+    operationalStateStore.stopPolling();
   };
 });
 </script>

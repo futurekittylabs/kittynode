@@ -5,6 +5,7 @@ import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { updates } from "$stores/updates.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
 import { onMount } from "svelte";
@@ -106,7 +107,9 @@ async function connectRemote() {
       notifyError("Remote URL must start with http:// or https://");
       return;
     }
-    setRemote(url);
+    await appConfigStore.setServerUrl(url);
+    await operationalStateStore.refresh();
+    refetchStores();
     notifySuccess("Connected to remote");
   } catch (e) {
     notifyError("Failed to connect to remote", e);
@@ -115,7 +118,9 @@ async function connectRemote() {
 
 async function disconnectRemote() {
   try {
-    setRemote("");
+    await appConfigStore.setServerUrl("");
+    await operationalStateStore.refresh();
+    refetchStores();
     notifySuccess("Disconnected from remote");
   } catch (e) {
     notifyError("Failed to disconnect from remote", e);
@@ -124,7 +129,7 @@ async function disconnectRemote() {
 
 async function deleteKittynode() {
   try {
-    await invoke("delete_kittynode", { serverUrl: serverUrlStore.serverUrl });
+    await invoke("delete_kittynode");
     // Immediately restart the app with fresh config
     await invoke("restart_app");
   } catch (e) {
@@ -158,10 +163,6 @@ async function checkForUpdates() {
   }
 }
 
-function setRemote(serverUrl: string) {
-  serverUrlStore.setServerUrl(serverUrl);
-  refetchStores();
-}
 </script>
 
 <div class="space-y-6">

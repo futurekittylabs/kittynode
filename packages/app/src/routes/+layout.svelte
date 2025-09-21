@@ -25,7 +25,7 @@ import {
   Users,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { page } from "$app/state";
 
 const { children } = $props();
@@ -38,7 +38,7 @@ const installedNodes = $derived(
 );
 
 $effect(() => {
-  packagesStore.handleDockerStateChange(dockerStatus.isRunning);
+  packagesStore.handleOperationalStateChange(operationalStateStore.state);
 });
 
 const navigationItems = [
@@ -78,6 +78,7 @@ onMount(async () => {
   checkingOnboarding = false;
 
   await packagesStore.loadPackages();
+  await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages();
 
   try {

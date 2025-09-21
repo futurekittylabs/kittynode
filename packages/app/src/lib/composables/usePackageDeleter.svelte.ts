@@ -1,5 +1,5 @@
 import { packagesStore } from "$stores/packages.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 import { goto } from "$app/navigation";
 
@@ -14,8 +14,8 @@ export function usePackageDeleter() {
     packageName: string,
     options?: { redirectToDashboard?: boolean },
   ): Promise<boolean> {
-    if (!dockerStatus.isRunning) {
-      notifyError("Docker must be running to delete packages");
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
       return false;
     }
 
@@ -37,7 +37,6 @@ export function usePackageDeleter() {
       return false;
     }
 
-    // Create a new Set to trigger reactivity
     deletingPackages = new Set([...deletingPackages, packageName]);
     try {
       await packagesStore.deletePackage(packageName);
@@ -52,7 +51,6 @@ export function usePackageDeleter() {
       notifyError(`Failed to delete ${packageName}`, error);
       return false;
     } finally {
-      // Create a new Set to trigger reactivity
       const newSet = new Set(deletingPackages);
       newSet.delete(packageName);
       deletingPackages = newSet;

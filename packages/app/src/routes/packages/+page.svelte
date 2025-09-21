@@ -3,7 +3,7 @@ import { onMount } from "svelte";
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
 import { packagesStore } from "$stores/packages.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
 import {
@@ -42,12 +42,13 @@ function managePackage(packageName: string) {
 }
 
 onMount(() => {
-  dockerStatus.startPolling();
+  operationalStateStore.startPolling();
+  void operationalStateStore.refresh();
   packagesStore.loadPackages();
   packagesStore.loadInstalledPackages();
 
   return () => {
-    dockerStatus.stopPolling();
+    operationalStateStore.stopPolling();
   };
 });
 </script>
@@ -156,7 +157,7 @@ onMount(() => {
                     managePackage(name);
                   }
                 }}
-                disabled={dockerStatus.isRunning !== true || isInstallingPackage}
+                disabled={!operationalStateStore.canInstall || isInstallingPackage}
                 class="w-full"
               >
                 {#if isInstallingPackage}

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Package } from "$lib/types";
-import { dockerStatus } from "./dockerStatus.svelte";
-import { serverUrlStore } from "./serverUrl.svelte";
+import type { OperationalState } from "$lib/types/operational_state";
+import { operationalStateStore } from "./operationalState.svelte";
 
 type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
@@ -41,9 +41,6 @@ function setInstalledUnavailable() {
     packages: {},
   };
 }
-
-let lastDockerRunning: boolean | null = null;
-
 export const packagesStore = {
   get packages() {
     return catalogState.packages;
@@ -111,14 +108,14 @@ export const packagesStore = {
   },
 
   async loadInstalledPackages({ force = false }: { force?: boolean } = {}) {
-    const running = dockerStatus.isRunning;
+    const state = operationalStateStore.state;
 
-    if (running === false) {
-      setInstalledUnavailable();
+    if (!state) {
       return;
     }
 
-    if (running !== true) {
+    if (!state.canManage) {
+      setInstalledUnavailable();
       return;
     }
 
@@ -134,9 +131,7 @@ export const packagesStore = {
     };
 
     try {
-      const result = await invoke<Package[]>("get_installed_packages", {
-        serverUrl: serverUrlStore.serverUrl,
-      });
+      const result = await invoke<Package[]>("get_installed_packages");
 
       if (requestId !== installedRequestToken) {
         return;
@@ -154,8 +149,9 @@ export const packagesStore = {
 
       const message = e instanceof Error ? e.message : String(e);
       console.error(`Failed to load installed packages: ${message}`);
+      const fallbackStatus = operationalStateStore.canManage ? "error" : "unavailable";
       installedState = {
-        status: dockerStatus.isRunning === true ? "error" : "unavailable",
+        status: fallbackStatus,
         packages: {},
         error: message,
       };
@@ -164,10 +160,7 @@ export const packagesStore = {
 
   async installPackage(name: string) {
     try {
-      await invoke("install_package", {
-        name,
-        serverUrl: serverUrlStore.serverUrl,
-      });
+      await invoke("install_package", { name });
       await this.loadInstalledPackages({ force: true });
     } catch (e) {
       console.error(`Failed to install ${name}: ${e}`);
@@ -180,7 +173,6 @@ export const packagesStore = {
       await invoke("delete_package", {
         name,
         includeImages: false,
-        serverUrl: serverUrlStore.serverUrl,
       });
       await this.loadInstalledPackages({ force: true });
     } catch (e) {
@@ -189,20 +181,16 @@ export const packagesStore = {
     }
   },
 
-  handleDockerStateChange(running: boolean | null) {
-    if (running === lastDockerRunning) {
+  handleOperationalStateChange(state: OperationalState | null) {
+    if (!state) {
       return;
     }
 
-    lastDockerRunning = running;
-
-    if (running === true) {
+    if (state.canManage) {
       void this.loadInstalledPackages({ force: true });
       return;
     }
 
-    if (running === false) {
-      setInstalledUnavailable();
-    }
+    setInstalledUnavailable();
   },
 };

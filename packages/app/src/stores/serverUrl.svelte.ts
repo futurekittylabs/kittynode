@@ -4,7 +4,7 @@ export const serverUrlStore = {
   get serverUrl() {
     return serverUrl;
   },
-  setServerUrl(url: string) {
+  setFromConfig(url: string) {
     serverUrl = url;
   },
 };
