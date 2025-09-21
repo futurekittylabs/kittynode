@@ -2,6 +2,7 @@
 
 [![CI - Rust](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-rust.yaml)
 [![CI - JavaScript](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-javascript.yaml/badge.svg)](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-javascript.yaml)
+[![codecov](https://codecov.io/github/futurekittylabs/kittynode/graph/badge.svg?token=TJAUBD8RPT)](https://codecov.io/github/futurekittylabs/kittynode)
 
 Kittynode is a control center for world computer operators.
 
