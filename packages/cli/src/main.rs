@@ -1,22 +1,11 @@
 mod commands;
-mod output;
 
-use atty::Stream;
 use clap::{Parser, Subcommand};
 use eyre::Result;
-use output::OutputFormat;
 
 #[derive(Parser)]
 #[command(about, version)]
 struct Cli {
-    #[arg(long, value_enum)]
-    format: Option<OutputFormat>,
-    #[arg(
-        long,
-        conflicts_with = "format",
-        help = "Output in JSON format (alias for --format json)"
-    )]
-    json: bool,
     #[command(subcommand)]
     command: Commands,
 }
@@ -96,50 +85,33 @@ async fn main() -> Result<()> {
         .with_writer(std::io::stderr)
         .init();
     let cli = Cli::parse();
-    let format = determine_format(cli.format, cli.json);
 
     match cli.command {
-        Commands::GetPackages => commands::get_packages(format).await?,
-        Commands::GetInstalledPackages => commands::get_installed_packages(format).await?,
+        Commands::GetPackages => commands::get_packages().await?,
+        Commands::GetInstalledPackages => commands::get_installed_packages().await?,
         Commands::InstallPackage { name } => commands::install_package(name).await?,
         Commands::DeletePackage {
             name,
             include_images,
         } => commands::delete_package(name, include_images).await?,
-        Commands::SystemInfo => commands::system_info(format).await?,
+        Commands::SystemInfo => commands::system_info().await?,
         Commands::GetContainerLogs { container, tail } => {
-            commands::get_container_logs(format, container, tail).await?
+            commands::get_container_logs(container, tail).await?
         }
-        Commands::GetConfig => commands::get_config(format)?,
-        Commands::GetPackageConfig { name } => commands::get_package_config(format, name).await?,
+        Commands::GetConfig => commands::get_config()?,
+        Commands::GetPackageConfig { name } => commands::get_package_config(name).await?,
         Commands::UpdatePackageConfig { name, values } => {
             commands::update_package_config(name, values).await?
         }
-        Commands::GetCapabilities => commands::get_capabilities(format)?,
+        Commands::GetCapabilities => commands::get_capabilities()?,
         Commands::AddCapability { name } => commands::add_capability(name)?,
         Commands::RemoveCapability { name } => commands::remove_capability(name)?,
         Commands::InitKittynode => commands::init_kittynode()?,
         Commands::DeleteKittynode => commands::delete_kittynode()?,
-        Commands::IsDockerRunning => commands::is_docker_running(format).await?,
-        Commands::StartDockerIfNeeded => commands::start_docker_if_needed(format).await?,
-        Commands::GetOperationalState => commands::get_operational_state(format).await?,
+        Commands::IsDockerRunning => commands::is_docker_running().await?,
+        Commands::StartDockerIfNeeded => commands::start_docker_if_needed().await?,
+        Commands::GetOperationalState => commands::get_operational_state().await?,
     }
 
     Ok(())
-}
-
-fn determine_format(explicit: Option<OutputFormat>, json: bool) -> OutputFormat {
-    if let Some(format) = explicit {
-        return format;
-    }
-
-    if json {
-        return OutputFormat::Json;
-    }
-
-    if atty::is(Stream::Stdout) {
-        OutputFormat::Text
-    } else {
-        OutputFormat::Json
-    }
 }

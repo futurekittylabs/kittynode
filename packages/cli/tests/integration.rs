@@ -1,33 +1,35 @@
 use assert_cmd::Command;
-use serde_json::Value;
 
 #[test]
-fn get_packages_json_contains_ethereum() {
+fn get_packages_outputs_known_package() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
     let output = cmd
-        .args(["--format", "json", "get-packages"])
+        .args(["get-packages"])
         .assert()
         .success()
         .get_output()
         .stdout
         .clone();
-    let value: Value = serde_json::from_slice(&output).unwrap();
+    let stdout = String::from_utf8_lossy(&output);
     assert!(
-        value.get("Ethereum").is_some(),
-        "expected Ethereum package to be present"
+        stdout.contains("Ethereum"),
+        "expected CLI output to list Ethereum package, got {stdout}"
     );
 }
 
 #[test]
-fn json_alias_flag_produces_json() {
+fn get_config_outputs_readable_text() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
     let output = cmd
-        .args(["--json", "get-config"])
+        .args(["get-config"])
         .assert()
         .success()
         .get_output()
         .stdout
         .clone();
-    let value: Value = serde_json::from_slice(&output).unwrap();
-    assert!(value.get("server_url").is_some());
+    let stdout = String::from_utf8_lossy(&output);
+    assert!(
+        stdout.contains("Server URL:"),
+        "expected config output to include Server URL, got {stdout}"
+    );
 }
