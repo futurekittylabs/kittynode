@@ -1,5 +1,5 @@
 import { packagesStore } from "$stores/packages.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
 export function usePackageInstaller() {
@@ -10,8 +10,8 @@ export function usePackageInstaller() {
   }
 
   async function installPackage(packageName: string): Promise<boolean> {
-    if (!dockerStatus.isRunning) {
-      notifyError("Docker must be running to install packages");
+    if (!operationalStateStore.canInstall) {
+      notifyError("Cannot install packages in the current operational state");
       return false;
     }
 
@@ -33,7 +33,6 @@ export function usePackageInstaller() {
       return false;
     }
 
-    // Create a new Set to trigger reactivity
     installingPackages = new Set([...installingPackages, packageName]);
     try {
       await packagesStore.installPackage(packageName);
@@ -43,7 +42,6 @@ export function usePackageInstaller() {
       notifyError(`Failed to install ${packageName}`, error);
       return false;
     } finally {
-      // Create a new Set to trigger reactivity
       const newSet = new Set(installingPackages);
       newSet.delete(packageName);
       installingPackages = newSet;

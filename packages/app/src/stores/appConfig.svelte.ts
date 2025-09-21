@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { KittynodeConfig } from "$lib/types";
+import { serverUrlStore } from "./serverUrl.svelte";
 
 type RawKittynodeConfig = {
   capabilities?: string[];
@@ -29,6 +30,7 @@ async function loadConfig(): Promise<void> {
   try {
     const raw = await invoke<RawKittynodeConfig>("get_config");
     config = normalizeConfig(raw);
+    serverUrlStore.setFromConfig(config.serverUrl);
     initialized = true;
   } catch (e) {
     console.error(`Failed to load Kittynode config: ${e}`);
@@ -78,6 +80,18 @@ export const appConfigStore = {
       }
     } catch (e) {
       console.error(`Failed to update Docker auto-start preference: ${e}`);
+      throw e;
+    }
+  },
+  async setServerUrl(endpoint: string) {
+    try {
+      await invoke("set_server_url", { endpoint });
+      if (config) {
+        config = { ...config, serverUrl: endpoint };
+      }
+      serverUrlStore.setFromConfig(endpoint);
+    } catch (e) {
+      console.error(`Failed to update server URL: ${e}`);
       throw e;
     }
   },

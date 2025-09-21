@@ -1,23 +1,33 @@
 use assert_cmd::Command;
-use predicates::prelude::*;
+use serde_json::Value;
 
 #[test]
-fn get_packages() {
+fn get_packages_json_contains_ethereum() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
-    cmd.arg("get-packages")
+    let output = cmd
+        .args(["--format", "json", "get-packages"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Package: Ethereum"));
+        .get_output()
+        .stdout
+        .clone();
+    let value: Value = serde_json::from_slice(&output).unwrap();
+    assert!(
+        value.get("Ethereum").is_some(),
+        "expected Ethereum package to be present"
+    );
 }
 
 #[test]
-#[ignore]
-fn install_and_delete_a_package() {
+fn json_alias_flag_produces_json() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
-    cmd.arg("install-package")
-        .arg("Ethereum")
+    let output = cmd
+        .args(["--json", "get-config"])
         .assert()
-        .success();
-    cmd = Command::cargo_bin("kittynode").unwrap();
-    cmd.arg("delete-package").arg("Ethereum").assert().success();
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let value: Value = serde_json::from_slice(&output).unwrap();
+    assert!(value.get("server_url").is_some());
 }

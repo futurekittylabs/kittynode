@@ -3,11 +3,11 @@ import { onMount, onDestroy } from "svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
-import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { systemInfoStore } from "$stores/systemInfo.svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
-import { dockerStatus } from "$stores/dockerStatus.svelte";
+import { serverUrlStore } from "$stores/serverUrl.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
@@ -76,14 +76,20 @@ onMount(async () => {
     console.error(`Failed to load Kittynode config: ${e}`);
   }
 
-  // Start Docker if needed (only on first app startup)
+  await operationalStateStore.refresh();
+
   if (isLocalDesktop() && appConfigStore.autoStartDocker) {
     console.info("Attempting Docker auto-start based on user preference");
-    await dockerStatus.startDockerIfNeeded();
+    const result = await operationalStateStore.startDockerIfNeeded();
+    if (result.status === "error") {
+      console.error(
+        `Docker auto-start failed: ${result.error}. Continuing without auto-start.`,
+      );
+    }
   }
 
-  const pollingInterval = dockerStatus.isStarting ? 2000 : 5000;
-  dockerStatus.startPolling(pollingInterval);
+  const pollingInterval = operationalStateStore.isStarting ? 2000 : 5000;
+  operationalStateStore.startPolling(pollingInterval);
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();
@@ -92,7 +98,7 @@ onMount(async () => {
 });
 
 onDestroy(() => {
-  dockerStatus.stopPolling();
+  operationalStateStore.stopPolling();
 });
 </script>
 
@@ -292,7 +298,7 @@ onDestroy(() => {
           {@const status = packagesStore.installationStatus(name)}
           {@const isInstallingPackage = isInstalling(name)}
           {@const disabled =
-            dockerStatus.isRunning !== true || status !== "available" || isInstallingPackage}
+            !operationalStateStore.canInstall || status !== "available" || isInstallingPackage}
 
           <Card.Root>
             <Card.Header>

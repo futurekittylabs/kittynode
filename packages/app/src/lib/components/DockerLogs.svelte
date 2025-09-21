@@ -1,7 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
 import { invoke } from "@tauri-apps/api/core";
-import { serverUrlStore } from "$stores/serverUrl.svelte";
 import Convert from "ansi-to-html";
 
 const convert = new Convert();
@@ -21,7 +20,6 @@ async function fetchLogs() {
     const newLogs = await invoke<string[]>("get_container_logs", {
       containerName,
       tailLines,
-      serverUrl: serverUrlStore.serverUrl,
     });
 
     // Convert ANSI escape sequences to HTML
