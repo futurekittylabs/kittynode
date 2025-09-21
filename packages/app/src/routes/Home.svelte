@@ -157,7 +157,7 @@ onDestroy(() => {
         </Card.Header>
         <Card.Content>
           <div class="text-2xl font-bold">
-            {systemInfoStore.systemInfo.memory.total_display}
+            {systemInfoStore.systemInfo.memory.totalDisplay}
           </div>
           <p class="text-xs text-muted-foreground">
             Total System Memory

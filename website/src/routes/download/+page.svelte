@@ -4,7 +4,7 @@ import {
   Monitor,
   Download,
   AppWindowMac,
-  CircleQuestionMark,
+  HelpCircle,
   ChevronDown,
 } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
@@ -133,7 +133,7 @@ let linuxHelpOpen = false;
 		<div class="overflow-hidden rounded-lg border">
 			<CollapsibleTrigger class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60">
 				<span class="flex items-center gap-2">
-					<CircleQuestionMark class="h-4 w-4 text-link" />
+					<HelpCircle class="h-4 w-4 text-link" />
 					Looking for another Linux package format?
 				</span>
 				<ChevronDown class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`} />

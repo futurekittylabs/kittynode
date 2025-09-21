@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 
 type InitState = "idle" | "initializing" | "initialized";
 
@@ -20,7 +20,7 @@ export const initializedStore = {
     }
     state = "initializing";
     try {
-      await invoke("init_kittynode");
+      await coreClient.initKittynode();
       state = "initialized";
     } catch (error) {
       state = "idle";

@@ -10,7 +10,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { getVersion } from "@tauri-apps/api/app";
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import { Button } from "$lib/components/ui/button";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -64,7 +64,7 @@ onMount(async () => {
 
   // Check if onboarding has been completed
   try {
-    onboardingCompleted = await invoke("get_onboarding_completed");
+    onboardingCompleted = await coreClient.getOnboardingCompleted();
     if (onboardingCompleted) {
       // Skip splash screen without re-initializing config
       // Just set the initialized flag to bypass the splash

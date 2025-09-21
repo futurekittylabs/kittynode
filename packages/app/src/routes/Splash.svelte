@@ -2,7 +2,7 @@
 import { initializedStore } from "$stores/initialized.svelte";
 import { goto } from "$app/navigation";
 import { platform } from "@tauri-apps/plugin-os";
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import { onMount } from "svelte";
 import { mode } from "mode-watcher";
 import { toast } from "svelte-sonner";
@@ -23,7 +23,7 @@ async function initKittynode() {
     }
     // Mark onboarding as completed
     try {
-      await invoke("set_onboarding_completed", { completed: true });
+      await coreClient.setOnboardingCompleted(true);
     } catch (e) {
       console.error(`Failed to save onboarding state: ${e}`);
       toast.error("Failed to save onboarding progress");

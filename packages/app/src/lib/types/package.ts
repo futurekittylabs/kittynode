@@ -1,17 +1,27 @@
 export interface Package {
   name: string;
   description: string;
-  network_name: string;
+  networkName: string;
+  defaultConfig: PackageConfig;
   containers: Container[];
+}
+
+export interface PackageConfig {
+  values: Record<string, string>;
 }
 
 export interface Container {
   name: string;
   image: string;
   cmd: string[];
-  port_bindings: Record<string, { host_ip: string; host_port: string }[]>;
-  volume_bindings: Binding[];
-  file_bindings: Binding[];
+  portBindings: Record<string, PortBinding[]>;
+  volumeBindings: Binding[];
+  fileBindings: Binding[];
+}
+
+export interface PortBinding {
+  hostIp?: string | null;
+  hostPort?: string | null;
 }
 
 export interface Binding {

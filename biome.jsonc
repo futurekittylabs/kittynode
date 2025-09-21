@@ -22,7 +22,19 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "@tauri-apps/api/core": {
+                "message": "Import invoke via $lib/client instead of using @tauri-apps/api/core directly."
+              }
+            }
+          }
+        }
+      }
     }
   },
   "assist": {
@@ -57,6 +69,16 @@
       ],
       "linter": {
         "enabled": false
+      }
+    },
+    {
+      "includes": ["packages/app/src/lib/client.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
       }
     }
   ]

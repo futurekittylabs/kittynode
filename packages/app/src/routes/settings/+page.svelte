@@ -1,5 +1,5 @@
 <script lang="ts">
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
@@ -129,9 +129,9 @@ async function disconnectRemote() {
 
 async function deleteKittynode() {
   try {
-    await invoke("delete_kittynode");
+    await coreClient.deleteKittynode();
     // Immediately restart the app with fresh config
-    await invoke("restart_app");
+    await coreClient.restartApp();
   } catch (e) {
     notifyError("Failed to delete Kittynode data", e);
   }

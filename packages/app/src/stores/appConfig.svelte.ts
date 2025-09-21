@@ -1,24 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import type { KittynodeConfig } from "$lib/types";
 import { serverUrlStore } from "./serverUrl.svelte";
-
-type RawKittynodeConfig = {
-  capabilities?: string[];
-  server_url?: string;
-  onboarding_completed?: boolean;
-  auto_start_docker?: boolean;
-};
-
-function normalizeConfig(
-  raw: RawKittynodeConfig | null | undefined,
-): KittynodeConfig {
-  return {
-    capabilities: raw?.capabilities ?? [],
-    serverUrl: raw?.server_url ?? "",
-    onboardingCompleted: raw?.onboarding_completed ?? false,
-    autoStartDocker: raw?.auto_start_docker ?? false,
-  };
-}
 
 let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);
@@ -28,8 +10,7 @@ let loadPromise: Promise<void> | null = null;
 async function loadConfig(): Promise<void> {
   loading = true;
   try {
-    const raw = await invoke<RawKittynodeConfig>("get_config");
-    config = normalizeConfig(raw);
+    config = await coreClient.getConfig();
     serverUrlStore.setFromConfig(config.serverUrl);
     initialized = true;
   } catch (e) {
@@ -74,7 +55,7 @@ export const appConfigStore = {
   },
   async setAutoStartDocker(enabled: boolean) {
     try {
-      await invoke("set_auto_start_docker", { enabled });
+      await coreClient.setAutoStartDocker(enabled);
       if (config) {
         config = { ...config, autoStartDocker: enabled };
       }
@@ -85,7 +66,7 @@ export const appConfigStore = {
   },
   async setServerUrl(endpoint: string) {
     try {
-      await invoke("set_server_url", { endpoint });
+      await coreClient.setServerUrl(endpoint);
       if (config) {
         config = { ...config, serverUrl: endpoint };
       }
