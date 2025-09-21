@@ -2135,7 +2135,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-tauri"
-version = "0.59.0"
+version = "0.60.0"
 dependencies = [
  "async-trait",
  "eyre",
@@ -3278,7 +3278,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
