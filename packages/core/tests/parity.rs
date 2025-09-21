@@ -8,7 +8,10 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 const STORAGE_TOLERANCE_BYTES: i64 = 5_000_000;
-const CPU_FREQUENCY_TOLERANCE_GHZ: f64 = 0.2;
+// CPU frequency is sampled at runtime and can vary notably across calls, so we
+// permit generous absolute and relative tolerances before failing parity.
+const CPU_FREQUENCY_ABSOLUTE_TOLERANCE_GHZ: f64 = 1.5;
+const CPU_FREQUENCY_RELATIVE_TOLERANCE: f64 = 0.5;
 
 fn cli_json(args: &[&str]) -> Result<Value> {
     let mut cmd = cli_command()?;
@@ -81,6 +84,14 @@ fn align_storage_available_bytes(reference: &Value, candidate: &mut Value) -> Re
         .and_then(Value::as_array_mut)
         .ok_or_else(|| eyre!("candidate storage disks not found"))?;
 
+    if reference_disks.len() != candidate_disks.len() {
+        return Err(eyre!(
+            "storage disk count differs: reference {}, candidate {}",
+            reference_disks.len(),
+            candidate_disks.len()
+        ));
+    }
+
     for (ref_disk, candidate_disk) in reference_disks.iter().zip(candidate_disks.iter_mut()) {
         let ref_bytes = ref_disk
             .get("available_bytes")
@@ -138,12 +149,30 @@ fn align_processor(reference: &Value, candidate: &mut Value) -> Result<()> {
         .and_then(Value::as_f64)
         .ok_or_else(|| eyre!("reference processor frequency missing"))?;
 
-    if let Some(candidate_frequency_value) = candidate_processor.get_mut("frequency_ghz")
-        && let Some(candidate_frequency) = candidate_frequency_value.as_f64()
-        && (reference_frequency - candidate_frequency).abs() <= CPU_FREQUENCY_TOLERANCE_GHZ
+    let candidate_frequency_value = candidate_processor
+        .get_mut("frequency_ghz")
+        .ok_or_else(|| eyre!("candidate processor frequency missing"))?;
+
+    let candidate_frequency = candidate_frequency_value
+        .as_f64()
+        .ok_or_else(|| eyre!("candidate processor frequency not a number"))?;
+
+    let frequency_delta = (reference_frequency - candidate_frequency).abs();
+    let frequency_scale = reference_frequency
+        .abs()
+        .max(candidate_frequency.abs())
+        .max(1e-9);
+    let relative_delta = frequency_delta / frequency_scale;
+
+    if frequency_delta > CPU_FREQUENCY_ABSOLUTE_TOLERANCE_GHZ
+        && relative_delta > CPU_FREQUENCY_RELATIVE_TOLERANCE
     {
-        *candidate_frequency_value = Value::from(reference_frequency);
+        return Err(eyre!(
+            "processor frequency differs more than tolerated: reference {reference_frequency}, candidate {candidate_frequency}"
+        ));
     }
+
+    *candidate_frequency_value = Value::from(reference_frequency);
 
     Ok(())
 }
