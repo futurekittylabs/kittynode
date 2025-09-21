@@ -106,7 +106,7 @@ async function connectRemote() {
       notifyError("Remote URL must start with http:// or https://");
       return;
     }
-    setRemote(url);
+    await setRemote(url);
     notifySuccess("Connected to remote");
   } catch (e) {
     notifyError("Failed to connect to remote", e);
@@ -115,7 +115,7 @@ async function connectRemote() {
 
 async function disconnectRemote() {
   try {
-    setRemote("");
+    await setRemote("");
     notifySuccess("Disconnected from remote");
   } catch (e) {
     notifyError("Failed to disconnect from remote", e);
@@ -124,7 +124,7 @@ async function disconnectRemote() {
 
 async function deleteKittynode() {
   try {
-    await invoke("delete_kittynode", { serverUrl: serverUrlStore.serverUrl });
+    await invoke("delete_kittynode");
     // Immediately restart the app with fresh config
     await invoke("restart_app");
   } catch (e) {
@@ -158,9 +158,18 @@ async function checkForUpdates() {
   }
 }
 
-function setRemote(serverUrl: string) {
-  serverUrlStore.setServerUrl(serverUrl);
-  refetchStores();
+async function setRemote(serverUrl: string) {
+  const previous = serverUrlStore.serverUrl;
+  try {
+    serverUrlStore.setServerUrl(serverUrl);
+    await invoke("set_server_url", { serverUrl });
+    await appConfigStore.reload();
+    refetchStores();
+  } catch (error) {
+    serverUrlStore.setServerUrl(previous);
+    await invoke("set_server_url", { serverUrl: previous });
+    throw error;
+  }
 }
 </script>
 

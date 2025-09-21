@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { serverUrlStore } from "./serverUrl.svelte";
 
 type InitState = "idle" | "initializing" | "initialized";
 
@@ -21,7 +20,7 @@ export const initializedStore = {
     }
     state = "initializing";
     try {
-      await invoke("init_kittynode", { serverUrl: serverUrlStore.serverUrl });
+      await invoke("init_kittynode");
       state = "initialized";
     } catch (error) {
       state = "idle";

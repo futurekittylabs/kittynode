@@ -1,18 +1,18 @@
+mod core_client;
+
+use core_client::{CoreClientState, HTTP_CLIENT};
 use eyre::Result;
 use kittynode_core::api::types::{Config, Package, PackageConfig, SystemInfo};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 use tauri::Manager;
-use tauri_plugin_http::reqwest;
 use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 struct LatestManifest {
     version: String,
 }
-
-pub static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
 // Tracks whether we've already attempted to start Docker automatically this session
 pub static DOCKER_AUTO_STARTED: LazyLock<Arc<Mutex<bool>>> =
     LazyLock::new(|| Arc::new(Mutex::new(false)));
@@ -39,123 +39,77 @@ async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
 }
 
 #[tauri::command]
-async fn add_capability(name: String, server_url: String) -> Result<(), String> {
+async fn add_capability(
+    client_state: tauri::State<'_, CoreClientState>,
+    name: String,
+) -> Result<(), String> {
     info!("Adding capability: {}", name);
-
-    if !server_url.is_empty() {
-        let url = format!("{}/add_capability/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to add capability: {}", res.status()));
-        }
-        Ok(())
-    } else {
-        kittynode_core::api::add_capability(&name).map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.add_capability(&name).await
 }
 
 #[tauri::command]
-async fn remove_capability(name: String, server_url: String) -> Result<(), String> {
+async fn remove_capability(
+    client_state: tauri::State<'_, CoreClientState>,
+    name: String,
+) -> Result<(), String> {
     info!("Removing capability: {}", name);
-
-    if !server_url.is_empty() {
-        let url = format!("{}/remove_capability/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to remove capability: {}", res.status()));
-        }
-        Ok(())
-    } else {
-        kittynode_core::api::remove_capability(&name).map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.remove_capability(&name).await
 }
 
 #[tauri::command]
-async fn get_capabilities(server_url: String) -> Result<Vec<String>, String> {
+async fn get_capabilities(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<Vec<String>, String> {
     info!("Getting capabilities");
-
-    if !server_url.is_empty() {
-        let url = format!("{}/get_capabilities", server_url);
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !res.status().is_success() {
-            let status = res.status();
-            let error_text = res.text().await.unwrap_or_default();
-            return Err(format!(
-                "Failed to get capabilities: {} - {}",
-                status, error_text
-            ));
-        }
-
-        res.json::<Vec<String>>().await.map_err(|e| e.to_string())
-    } else {
-        kittynode_core::api::get_capabilities().map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.get_capabilities().await
 }
 
 #[tauri::command]
-fn get_packages() -> Result<HashMap<String, Package>, String> {
+async fn get_packages(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<HashMap<String, Package>, String> {
     info!("Getting packages");
-    kittynode_core::api::get_packages()
-        .map(|packages| {
-            packages
-                .into_iter()
-                .map(|(name, package)| (name.to_string(), package))
-                .collect()
-        })
-        .map_err(|e| e.to_string())
+    let client = client_state.client();
+    client.get_packages().await
 }
 
 #[tauri::command]
-async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, String> {
+async fn get_installed_packages(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<Vec<Package>, String> {
     info!("Getting installed packages");
-
-    if !server_url.is_empty() {
-        let url = format!("{}/get_installed_packages", server_url);
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        let status = res.status();
-        if !status.is_success() {
-            let error_text = res.text().await.unwrap_or_default();
-            return Err(format!(
-                "Failed to get installed packages: {} - {}",
-                status, error_text
-            ));
-        }
-
-        res.json::<Vec<Package>>().await.map_err(|e| e.to_string())
-    } else {
-        kittynode_core::api::get_installed_packages()
-            .await
-            .map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.get_installed_packages().await
 }
 
 #[tauri::command]
-async fn is_docker_running() -> bool {
+async fn is_docker_running(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<bool, String> {
     info!("Checking if Docker is running");
-    kittynode_core::api::is_docker_running().await
+    let client = client_state.client();
+    client.is_docker_running().await
 }
 
 #[tauri::command]
-async fn start_docker_if_needed() -> Result<String, String> {
+async fn start_docker_if_needed(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<String, String> {
     info!("Checking if Docker needs to be started");
+
+    let client = client_state.client();
+    let config = kittynode_core::api::get_config().map_err(|e| e.to_string())?;
+
+    if !config.server_url.trim().is_empty() {
+        return if client.is_docker_running().await? {
+            Ok("running".to_string())
+        } else {
+            Ok("unavailable".to_string())
+        };
+    }
 
     let already_attempted = {
         let auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
@@ -163,20 +117,19 @@ async fn start_docker_if_needed() -> Result<String, String> {
     };
 
     if already_attempted {
-        if kittynode_core::api::is_docker_running().await {
+        if client.is_docker_running().await? {
             return Ok("running".to_string());
         }
 
         return Ok("already_started".to_string());
     }
 
-    if kittynode_core::api::is_docker_running().await {
+    if client.is_docker_running().await? {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         *auto_started = true;
         return Ok("running".to_string());
     }
 
-    let config = kittynode_core::api::get_config().map_err(|e| e.to_string())?;
     if !config.auto_start_docker {
         info!("Skipping Docker auto-start due to user preference");
         return Ok("disabled".to_string());
@@ -193,7 +146,7 @@ async fn start_docker_if_needed() -> Result<String, String> {
     };
 
     if !should_attempt_start {
-        if kittynode_core::api::is_docker_running().await {
+        if client.is_docker_running().await? {
             return Ok("running".to_string());
         }
 
@@ -212,191 +165,82 @@ async fn start_docker_if_needed() -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn install_package(name: String, server_url: String) -> Result<(), String> {
-    if !server_url.is_empty() {
-        let url = format!("{}/install_package/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to install package: {}", res.status()));
-        }
-    } else {
-        kittynode_core::api::install_package(&name)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
+async fn install_package(
+    client_state: tauri::State<'_, CoreClientState>,
+    name: String,
+) -> Result<(), String> {
+    let client = client_state.client();
+    client.install_package(&name).await?;
     info!("Successfully installed package: {}", name);
     Ok(())
 }
 
 #[tauri::command]
 async fn delete_package(
+    client_state: tauri::State<'_, CoreClientState>,
     name: String,
     include_images: bool,
-    server_url: String,
 ) -> Result<(), String> {
-    if !server_url.is_empty() {
-        let url = format!("{}/delete_package/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to delete package: {}", res.status()));
-        }
-    } else {
-        kittynode_core::api::delete_package(&name, include_images)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
+    let client = client_state.client();
+    client.delete_package(&name, include_images).await?;
     info!("Successfully deleted package: {}", name);
     Ok(())
 }
 
 #[tauri::command]
-async fn delete_kittynode(server_url: String) -> Result<(), String> {
+async fn delete_kittynode(client_state: tauri::State<'_, CoreClientState>) -> Result<(), String> {
     info!("Deleting .kittynode directory");
-
-    if !server_url.is_empty() {
-        let url = format!("{}/delete_kittynode", server_url);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to delete Kittynode: {}", res.status()));
-        }
-        Ok(())
-    } else {
-        kittynode_core::api::delete_kittynode().map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.delete_kittynode().await
 }
 
 #[tauri::command]
-async fn system_info(server_url: String) -> Result<SystemInfo, String> {
+async fn system_info(
+    client_state: tauri::State<'_, CoreClientState>,
+) -> Result<SystemInfo, String> {
     info!("Getting system info");
-
-    if !server_url.is_empty() {
-        let url = format!("{}/get_system_info", server_url);
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !res.status().is_success() {
-            return Err(format!("Failed to get system info: {}", res.status()));
-        }
-
-        res.json::<SystemInfo>().await.map_err(|e| e.to_string())
-    } else {
-        kittynode_core::api::get_system_info().map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.get_system_info().await
 }
 
 #[tauri::command]
-async fn init_kittynode(server_url: String) -> Result<(), String> {
+async fn init_kittynode(client_state: tauri::State<'_, CoreClientState>) -> Result<(), String> {
     info!("Initializing Kittynode");
-
-    if !server_url.is_empty() {
-        let url = format!("{}/init_kittynode", server_url);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to initialize Kittynode: {}", res.status()));
-        }
-        Ok(())
-    } else {
-        kittynode_core::api::init_kittynode().map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.init_kittynode().await
 }
 
 #[tauri::command]
 async fn get_container_logs(
+    client_state: tauri::State<'_, CoreClientState>,
     container_name: String,
     tail_lines: Option<usize>,
-    server_url: String,
 ) -> Result<Vec<String>, String> {
     info!(
         "Getting logs for container: {} (tail: {:?})",
         container_name, tail_lines
     );
-
-    if !server_url.is_empty() {
-        let url = format!("{}/logs/{}", server_url, container_name);
-        // Add tail_lines to query params if present
-        let url = if let Some(n) = tail_lines {
-            format!("{}?tail={}", url, n)
-        } else {
-            url
-        };
-
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to get logs: {}", res.status()));
-        }
-        res.json::<Vec<String>>().await.map_err(|e| e.to_string())
-    } else {
-        kittynode_core::api::get_container_logs(&container_name, tail_lines)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.get_container_logs(&container_name, tail_lines).await
 }
 
 #[tauri::command]
-async fn get_package_config(name: String, server_url: String) -> Result<PackageConfig, String> {
-    if !server_url.is_empty() {
-        let url = format!("{}/get_package_config/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        res.json::<PackageConfig>().await.map_err(|e| e.to_string())
-    } else {
-        kittynode_core::api::get_package_config(&name)
-            .await
-            .map_err(|e| e.to_string())
-    }
+async fn get_package_config(
+    client_state: tauri::State<'_, CoreClientState>,
+    name: String,
+) -> Result<PackageConfig, String> {
+    let client = client_state.client();
+    client.get_package_config(&name).await
 }
 
 #[tauri::command]
 async fn update_package_config(
+    client_state: tauri::State<'_, CoreClientState>,
     name: String,
     config: PackageConfig,
-    server_url: String,
 ) -> Result<(), String> {
-    if !server_url.is_empty() {
-        let url = format!("{}/update_package_config/{}", server_url, name);
-        let res = HTTP_CLIENT
-            .post(&url)
-            .json(&config)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("Failed to update package config: {}", res.status()));
-        }
-        Ok(())
-    } else {
-        kittynode_core::api::update_package_config(&name, config)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    let client = client_state.client();
+    client.update_package_config(&name, config).await
 }
 
 #[tauri::command]
@@ -424,6 +268,15 @@ fn set_auto_start_docker(enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn set_server_url(
+    client_state: tauri::State<'_, CoreClientState>,
+    server_url: String,
+) -> Result<(), String> {
+    info!("Setting server URL to: {}", server_url);
+    client_state.set_server_url(server_url)
+}
+
+#[tauri::command]
 async fn restart_app(app_handle: tauri::AppHandle) {
     info!("Restarting application");
     app_handle.restart();
@@ -431,6 +284,8 @@ async fn restart_app(app_handle: tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
+    let core_client_state = CoreClientState::initialize();
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
@@ -438,6 +293,8 @@ pub fn run() -> Result<()> {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+
+    let builder = builder.manage(core_client_state);
 
     builder
         .setup(|app| {
@@ -468,6 +325,7 @@ pub fn run() -> Result<()> {
             set_onboarding_completed,
             get_config,
             set_auto_start_docker,
+            set_server_url,
             restart_app
         ])
         .run(tauri::generate_context!())

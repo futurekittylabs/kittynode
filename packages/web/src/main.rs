@@ -6,8 +6,9 @@ use axum::{
     routing::{get, post},
 };
 use kittynode_core::api::types::LogsQuery;
-use kittynode_core::api::types::Package;
 use kittynode_core::api::types::SystemInfo;
+use kittynode_core::api::types::{Package, PackageConfig};
+use std::collections::HashMap;
 
 pub(crate) async fn hello_world() -> &'static str {
     "Hello World!"
@@ -33,6 +34,37 @@ pub(crate) async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode,
     kittynode_core::api::get_capabilities()
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+pub(crate) async fn get_packages() -> Result<Json<HashMap<String, Package>>, (StatusCode, String)> {
+    kittynode_core::api::get_packages()
+        .map(|packages| {
+            packages
+                .into_iter()
+                .map(|(name, package)| (name.to_string(), package))
+                .collect::<HashMap<String, Package>>()
+        })
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+pub(crate) async fn get_package_config(
+    Path(name): Path<String>,
+) -> Result<Json<PackageConfig>, (StatusCode, String)> {
+    kittynode_core::api::get_package_config(&name)
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+pub(crate) async fn update_package_config(
+    Path(name): Path<String>,
+    Json(config): Json<PackageConfig>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    kittynode_core::api::update_package_config(&name, config)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(StatusCode::OK)
 }
 
 pub(crate) async fn install_package(
@@ -107,6 +139,9 @@ async fn main() {
         .route("/add_capability/:name", post(add_capability))
         .route("/remove_capability/:name", post(remove_capability))
         .route("/get_capabilities", get(get_capabilities))
+        .route("/get_packages", get(get_packages))
+        .route("/get_package_config/:name", get(get_package_config))
+        .route("/update_package_config/:name", post(update_package_config))
         .route("/install_package/:name", post(install_package))
         .route("/delete_package/:name", post(delete_package))
         .route("/get_installed_packages", get(get_installed_packages))

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { KittynodeConfig } from "$lib/types";
+import { serverUrlStore } from "./serverUrl.svelte";
 
 type RawKittynodeConfig = {
   capabilities?: string[];
@@ -29,6 +30,7 @@ async function loadConfig(): Promise<void> {
   try {
     const raw = await invoke<RawKittynodeConfig>("get_config");
     config = normalizeConfig(raw);
+    serverUrlStore.setServerUrl(config.serverUrl);
     initialized = true;
   } catch (e) {
     console.error(`Failed to load Kittynode config: ${e}`);

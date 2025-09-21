@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { serverUrlStore } from "./serverUrl.svelte";
 
 interface PackageConfig {
   values: Record<string, string>;
@@ -7,20 +6,13 @@ interface PackageConfig {
 
 export const packageConfigStore = {
   async getConfig(packageName: string): Promise<PackageConfig> {
-    return await invoke("get_package_config", {
-      name: packageName,
-      serverUrl: serverUrlStore.serverUrl,
-    });
+    return await invoke("get_package_config", { name: packageName });
   },
 
   async updateConfig(
     packageName: string,
     config: PackageConfig,
   ): Promise<void> {
-    await invoke("update_package_config", {
-      name: packageName,
-      config,
-      serverUrl: serverUrlStore.serverUrl,
-    });
+    await invoke("update_package_config", { name: packageName, config });
   },
 };
