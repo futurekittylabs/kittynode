@@ -3,7 +3,7 @@ import * as Card from "$lib/components/ui/card";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { CircleCheck, CircleAlert, Server, Loader2 } from "@lucide/svelte";
 
-export let showServerIcon: boolean = false;
+const { showServerIcon = false } = $props<{ showServerIcon?: boolean }>();
 
 const state = $derived(operationalStateStore.state);
 const isStarting = $derived(operationalStateStore.isStarting);

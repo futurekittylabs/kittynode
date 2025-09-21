@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { OperationalMode, OperationalState } from "$lib/types/operational_state";
+import type {
+  OperationalMode,
+  OperationalState,
+} from "$lib/types/operational_state";
 
 interface RawOperationalState {
   mode: OperationalMode;

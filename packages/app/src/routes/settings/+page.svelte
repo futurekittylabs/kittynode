@@ -162,7 +162,6 @@ async function checkForUpdates() {
     notifyError("Failed to check for updates", e);
   }
 }
-
 </script>
 
 <div class="space-y-6">

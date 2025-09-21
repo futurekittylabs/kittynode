@@ -149,7 +149,9 @@ export const packagesStore = {
 
       const message = e instanceof Error ? e.message : String(e);
       console.error(`Failed to load installed packages: ${message}`);
-      const fallbackStatus = operationalStateStore.canManage ? "error" : "unavailable";
+      const fallbackStatus = operationalStateStore.canManage
+        ? "error"
+        : "unavailable";
       installedState = {
         status: fallbackStatus,
         packages: {},
