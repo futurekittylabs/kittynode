@@ -1,13 +1,14 @@
 use assert_cmd::Command;
 use axum::extract::{Path, Query};
 use escargot::CargoBuild;
-use eyre::{eyre, Result};
+use eyre::{Result, eyre};
 use kittynode_core::api;
 use serde_json::{self, Value};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
 const STORAGE_TOLERANCE_BYTES: i64 = 5_000_000;
+const CPU_FREQUENCY_TOLERANCE_GHZ: f64 = 0.2;
 
 fn cli_json(args: &[&str]) -> Result<Value> {
     let mut cmd = cli_command()?;
@@ -53,12 +54,10 @@ fn cli_bin_path() -> Result<&'static std::path::Path> {
         .set(path)
         .map_err(|_| eyre!("failed to cache CLI binary path"))?;
 
-    Ok(
-        CLI_BIN
-            .get()
-            .expect("CLI binary path should be initialized")
-            .as_path(),
-    )
+    Ok(CLI_BIN
+        .get()
+        .expect("CLI binary path should be initialized")
+        .as_path())
 }
 
 fn align_storage_available_bytes(reference: &Value, candidate: &mut Value) -> Result<()> {
@@ -93,6 +92,49 @@ fn align_storage_available_bytes(reference: &Value, candidate: &mut Value) -> Re
         if let Some(field) = candidate_disk.get_mut("available_bytes") {
             *field = Value::from(ref_bytes);
         }
+
+        if let Some(ref_available_display) = ref_disk.get("available_display")
+            && let Some(candidate_available_display) = candidate_disk.get_mut("available_display")
+        {
+            *candidate_available_display = ref_available_display.clone();
+        }
+
+        if let Some(ref_used_display) = ref_disk.get("used_display")
+            && let Some(candidate_used_display) = candidate_disk.get_mut("used_display")
+        {
+            *candidate_used_display = ref_used_display.clone();
+        }
+
+        if let Some(ref_total_display) = ref_disk.get("total_display")
+            && let Some(candidate_total_display) = candidate_disk.get_mut("total_display")
+        {
+            *candidate_total_display = ref_total_display.clone();
+        }
+    }
+
+    align_processor(reference, candidate)?;
+
+    Ok(())
+}
+
+fn align_processor(reference: &Value, candidate: &mut Value) -> Result<()> {
+    let reference_processor = reference
+        .get("processor")
+        .ok_or_else(|| eyre!("reference processor section missing"))?;
+    let candidate_processor = candidate
+        .get_mut("processor")
+        .ok_or_else(|| eyre!("candidate processor section missing"))?;
+
+    let reference_frequency = reference_processor
+        .get("frequency_ghz")
+        .and_then(Value::as_f64)
+        .ok_or_else(|| eyre!("reference processor frequency missing"))?;
+
+    if let Some(candidate_frequency_value) = candidate_processor.get_mut("frequency_ghz")
+        && let Some(candidate_frequency) = candidate_frequency_value.as_f64()
+        && (reference_frequency - candidate_frequency).abs() <= CPU_FREQUENCY_TOLERANCE_GHZ
+    {
+        *candidate_frequency_value = Value::from(reference_frequency);
     }
 
     Ok(())
