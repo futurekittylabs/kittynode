@@ -45,7 +45,7 @@ async function refresh() {
   }
 }
 
-function startPolling(intervalMs = 5000) {
+function startPolling(intervalMs = DEFAULT_POLL_INTERVAL) {
   void refresh();
   if (pollHandle !== null) {
     window.clearInterval(pollHandle);
@@ -68,7 +68,7 @@ async function startDockerIfNeeded() {
     const status = await invoke<string>("start_docker_if_needed");
     if (status === "starting") {
       isStarting = true;
-      startPolling(2000);
+      startPolling(STARTING_POLL_INTERVAL);
       scheduleStartingTimeout();
     }
     await refresh();
@@ -80,13 +80,13 @@ async function startDockerIfNeeded() {
   }
 }
 
-function scheduleStartingTimeout(duration = 30000) {
+function scheduleStartingTimeout(duration = STARTING_TIMEOUT_MS) {
   clearStartingTimeout();
   startingTimeout = window.setTimeout(() => {
     if (isStarting) {
       console.info("Docker startup timeout reached, clearing starting state");
       isStarting = false;
-      startPolling(5000);
+      startPolling(DEFAULT_POLL_INTERVAL);
     }
   }, duration);
 }
@@ -133,3 +133,6 @@ export const operationalStateStore = {
     return startDockerIfNeeded();
   },
 };
+const DEFAULT_POLL_INTERVAL = 5000;
+const STARTING_POLL_INTERVAL = 2000;
+const STARTING_TIMEOUT_MS = 30_000;

@@ -11,7 +11,8 @@ use tauri_plugin_http::reqwest::{Client, StatusCode};
 
 fn normalize_base_url(server_url: &str) -> Option<String> {
     let trimmed = server_url.trim();
-    if trimmed.is_empty() {
+    let has_valid_scheme = trimmed.starts_with("http://") || trimmed.starts_with("https://");
+    if trimmed.is_empty() || !has_valid_scheme {
         None
     } else {
         Some(trimmed.trim_end_matches('/').to_string())
@@ -20,18 +21,28 @@ fn normalize_base_url(server_url: &str) -> Option<String> {
 
 #[async_trait]
 pub trait CoreClient: Send + Sync {
+    /// Retrieve the current package catalog from the core. Implementations may call the
+    /// core directly (local) or proxy the HTTP API (remote) but must return the same data shape.
     async fn get_packages(&self) -> Result<HashMap<String, Package>>;
+    /// List the enabled capabilities.
     async fn get_capabilities(&self) -> Result<Vec<String>>;
+    /// Enable a capability on the node.
     async fn add_capability(&self, name: &str) -> Result<()>;
+    /// Disable a capability on the node.
     async fn remove_capability(&self, name: &str) -> Result<()>;
+    /// Return the installed packages as reported by the core.
     async fn get_installed_packages(&self) -> Result<Vec<Package>>;
+    /// Retrieve system information (CPU, memory, storage).
     async fn system_info(&self) -> Result<SystemInfo>;
+    /// Fetch container logs; implementations should proxy the same parameters to the core.
     async fn get_container_logs(
         &self,
         container_name: &str,
         tail_lines: Option<usize>,
     ) -> Result<Vec<String>>;
+    /// Install a package via the core.
     async fn install_package(&self, name: &str) -> Result<()>;
+    /// Delete a package, optionally removing images.
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()>;
     async fn delete_kittynode(&self) -> Result<()>;
     async fn init_kittynode(&self) -> Result<()>;
@@ -328,6 +339,8 @@ impl CoreClient for HttpCoreClient {
     }
 
     async fn get_operational_state(&self) -> Result<OperationalState> {
+        // The remote HTTP service reports its own mode (usually local); we override it to mark
+        // that this client is operating in remote mode while preserving the rest of the payload.
         self.get_json::<OperationalState>("/get_operational_state")
             .await
             .map(|mut state| {
@@ -352,12 +365,15 @@ impl CoreClientManager {
     pub fn client(&self) -> Arc<dyn CoreClient> {
         self.inner
             .lock()
-            .expect("core client mutex poisoned")
-            .clone()
+            .map(|guard| guard.clone())
+            .unwrap_or_else(|poisoned| poisoned.into_inner().clone())
     }
 
     pub fn reload(&self, config: &Config) -> Result<()> {
-        let mut guard = self.inner.lock().expect("core client mutex poisoned");
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|err| eyre::eyre!("failed to reload core client: {err}"))?;
         *guard = create_client(config)?;
         Ok(())
     }
