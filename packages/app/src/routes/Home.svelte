@@ -80,7 +80,12 @@ onMount(async () => {
 
   if (isLocalDesktop() && appConfigStore.autoStartDocker) {
     console.info("Attempting Docker auto-start based on user preference");
-    await operationalStateStore.startDockerIfNeeded();
+    const result = await operationalStateStore.startDockerIfNeeded();
+    if (result.status === "error") {
+      console.error(
+        `Docker auto-start failed: ${result.error}. Continuing without auto-start.`,
+      );
+    }
   }
 
   const pollingInterval = operationalStateStore.isStarting ? 2000 : 5000;

@@ -75,11 +75,15 @@ async function startDockerIfNeeded() {
       scheduleStartingTimeout();
     }
     await refresh();
-    return status;
+    return { status };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Failed to start Docker: ${message}`);
-    throw err;
+    await refresh();
+    return {
+      status: "error",
+      error: message,
+    } as const;
   }
 }
 

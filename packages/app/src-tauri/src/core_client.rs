@@ -44,12 +44,19 @@ pub trait CoreClient: Send + Sync {
     async fn install_package(&self, name: &str) -> Result<()>;
     /// Delete a package, optionally removing images.
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()>;
+    /// Remove Kittynode data from disk.
     async fn delete_kittynode(&self) -> Result<()>;
+    /// Initialize Kittynode configuration and directories.
     async fn init_kittynode(&self) -> Result<()>;
+    /// Fetch the persisted configuration for a package.
     async fn get_package_config(&self, name: &str) -> Result<PackageConfig>;
+    /// Persist new configuration values for a package.
     async fn update_package_config(&self, name: &str, config: PackageConfig) -> Result<()>;
+    /// Check whether Docker is reachable for the current mode.
     async fn is_docker_running(&self) -> Result<bool>;
+    /// Attempt to start Docker if auto-start policies allow it.
     async fn start_docker_if_needed(&self) -> Result<DockerStartStatus>;
+    /// Report the operational capabilities (install/manage, diagnostics, etc.).
     async fn get_operational_state(&self) -> Result<OperationalState>;
 }
 
