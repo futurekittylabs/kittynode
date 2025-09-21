@@ -117,19 +117,9 @@ export const updates = {
   },
 };
 async function checkLinuxManifest(): Promise<boolean> {
-  const response = await fetch(LATEST_MANIFEST_URL, {
-    headers: {
-      Accept: "application/json",
-    },
+  const manifest = await invoke<LatestManifest>("fetch_latest_manifest", {
+    url: LATEST_MANIFEST_URL,
   });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch latest manifest: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  const manifest = (await response.json()) as LatestManifest;
 
   if (!manifest.version) {
     throw new Error("Latest manifest is missing the version property");
