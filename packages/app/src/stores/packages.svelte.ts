@@ -29,6 +29,7 @@ let installedState = $state<InstalledState>({
 });
 
 let installedRequestToken = 0;
+let lastOperationalSnapshot: { canManage: boolean } | null = null;
 
 function toPackageRecord(list: Package[]): Record<string, Package> {
   return Object.fromEntries(list.map((pkg) => [pkg.name, pkg]));
@@ -188,11 +189,18 @@ export const packagesStore = {
       return;
     }
 
+    const previous = lastOperationalSnapshot;
+    lastOperationalSnapshot = { canManage: state.canManage };
+
     if (state.canManage) {
-      void this.loadInstalledPackages({ force: true });
+      if (!previous || !previous.canManage) {
+        void this.loadInstalledPackages({ force: true });
+      }
       return;
     }
 
-    setInstalledUnavailable();
+    if (!previous || previous.canManage) {
+      setInstalledUnavailable();
+    }
   },
 };
