@@ -2,6 +2,7 @@ mod commands;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(about, version)]
@@ -65,6 +66,42 @@ enum Commands {
     IsDockerRunning,
     StartDockerIfNeeded,
     GetOperationalState,
+    Validator {
+        #[command(subcommand)]
+        command: ValidatorCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum ValidatorCommands {
+    #[command(name = "generate-keys")]
+    GenerateKeys {
+        #[arg(long = "output-dir", value_name = "PATH")]
+        output_dir: PathBuf,
+        #[arg(long = "entropy", value_name = "STRING")]
+        entropy: String,
+        #[arg(long = "file-name", value_name = "NAME")]
+        file_name: Option<String>,
+        #[arg(long = "overwrite")]
+        overwrite: bool,
+    },
+    #[command(name = "create-deposit-data")]
+    CreateDepositData {
+        #[arg(long = "key", value_name = "PATH")]
+        key_path: PathBuf,
+        #[arg(long = "output", value_name = "PATH")]
+        output_path: PathBuf,
+        #[arg(long = "withdrawal-credentials", value_name = "HEX")]
+        withdrawal_credentials: String,
+        #[arg(long = "amount-gwei", default_value_t = 32_000_000_000)]
+        amount_gwei: u64,
+        #[arg(long = "fork-version", default_value = "00000000")]
+        fork_version: String,
+        #[arg(long = "genesis-root", value_name = "HEX")]
+        genesis_root: String,
+        #[arg(long = "overwrite")]
+        overwrite: bool,
+    },
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String), String> {
@@ -111,6 +148,31 @@ async fn main() -> Result<()> {
         Commands::IsDockerRunning => commands::is_docker_running().await?,
         Commands::StartDockerIfNeeded => commands::start_docker_if_needed().await?,
         Commands::GetOperationalState => commands::get_operational_state().await?,
+        Commands::Validator { command } => match command {
+            ValidatorCommands::GenerateKeys {
+                output_dir,
+                entropy,
+                file_name,
+                overwrite,
+            } => commands::validator_generate_keys(output_dir, file_name, entropy, overwrite)?,
+            ValidatorCommands::CreateDepositData {
+                key_path,
+                output_path,
+                withdrawal_credentials,
+                amount_gwei,
+                fork_version,
+                genesis_root,
+                overwrite,
+            } => commands::validator_create_deposit_data(
+                key_path,
+                output_path,
+                withdrawal_credentials,
+                amount_gwei,
+                fork_version,
+                genesis_root,
+                overwrite,
+            )?,
+        },
     }
 
     Ok(())

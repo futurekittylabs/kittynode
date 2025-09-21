@@ -1,9 +1,10 @@
 use eyre::{Result, WrapErr};
-use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
 };
+use kittynode_core::api::{self, CreateDepositDataParams, GenerateKeysParams};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub async fn get_packages() -> Result<()> {
     let packages = api::get_packages()?;
@@ -216,4 +217,48 @@ fn print_operational_state_text(state: &OperationalState) {
             println!("  - {entry}");
         }
     }
+}
+
+pub fn validator_generate_keys(
+    output_dir: PathBuf,
+    file_name: Option<String>,
+    entropy: String,
+    overwrite: bool,
+) -> Result<()> {
+    let params = GenerateKeysParams {
+        output_dir,
+        file_name,
+        entropy,
+        overwrite,
+    };
+    let key_path = params.key_path();
+    let key = api::generate_keys(params)?;
+    println!("Stored validator key at {}", key_path.display());
+    println!("Public key: {}", key.public_key);
+    Ok(())
+}
+
+pub fn validator_create_deposit_data(
+    key_path: PathBuf,
+    output_path: PathBuf,
+    withdrawal_credentials: String,
+    amount_gwei: u64,
+    fork_version_hex: String,
+    genesis_root_hex: String,
+    overwrite: bool,
+) -> Result<()> {
+    let params = CreateDepositDataParams::from_hex_inputs(
+        key_path,
+        output_path.clone(),
+        withdrawal_credentials,
+        amount_gwei,
+        &fork_version_hex,
+        &genesis_root_hex,
+        overwrite,
+    )?;
+
+    let deposit = api::create_deposit_data(params)?;
+    println!("Stored deposit data at {}", output_path.display());
+    println!("Deposit data root: {}", deposit.deposit_data_root);
+    Ok(())
 }

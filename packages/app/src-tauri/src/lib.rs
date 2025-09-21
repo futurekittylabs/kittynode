@@ -4,9 +4,13 @@ use crate::core_client::CoreClientManager;
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
-use kittynode_core::api::types::{Config, OperationalState, Package, PackageConfig, SystemInfo};
+use kittynode_core::api::types::{
+    Config, DepositData, OperationalState, Package, PackageConfig, SystemInfo, ValidatorKey,
+};
+use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::LazyLock;
 use tauri::{Manager, State};
 use tauri_plugin_http::reqwest;
@@ -221,6 +225,65 @@ async fn get_operational_state(
         .map_err(|e| e.to_string())
 }
 
+#[derive(Deserialize)]
+struct GenerateValidatorKeysArgs {
+    output_dir: String,
+    file_name: Option<String>,
+    entropy: String,
+    overwrite: bool,
+}
+
+#[tauri::command]
+async fn generate_validator_keys(
+    args: GenerateValidatorKeysArgs,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<ValidatorKey, String> {
+    let client = client_state.client();
+    let params = GenerateKeysParams {
+        output_dir: PathBuf::from(&args.output_dir),
+        file_name: args.file_name,
+        entropy: args.entropy,
+        overwrite: args.overwrite,
+    };
+    client
+        .generate_validator_keys(params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Deserialize)]
+struct CreateDepositDataArgs {
+    key_path: String,
+    output_path: String,
+    withdrawal_credentials: String,
+    amount_gwei: u64,
+    fork_version: String,
+    genesis_root: String,
+    overwrite: bool,
+}
+
+#[tauri::command]
+async fn create_validator_deposit_data(
+    args: CreateDepositDataArgs,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<DepositData, String> {
+    let params = CreateDepositDataParams::from_hex_inputs(
+        PathBuf::from(&args.key_path),
+        PathBuf::from(&args.output_path),
+        args.withdrawal_credentials,
+        args.amount_gwei,
+        &args.fork_version,
+        &args.genesis_root,
+        args.overwrite,
+    )
+    .map_err(|err| err.to_string())?;
+    let client = client_state.client();
+    client
+        .create_validator_deposit_data(params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn get_onboarding_completed() -> Result<bool, String> {
     info!("Getting onboarding completed status");
@@ -301,6 +364,8 @@ pub fn run() -> Result<()> {
             get_package_config,
             update_package_config,
             get_operational_state,
+            generate_validator_keys,
+            create_validator_deposit_data,
             get_onboarding_completed,
             set_onboarding_completed,
             get_config,
