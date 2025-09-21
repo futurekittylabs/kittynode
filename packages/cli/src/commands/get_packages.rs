@@ -1,5 +1,5 @@
 use eyre::Result;
-use kittynode_core::application::get_packages;
+use kittynode_core::api::get_packages;
 
 pub async fn get_packages_cmd() -> Result<()> {
     let packages = get_packages()?;

@@ -1,7 +1,5 @@
 use eyre::Result;
-use kittynode_core::domain::config::Config;
-use kittynode_core::domain::package::{Package, PackageConfig};
-use kittynode_core::domain::system_info::SystemInfo;
+use kittynode_core::api::types::{Config, Package, PackageConfig, SystemInfo};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 use tauri::Manager;
@@ -29,7 +27,7 @@ async fn add_capability(name: String, server_url: String) -> Result<(), String> 
         }
         Ok(())
     } else {
-        kittynode_core::application::add_capability(&name).map_err(|e| e.to_string())
+        kittynode_core::api::add_capability(&name).map_err(|e| e.to_string())
     }
 }
 
@@ -49,7 +47,7 @@ async fn remove_capability(name: String, server_url: String) -> Result<(), Strin
         }
         Ok(())
     } else {
-        kittynode_core::application::remove_capability(&name).map_err(|e| e.to_string())
+        kittynode_core::api::remove_capability(&name).map_err(|e| e.to_string())
     }
 }
 
@@ -76,14 +74,14 @@ async fn get_capabilities(server_url: String) -> Result<Vec<String>, String> {
 
         res.json::<Vec<String>>().await.map_err(|e| e.to_string())
     } else {
-        kittynode_core::application::get_capabilities().map_err(|e| e.to_string())
+        kittynode_core::api::get_capabilities().map_err(|e| e.to_string())
     }
 }
 
 #[tauri::command]
 fn get_packages() -> Result<HashMap<String, Package>, String> {
     info!("Getting packages");
-    kittynode_core::application::get_packages()
+    kittynode_core::api::get_packages()
         .map(|packages| {
             packages
                 .into_iter()
@@ -116,7 +114,7 @@ async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, Stri
 
         res.json::<Vec<Package>>().await.map_err(|e| e.to_string())
     } else {
-        kittynode_core::application::get_installed_packages()
+        kittynode_core::api::get_installed_packages()
             .await
             .map_err(|e| e.to_string())
     }
@@ -125,7 +123,7 @@ async fn get_installed_packages(server_url: String) -> Result<Vec<Package>, Stri
 #[tauri::command]
 async fn is_docker_running() -> bool {
     info!("Checking if Docker is running");
-    kittynode_core::application::is_docker_running().await
+    kittynode_core::api::is_docker_running().await
 }
 
 #[tauri::command]
@@ -138,20 +136,20 @@ async fn start_docker_if_needed() -> Result<String, String> {
     };
 
     if already_attempted {
-        if kittynode_core::application::is_docker_running().await {
+        if kittynode_core::api::is_docker_running().await {
             return Ok("running".to_string());
         }
 
         return Ok("already_started".to_string());
     }
 
-    if kittynode_core::application::is_docker_running().await {
+    if kittynode_core::api::is_docker_running().await {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         *auto_started = true;
         return Ok("running".to_string());
     }
 
-    let config = kittynode_core::application::get_config().map_err(|e| e.to_string())?;
+    let config = kittynode_core::api::get_config().map_err(|e| e.to_string())?;
     if !config.auto_start_docker {
         info!("Skipping Docker auto-start due to user preference");
         return Ok("disabled".to_string());
@@ -168,7 +166,7 @@ async fn start_docker_if_needed() -> Result<String, String> {
     };
 
     if !should_attempt_start {
-        if kittynode_core::application::is_docker_running().await {
+        if kittynode_core::api::is_docker_running().await {
             return Ok("running".to_string());
         }
 
@@ -177,7 +175,7 @@ async fn start_docker_if_needed() -> Result<String, String> {
 
     info!("Starting Docker Desktop");
 
-    if let Err(err) = kittynode_core::application::start_docker().await {
+    if let Err(err) = kittynode_core::api::start_docker().await {
         let mut auto_started = DOCKER_AUTO_STARTED.lock().unwrap();
         *auto_started = false;
         return Err(err.to_string());
@@ -199,7 +197,7 @@ async fn install_package(name: String, server_url: String) -> Result<(), String>
             return Err(format!("Failed to install package: {}", res.status()));
         }
     } else {
-        kittynode_core::application::install_package(&name)
+        kittynode_core::api::install_package(&name)
             .await
             .map_err(|e| e.to_string())?;
     }
@@ -225,7 +223,7 @@ async fn delete_package(
             return Err(format!("Failed to delete package: {}", res.status()));
         }
     } else {
-        kittynode_core::application::delete_package(&name, include_images)
+        kittynode_core::api::delete_package(&name, include_images)
             .await
             .map_err(|e| e.to_string())?;
     }
@@ -250,7 +248,7 @@ async fn delete_kittynode(server_url: String) -> Result<(), String> {
         }
         Ok(())
     } else {
-        kittynode_core::application::delete_kittynode().map_err(|e| e.to_string())
+        kittynode_core::api::delete_kittynode().map_err(|e| e.to_string())
     }
 }
 
@@ -272,7 +270,7 @@ async fn system_info(server_url: String) -> Result<SystemInfo, String> {
 
         res.json::<SystemInfo>().await.map_err(|e| e.to_string())
     } else {
-        kittynode_core::application::get_system_info().map_err(|e| e.to_string())
+        kittynode_core::api::get_system_info().map_err(|e| e.to_string())
     }
 }
 
@@ -292,7 +290,7 @@ async fn init_kittynode(server_url: String) -> Result<(), String> {
         }
         Ok(())
     } else {
-        kittynode_core::application::init_kittynode().map_err(|e| e.to_string())
+        kittynode_core::api::init_kittynode().map_err(|e| e.to_string())
     }
 }
 
@@ -326,7 +324,7 @@ async fn get_container_logs(
         }
         res.json::<Vec<String>>().await.map_err(|e| e.to_string())
     } else {
-        kittynode_core::application::get_container_logs(&container_name, tail_lines)
+        kittynode_core::api::get_container_logs(&container_name, tail_lines)
             .await
             .map_err(|e| e.to_string())
     }
@@ -343,7 +341,7 @@ async fn get_package_config(name: String, server_url: String) -> Result<PackageC
             .map_err(|e| e.to_string())?;
         res.json::<PackageConfig>().await.map_err(|e| e.to_string())
     } else {
-        kittynode_core::application::get_package_config(&name)
+        kittynode_core::api::get_package_config(&name)
             .await
             .map_err(|e| e.to_string())
     }
@@ -368,7 +366,7 @@ async fn update_package_config(
         }
         Ok(())
     } else {
-        kittynode_core::application::update_package_config(&name, config)
+        kittynode_core::api::update_package_config(&name, config)
             .await
             .map_err(|e| e.to_string())
     }
@@ -377,25 +375,25 @@ async fn update_package_config(
 #[tauri::command]
 fn get_onboarding_completed() -> Result<bool, String> {
     info!("Getting onboarding completed status");
-    kittynode_core::application::get_onboarding_completed().map_err(|e| e.to_string())
+    kittynode_core::api::get_onboarding_completed().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn set_onboarding_completed(completed: bool) -> Result<(), String> {
     info!("Setting onboarding completed to: {}", completed);
-    kittynode_core::application::set_onboarding_completed(completed).map_err(|e| e.to_string())
+    kittynode_core::api::set_onboarding_completed(completed).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn get_config() -> Result<Config, String> {
     info!("Loading Kittynode configuration");
-    kittynode_core::application::get_config().map_err(|e| e.to_string())
+    kittynode_core::api::get_config().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn set_auto_start_docker(enabled: bool) -> Result<(), String> {
     info!("Updating auto start docker preference to: {}", enabled);
-    kittynode_core::application::set_auto_start_docker(enabled).map_err(|e| e.to_string())
+    kittynode_core::api::set_auto_start_docker(enabled).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
