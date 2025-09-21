@@ -95,7 +95,7 @@ fn encode_hex(bytes: &[u8]) -> String {
 fn decode_hex(input: &str) -> Result<Vec<u8>> {
     let trimmed = input.trim();
     let without_prefix = trimmed.strip_prefix("0x").unwrap_or(trimmed);
-    if without_prefix.len() % 2 != 0 {
+    if !without_prefix.len().is_multiple_of(2) {
         return Err(eyre!(
             "hex value must have an even length, got {} characters",
             without_prefix.len()

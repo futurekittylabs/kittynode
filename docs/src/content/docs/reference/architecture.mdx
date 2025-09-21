@@ -3,31 +3,34 @@ title: Architecture
 description: Kittynode architecture.
 ---
 
-Kittynode is a control center for world computer operators. It's designed so that anyone in the world can easily get started running an Ethereum node. The entire process of setting up a node is encapsulated within the Kittynode app:
-
-- Installing and starting Docker or Kubernetes for the user
-- Installing an Ethereum node in a few clicks
-- Configuring a validator all without leaving the app:
-  - Generate validator/withdrawal keys
-  - Submit 32 ETH deposit transaction
-
-After setting up a node, the operator can monitor it from anywhere in the world with the mobile app.
+Kittynode is a control center for world computer operators. It's designed so that anyone in the world can easily get started running an Ethereum node. The codebase is architected to be modular, extensible, and secure.
 
 ## Modules
 
-Kittynode is comprised of several modules that compose together to create seamless and secure experiences for node operators. It also allows us to understand the security boundaries of each module with more clarity. By re-using code and keeping important modules isolated, we increase the security of the entire system for node operators.
+Kittynode is split into packages that cover the core logic, user interfaces, and remote bindings. The clear boundaries let us reason about security per module, reuse the same code everywhere, and add features without reshaping the rest of the system.
 
-| Package          | Description                                           |
-| ---------------- | ----------------------------------------------------- |
-| `kittynode-core` | Core Rust library powering all Kittynode applications |
-| `kittynode-cli`  | Command-line interface built on the core library      |
-| `kittynode-app`  | Cross-platform Tauri app with Svelte frontend         |
-| `kittynode-web`  | Web server binding to the core library                |
+| Package          | What it does                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `kittynode-core` | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
+| `kittynode-cli`  | Thin command-line wrapper that forwards subcommands to the core API for headless environments              |
+| `kittynode-app`  | Tauri desktop/mobile shell with the Svelte UI that talks to the core directly or through HTTP              |
+| `kittynode-web`  | Axum HTTP service that exposes the core API for remote management and automation                           |
 
 ### Core API Facade
 
 - Consumers import from `kittynode_core::api` and `kittynode_core::api::types` only.
 - Internal layers (`application`, `domain`, `infra`, `manifests`) remain crate-internal to allow refactors without consumer churn.
+
+### Core internals
+
+Inside `kittynode-core` the folders map directly to responsibilities:
+
+- `application` orchestrates use cases such as installing packages, generating validator data, and managing capabilities.
+- `domain` defines the data types that move between layers as plain structs and enums.
+- `infra` talks to Docker through Bollard, manages files under `~/.kittynode`, and persists configuration.
+- `manifests` holds package definitions. Each manifest describes the containers, networks, and volumes needed for a stack like Ethereum.
+
+This split keeps privileged logic small and makes it straightforward to add new behaviours without touching every consumer.
 
 ## Technology Stack
 
@@ -48,6 +51,8 @@ Kittynode has three user facing apps:
 
 Every app uses the same core library, and the desktop/mobile app uses the same frontend codebase. By re-using components, Kittynode is easier to audit and more secure, with less lines of code.
 
+The Tauri app switches between a local client and an HTTP client (`kittynode-web`) based on the configured server URL, so we can manage a remote node without changing UI code. Remote mode disables sensitive flows like key generation on the controlling device but still surfaces live status from the node.
+
 ## Capabilities
 
 There are several capabilities you can add to your Kittynode which augment the threat model. We default to minimizing the capabilities of the Kittynode, while giving enough features to get started.
@@ -58,6 +63,22 @@ Here are a few example capabilities related to remote access:
 - **Local only**: Kittynode can update local node infrastructure from the host machine.
 - **Private onchain requests**: Kittynode can update local node infrastructure via listening to private requests submitted onchain.
 - **Local HTTPS server**: Kittynode can update local node infrastructure via requests that come from the same Wireguard network (but a different machine, such as a phone); these requests are authenticated by a passkey or JWT token.
+
+Capabilities and general configuration are stored under `~/.kittynode/config.toml`.
+
+## Package lifecycle
+
+Package installs are declarative:
+
+1. A manifest returns a `Package` with default configuration and container definitions.
+2. `infra::package::install_package` creates the Docker network, pulls images, and starts the containers.
+3. `infra::package::delete_package` stops containers, removes Docker resources, and cleans any files that were mounted.
+
+Because the manifests are normal Rust code, adding a new stack mainly means writing one manifest and any matching UI strings.
+
+## Operational state
+
+`kittynode-core` reports mode, Docker health, and diagnostics through `get_operational_state`. If Docker is not running and auto-start is enabled, `start_docker_if_needed` will try to launch Docker Desktop once and return a status so the UI can inform the operator. Hardware, storage, and OS details come from `get_system_info` and feed into the same status views.
 
 ## Architecture Diagram
 
