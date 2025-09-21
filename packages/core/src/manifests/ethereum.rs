@@ -1,9 +1,8 @@
-use bollard::models::PortBinding;
 use eyre::Result;
 use std::collections::HashMap;
 
 use crate::{
-    domain::container::{Binding, Container},
+    domain::container::{Binding, Container, PortBinding},
     domain::package::{Package, PackageConfig, PackageDefinition},
     infra::file::kittynode_path,
 };

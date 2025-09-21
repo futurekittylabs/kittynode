@@ -10,6 +10,7 @@ pub(crate) trait PackageDefinition {
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PackageConfig {
     pub values: HashMap<String, String>,
 }
@@ -24,6 +25,7 @@ impl PackageConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Package {
     pub(crate) name: String,
     pub(crate) description: String,

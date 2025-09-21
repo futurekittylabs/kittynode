@@ -1,9 +1,9 @@
-use bollard::models::PortBinding;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Container {
     pub(crate) name: String,
     pub(crate) image: String,
@@ -14,6 +14,14 @@ pub struct Container {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortBinding {
+    pub(crate) host_ip: Option<String>,
+    pub(crate) host_port: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Binding {
     pub(crate) source: String,
     pub(crate) destination: String,
