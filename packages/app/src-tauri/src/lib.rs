@@ -1,15 +1,42 @@
 use eyre::Result;
 use kittynode_core::api::types::{Config, Package, PackageConfig, SystemInfo};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 use tauri::Manager;
 use tauri_plugin_http::reqwest;
 use tracing::info;
 
+#[derive(Serialize, Deserialize)]
+struct LatestManifest {
+    version: String,
+}
+
 pub static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
 // Tracks whether we've already attempted to start Docker automatically this session
 pub static DOCKER_AUTO_STARTED: LazyLock<Arc<Mutex<bool>>> =
     LazyLock::new(|| Arc::new(Mutex::new(false)));
+
+#[tauri::command]
+async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
+    info!("Fetching latest manifest from: {}", url);
+
+    let response = HTTP_CLIENT
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!("Failed to fetch latest manifest: {}", status));
+    }
+
+    response
+        .json::<LatestManifest>()
+        .await
+        .map_err(|e| e.to_string())
+}
 
 #[tauri::command]
 async fn add_capability(name: String, server_url: String) -> Result<(), String> {
@@ -421,6 +448,7 @@ pub fn run() -> Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            fetch_latest_manifest,
             get_packages,
             get_installed_packages,
             is_docker_running,
