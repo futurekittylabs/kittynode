@@ -1,18 +1,14 @@
 import { check } from "@tauri-apps/plugin-updater";
 import type { Update } from "@tauri-apps/plugin-updater";
-import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { platform } from "@tauri-apps/plugin-os";
 import { clean as semverClean, gt as semverGt } from "semver";
 import { notifyError, notifyInfo } from "$utils/notify";
+import { coreClient, type LatestManifest } from "$lib/client";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const LATEST_MANIFEST_URL =
   "https://github.com/futurekittylabs/kittynode/releases/latest/download/latest.json";
-
-type LatestManifest = {
-  version: string;
-};
 
 let currentUpdate = $state<Update | null>(null);
 let dismissedTime = $state<number | null>(null);
@@ -109,7 +105,7 @@ export const updates = {
       });
 
       console.info("Update installed.");
-      await invoke("restart_app");
+      await coreClient.restartApp();
     } catch (e) {
       notifyError("Failed to update Kittynode", e);
     }
@@ -117,9 +113,8 @@ export const updates = {
   },
 };
 async function checkLinuxManifest(): Promise<boolean> {
-  const manifest = await invoke<LatestManifest>("fetch_latest_manifest", {
-    url: LATEST_MANIFEST_URL,
-  });
+  const manifest: LatestManifest =
+    await coreClient.fetchLatestManifest(LATEST_MANIFEST_URL);
 
   if (!manifest.version) {
     throw new Error("Latest manifest is missing the version property");

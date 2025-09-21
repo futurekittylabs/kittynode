@@ -113,7 +113,7 @@ onMount(() => {
             </div>
             <div>
               <p class="text-muted-foreground">Frequency</p>
-              <p class="font-medium">{systemInfoStore.systemInfo.processor.frequency_ghz.toFixed(2)} GHz</p>
+              <p class="font-medium">{systemInfoStore.systemInfo.processor.frequencyGhz.toFixed(2)} GHz</p>
             </div>
           </div>
           <div>
@@ -133,7 +133,7 @@ onMount(() => {
         <Card.Content class="space-y-2">
           <div>
             <p class="text-sm text-muted-foreground">Total System Memory</p>
-            <p class="text-2xl font-bold">{systemInfoStore.systemInfo.memory.total_display}</p>
+            <p class="text-2xl font-bold">{systemInfoStore.systemInfo.memory.totalDisplay}</p>
           </div>
           <div class="pt-2">
             <p class="text-xs text-muted-foreground">
@@ -158,8 +158,8 @@ onMount(() => {
       <Card.Content class="space-y-4">
         {#each systemInfoStore.systemInfo.storage.disks as disk}
           {@const usagePercent = calculateUsagePercentage(
-            disk.total_bytes - disk.available_bytes,
-            disk.total_bytes
+            disk.totalBytes - disk.availableBytes,
+            disk.totalBytes
           )}
           <div class="space-y-2">
             <div class="flex items-center justify-between">
@@ -169,7 +169,7 @@ onMount(() => {
             </div>
             <Progress value={usagePercent} max={100} />
             <div class="flex justify-between text-xs text-muted-foreground">
-              <span>{disk.used_display} of {disk.total_display} used</span>
+              <span>{disk.usedDisplay} of {disk.totalDisplay} used</span>
             </div>
           </div>
         {/each}

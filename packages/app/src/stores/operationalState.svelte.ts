@@ -1,26 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import type {
   OperationalMode,
   OperationalState,
 } from "$lib/types/operational_state";
-
-interface RawOperationalState {
-  mode: OperationalMode;
-  docker_running: boolean;
-  can_install: boolean;
-  can_manage: boolean;
-  diagnostics?: string[];
-}
-
-function normalizeOperationalState(raw: RawOperationalState): OperationalState {
-  return {
-    mode: raw.mode,
-    dockerRunning: raw.docker_running,
-    canInstall: raw.can_install,
-    canManage: raw.can_manage,
-    diagnostics: raw.diagnostics ?? [],
-  };
-}
 
 let state = $state<OperationalState | null>(null);
 let loading = $state(false);
@@ -32,8 +14,7 @@ let startingTimeout: number | null = $state(null);
 async function refresh() {
   loading = true;
   try {
-    const raw = await invoke<RawOperationalState>("get_operational_state");
-    state = normalizeOperationalState(raw);
+    state = await coreClient.getOperationalState();
     error = null;
     if (state.dockerRunning) {
       isStarting = false;
@@ -68,7 +49,7 @@ function stopPolling() {
 
 async function startDockerIfNeeded() {
   try {
-    const status = await invoke<string>("start_docker_if_needed");
+    const status = await coreClient.startDockerIfNeeded();
     if (status === "starting") {
       isStarting = true;
       startPolling(STARTING_POLL_INTERVAL);

@@ -1,9 +1,12 @@
-use crate::domain::container::{Binding, Container};
+use crate::domain::container::{Binding, Container, PortBinding};
 #[cfg(target_os = "linux")]
 use bollard::API_DEFAULT_VERSION;
 use bollard::{
     Docker,
-    models::{ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest},
+    models::{
+        ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest,
+        PortBinding as DockerPortBinding,
+    },
     query_parameters::{
         CreateContainerOptionsBuilder, CreateImageOptionsBuilder, ListContainersOptionsBuilder,
         LogsOptionsBuilder,
@@ -219,7 +222,7 @@ pub(crate) async fn pull_and_start_container(
     let port_bindings = container
         .port_bindings
         .iter()
-        .map(|(k, v)| (k.to_string(), Some(v.clone())))
+        .map(|(k, v)| (k.to_string(), Some(convert_port_bindings(v))))
         .collect();
 
     let bindings = container
@@ -314,4 +317,14 @@ fn create_binding_string(binding: &Binding) -> String {
         Some(options) => format!("{}:{}:{}", binding.source, binding.destination, options),
         None => format!("{}:{}", binding.source, binding.destination),
     }
+}
+
+fn convert_port_bindings(bindings: &[PortBinding]) -> Vec<DockerPortBinding> {
+    bindings
+        .iter()
+        .map(|binding| DockerPortBinding {
+            host_ip: binding.host_ip.clone(),
+            host_port: binding.host_port.clone(),
+        })
+        .collect()
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import Convert from "ansi-to-html";
 
 const convert = new Convert();
@@ -17,10 +17,7 @@ let polling: NodeJS.Timeout;
 
 async function fetchLogs() {
   try {
-    const newLogs = await invoke<string[]>("get_container_logs", {
-      containerName,
-      tailLines,
-    });
+    const newLogs = await coreClient.getContainerLogs(containerName, tailLines);
 
     // Convert ANSI escape sequences to HTML
     logs = newLogs.map((log) => convert.toHtml(log));

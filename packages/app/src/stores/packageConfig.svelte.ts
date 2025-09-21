@@ -1,23 +1,15 @@
-import { invoke } from "@tauri-apps/api/core";
-
-interface PackageConfig {
-  values: Record<string, string>;
-}
+import { coreClient } from "$lib/client";
+import type { PackageConfig } from "$lib/types";
 
 export const packageConfigStore = {
   async getConfig(packageName: string): Promise<PackageConfig> {
-    return await invoke("get_package_config", {
-      name: packageName,
-    });
+    return await coreClient.getPackageConfig(packageName);
   },
 
   async updateConfig(
     packageName: string,
     config: PackageConfig,
   ): Promise<void> {
-    await invoke("update_package_config", {
-      name: packageName,
-      config,
-    });
+    await coreClient.updatePackageConfig(packageName, config);
   },
 };

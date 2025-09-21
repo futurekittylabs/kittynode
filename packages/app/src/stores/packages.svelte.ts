@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
 import type { OperationalState } from "$lib/types/operational_state";
 import { operationalStateStore } from "./operationalState.svelte";
@@ -93,7 +93,7 @@ export const packagesStore = {
     };
 
     try {
-      const result = await invoke<Record<string, Package>>("get_packages");
+      const result = await coreClient.getPackages();
       catalogState = {
         status: "ready",
         packages: result,
@@ -132,7 +132,7 @@ export const packagesStore = {
     };
 
     try {
-      const result = await invoke<Package[]>("get_installed_packages");
+      const result = await coreClient.getInstalledPackages();
 
       if (requestId !== installedRequestToken) {
         return;
@@ -163,7 +163,7 @@ export const packagesStore = {
 
   async installPackage(name: string) {
     try {
-      await invoke("install_package", { name });
+      await coreClient.installPackage(name);
       await this.loadInstalledPackages({ force: true });
     } catch (e) {
       console.error(`Failed to install ${name}: ${e}`);
@@ -173,10 +173,7 @@ export const packagesStore = {
 
   async deletePackage(name: string) {
     try {
-      await invoke("delete_package", {
-        name,
-        includeImages: false,
-      });
+      await coreClient.deletePackage(name, false);
       await this.loadInstalledPackages({ force: true });
     } catch (e) {
       console.error(`Failed to delete ${name}: ${e}`);
