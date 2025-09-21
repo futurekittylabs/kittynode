@@ -5,9 +5,9 @@ use axum::{
     response::Json,
     routing::{get, post},
 };
-use kittynode_core::domain::logs::LogsQuery;
-use kittynode_core::domain::package::Package;
-use kittynode_core::domain::system_info::SystemInfo;
+use kittynode_core::api::types::LogsQuery;
+use kittynode_core::api::types::Package;
+use kittynode_core::api::types::SystemInfo;
 
 pub(crate) async fn hello_world() -> &'static str {
     "Hello World!"
@@ -16,7 +16,7 @@ pub(crate) async fn hello_world() -> &'static str {
 pub(crate) async fn add_capability(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::add_capability(&name)
+    kittynode_core::api::add_capability(&name)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
 }
@@ -24,13 +24,13 @@ pub(crate) async fn add_capability(
 pub(crate) async fn remove_capability(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::remove_capability(&name)
+    kittynode_core::api::remove_capability(&name)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
 }
 
 pub(crate) async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    kittynode_core::application::get_capabilities()
+    kittynode_core::api::get_capabilities()
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
@@ -38,7 +38,7 @@ pub(crate) async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode,
 pub(crate) async fn install_package(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::install_package(&name)
+    kittynode_core::api::install_package(&name)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
@@ -47,21 +47,21 @@ pub(crate) async fn install_package(
 pub(crate) async fn delete_package(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::delete_package(&name, false)
+    kittynode_core::api::delete_package(&name, false)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
 }
 
 pub(crate) async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
-    kittynode_core::application::get_installed_packages()
+    kittynode_core::api::get_installed_packages()
         .await
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
 pub(crate) async fn is_docker_running() -> Result<StatusCode, (StatusCode, String)> {
-    match kittynode_core::application::is_docker_running().await {
+    match kittynode_core::api::is_docker_running().await {
         true => Ok(StatusCode::OK),
         false => Err((
             StatusCode::SERVICE_UNAVAILABLE,
@@ -71,19 +71,19 @@ pub(crate) async fn is_docker_running() -> Result<StatusCode, (StatusCode, Strin
 }
 
 pub(crate) async fn init_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::init_kittynode()
+    kittynode_core::api::init_kittynode()
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
 }
 
 pub(crate) async fn delete_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    kittynode_core::application::delete_kittynode()
+    kittynode_core::api::delete_kittynode()
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
 }
 
 pub(crate) async fn get_system_info() -> Result<Json<SystemInfo>, (StatusCode, String)> {
-    kittynode_core::application::get_system_info()
+    kittynode_core::api::get_system_info()
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
@@ -92,7 +92,7 @@ pub(crate) async fn get_container_logs(
     Path(container_name): Path<String>,
     Query(params): Query<LogsQuery>,
 ) -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    kittynode_core::application::get_container_logs(&container_name, params.tail)
+    kittynode_core::api::get_container_logs(&container_name, params.tail)
         .await
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))

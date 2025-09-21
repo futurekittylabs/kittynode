@@ -24,6 +24,11 @@ Kittynode is comprised of several modules that compose together to create seamle
 | `kittynode-app`  | Cross-platform Tauri app with Svelte frontend         |
 | `kittynode-web`  | Web server binding to the core library                |
 
+### Core API Facade
+
+- Consumers import from `kittynode_core::api` and `kittynode_core::api::types` only.
+- Internal layers (`application`, `domain`, `infra`, `manifests`) remain crate-internal to allow refactors without consumer churn.
+
 ## Technology Stack
 
 The entire technology stack was carefully selected so Kittynode can quickly and securely scale development. We plan to audit every single line of code.

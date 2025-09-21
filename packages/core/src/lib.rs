@@ -1,7 +1,8 @@
 // Public modules
-pub mod application;
-pub mod domain;
+pub mod api;
 
 // Internal modules
+mod application;
+mod domain;
 mod infra;
 mod manifests;
