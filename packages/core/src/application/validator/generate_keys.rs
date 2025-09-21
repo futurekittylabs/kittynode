@@ -45,8 +45,8 @@ impl Default for GenerateKeysParams {
 }
 
 pub fn generate_keys(params: GenerateKeysParams) -> Result<ValidatorKey> {
-    let crypto = SimpleCryptoProvider::default();
-    let filesystem = StdValidatorFilesystem::default();
+    let crypto = SimpleCryptoProvider;
+    let filesystem = StdValidatorFilesystem;
     generate_keys_with(params, &crypto, &filesystem)
 }
 
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn writes_key_using_filesystem() {
         let fs = TestFilesystem::default();
-        let crypto = TestCrypto::default();
+        let crypto = TestCrypto;
         let params = GenerateKeysParams {
             output_dir: PathBuf::from("/validators"),
             file_name: Some("key.json".into()),
@@ -194,7 +194,7 @@ mod tests {
             .lock()
             .expect("mutex poisoned")
             .push(PathBuf::from("/validators"));
-        let crypto = TestCrypto::default();
+        let crypto = TestCrypto;
         let params = GenerateKeysParams {
             output_dir: PathBuf::from("/validators"),
             file_name: Some("key.json".into()),

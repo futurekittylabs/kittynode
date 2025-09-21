@@ -37,8 +37,8 @@ impl CreateDepositDataParams {
 }
 
 pub fn create_deposit_data(params: CreateDepositDataParams) -> Result<DepositData> {
-    let crypto = SimpleCryptoProvider::default();
-    let filesystem = StdValidatorFilesystem::default();
+    let crypto = SimpleCryptoProvider;
+    let filesystem = StdValidatorFilesystem;
     create_deposit_data_with(params, &crypto, &filesystem)
 }
 
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn builds_deposit_and_writes_file() {
         let fs = TestFilesystem::default();
-        let crypto = TestCrypto::default();
+        let crypto = TestCrypto;
         let key_path = PathBuf::from("/validators/key.json");
         let deposit_path = PathBuf::from("/validators/deposit.json");
 
@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn rejects_insecure_key_file() {
         let fs = TestFilesystem::default();
-        let crypto = TestCrypto::default();
+        let crypto = TestCrypto;
         let key_path = PathBuf::from("/validators/key.json");
         fs.insecure_files
             .lock()

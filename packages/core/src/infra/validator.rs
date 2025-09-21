@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn simple_crypto_is_deterministic() {
-        let provider = SimpleCryptoProvider::default();
+        let provider = SimpleCryptoProvider;
         let key = provider.generate_key("entropy").unwrap();
         let withdrawal = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
         let genesis_root = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn filesystem_enforces_permissions() {
-        let fs_impl = StdValidatorFilesystem::default();
+        let fs_impl = StdValidatorFilesystem;
         let dir = tempdir().unwrap();
         let secure_dir = dir.path().join("secure");
         fs_impl.ensure_secure_directory(&secure_dir).unwrap();
@@ -396,7 +396,7 @@ mod tests {
     fn filesystem_allows_current_directory_targets() {
         use std::path::Path;
 
-        let fs_impl = StdValidatorFilesystem::default();
+        let fs_impl = StdValidatorFilesystem;
         let dir = tempdir().unwrap();
 
         #[cfg(unix)]
