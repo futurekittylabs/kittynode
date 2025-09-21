@@ -309,8 +309,11 @@ fn ensure_secure_dir_permissions(path: &Path, metadata: &fs::Metadata) -> Result
     {
         use std::os::unix::fs::PermissionsExt;
         let mode = metadata.permissions().mode();
-        if mode & 0o077 != 0 {
-            eyre::bail!("directory {} is accessible to other users", path.display());
+        if mode & 0o022 != 0 {
+            eyre::bail!(
+                "directory {} is writable by group or others",
+                path.display()
+            );
         }
     }
     Ok(())
@@ -392,7 +395,7 @@ mod tests {
         {
             use std::os::unix::fs::PermissionsExt;
             let mut perms = fs::metadata(&secure_dir).unwrap().permissions();
-            perms.set_mode(0o755);
+            perms.set_mode(0o775);
             fs::set_permissions(&secure_dir, perms).unwrap();
             let result = fs_impl.ensure_secure_directory(&secure_dir);
             assert!(result.is_err());
