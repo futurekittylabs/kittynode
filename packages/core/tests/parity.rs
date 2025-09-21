@@ -42,10 +42,18 @@ fn cli_bin_path() -> Result<&'static std::path::Path> {
     let path = if let Ok(env_path) = std::env::var("CARGO_BIN_EXE_kittynode") {
         PathBuf::from(env_path)
     } else {
+        let manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../cli/Cargo.toml");
+
         CargoBuild::new()
             .bin("kittynode")
+            .manifest_path(&manifest_path)
             .run()
-            .map_err(|err| eyre!("failed to build kittynode CLI: {err}"))?
+            .map_err(|err| {
+                eyre!(
+                    "failed to build kittynode CLI via {}: {err}",
+                    manifest_path.display()
+                )
+            })?
             .path()
             .to_path_buf()
     };
