@@ -4,9 +4,14 @@ use crate::core_client::CoreClientManager;
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
-use kittynode_core::api::types::{Config, OperationalState, Package, PackageConfig, SystemInfo};
+use kittynode_core::api::types::{
+    Config, DepositData, OperationalState, Package, PackageConfig, SystemInfo, ValidatorKey,
+};
+use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Write as _;
+use std::path::PathBuf;
 use std::sync::LazyLock;
 use tauri::{Manager, State};
 use tauri_plugin_http::reqwest;
@@ -221,6 +226,111 @@ async fn get_operational_state(
         .map_err(|e| e.to_string())
 }
 
+#[derive(Deserialize)]
+struct GenerateValidatorKeysArgs {
+    output_dir: String,
+    file_name: Option<String>,
+    entropy: String,
+    overwrite: bool,
+}
+
+#[tauri::command]
+async fn generate_validator_keys(
+    args: GenerateValidatorKeysArgs,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<ValidatorKey, String> {
+    let client = client_state.client();
+    let params = GenerateKeysParams {
+        output_dir: PathBuf::from(&args.output_dir),
+        file_name: args.file_name,
+        entropy: args.entropy,
+        overwrite: args.overwrite,
+    };
+    client
+        .generate_validator_keys(params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Deserialize)]
+struct CreateDepositDataArgs {
+    key_path: String,
+    output_path: String,
+    withdrawal_credentials: String,
+    amount_gwei: u64,
+    fork_version: String,
+    genesis_root: String,
+    overwrite: bool,
+}
+
+#[tauri::command]
+async fn create_validator_deposit_data(
+    args: CreateDepositDataArgs,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<DepositData, String> {
+    let fork_version = parse_fork_version(&args.fork_version)?;
+    let genesis_root = parse_genesis_root(&args.genesis_root)?;
+    let client = client_state.client();
+    let params = CreateDepositDataParams {
+        key_path: PathBuf::from(&args.key_path),
+        output_path: PathBuf::from(&args.output_path),
+        withdrawal_credentials: args.withdrawal_credentials,
+        amount_gwei: args.amount_gwei,
+        fork_version,
+        genesis_validators_root: genesis_root,
+        overwrite: args.overwrite,
+    };
+    client
+        .create_validator_deposit_data(params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+fn parse_fork_version(input: &str) -> Result<[u8; 4], String> {
+    let trimmed = input.trim().trim_start_matches("0x");
+    if trimmed.len() != 8 {
+        return Err(format!(
+            "fork version must be 4 bytes (8 hex characters), received {}",
+            input
+        ));
+    }
+
+    let mut bytes = [0u8; 4];
+    for (idx, chunk) in trimmed.as_bytes().chunks(2).enumerate() {
+        let hex =
+            std::str::from_utf8(chunk).map_err(|_| "invalid UTF-8 in fork version".to_string())?;
+        bytes[idx] = u8::from_str_radix(hex, 16)
+            .map_err(|_| format!("invalid hex in fork version: {hex}"))?;
+    }
+    Ok(bytes)
+}
+
+fn parse_genesis_root(input: &str) -> Result<String, String> {
+    let trimmed = input.trim();
+    let without_prefix = trimmed.strip_prefix("0x").unwrap_or(trimmed);
+    if without_prefix.len() != 64 {
+        return Err(format!(
+            "genesis validators root must be 32 bytes (64 hex characters), received {}",
+            input
+        ));
+    }
+
+    let mut bytes = [0u8; 32];
+    for (idx, chunk) in without_prefix.as_bytes().chunks(2).enumerate() {
+        let hex = std::str::from_utf8(chunk)
+            .map_err(|_| "invalid UTF-8 in genesis validators root".to_string())?;
+        bytes[idx] = u8::from_str_radix(hex, 16)
+            .map_err(|_| format!("invalid hex in genesis validators root: {hex}"))?;
+    }
+
+    let mut output = String::with_capacity(66);
+    output.push_str("0x");
+    for byte in &bytes {
+        write!(&mut output, "{:02x}", byte).expect("write to string");
+    }
+    Ok(output)
+}
+
 #[tauri::command]
 fn get_onboarding_completed() -> Result<bool, String> {
     info!("Getting onboarding completed status");
@@ -301,6 +411,8 @@ pub fn run() -> Result<()> {
             get_package_config,
             update_package_config,
             get_operational_state,
+            generate_validator_keys,
+            create_validator_deposit_data,
             get_onboarding_completed,
             set_onboarding_completed,
             get_config,

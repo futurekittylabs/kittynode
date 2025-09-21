@@ -21,6 +21,7 @@ pub mod set_server_url;
 pub mod start_docker;
 pub mod start_docker_if_needed;
 pub mod update_package_config;
+pub mod validator;
 
 pub use add_capability::add_capability;
 pub use delete_kittynode::delete_kittynode;
