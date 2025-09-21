@@ -1,43 +1,24 @@
-use crate::output::OutputFormat;
 use eyre::{Result, WrapErr};
 use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
 };
-use serde::Serialize;
 use std::collections::HashMap;
-use std::io::{self, Write};
 
-fn print_json<T: Serialize>(value: &T) -> Result<()> {
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-    serde_json::to_writer(&mut handle, value)?;
-    handle.write_all(b"\n")?;
-    Ok(())
-}
-
-pub async fn get_packages(format: OutputFormat) -> Result<()> {
+pub async fn get_packages() -> Result<()> {
     let packages = api::get_packages()?;
-    if format.is_json() {
-        print_json(&packages)?;
-    } else {
-        let mut entries: Vec<(&String, &Package)> = packages.iter().collect();
-        entries.sort_by(|(a, _), (b, _)| a.cmp(b));
-        for (_name, package) in entries {
-            println!("{}", package);
-        }
+    let mut entries: Vec<(&String, &Package)> = packages.iter().collect();
+    entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+    for (_name, package) in entries {
+        println!("{}", package);
     }
     Ok(())
 }
 
-pub async fn get_installed_packages(format: OutputFormat) -> Result<()> {
+pub async fn get_installed_packages() -> Result<()> {
     let packages = api::get_installed_packages().await?;
-    if format.is_json() {
-        print_json(&packages)?;
-    } else {
-        for package in &packages {
-            println!("{}", package);
-        }
+    for package in &packages {
+        println!("{}", package);
     }
     Ok(())
 }
@@ -58,13 +39,9 @@ pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn system_info(format: OutputFormat) -> Result<()> {
+pub async fn system_info() -> Result<()> {
     let info = api::get_system_info()?;
-    if format.is_json() {
-        print_json(&info)?;
-    } else {
-        print_system_info_text(&info);
-    }
+    print_system_info_text(&info);
     Ok(())
 }
 
@@ -82,29 +59,17 @@ fn print_system_info_text(info: &SystemInfo) {
     }
 }
 
-pub async fn get_container_logs(
-    format: OutputFormat,
-    container: String,
-    tail: Option<usize>,
-) -> Result<()> {
+pub async fn get_container_logs(container: String, tail: Option<usize>) -> Result<()> {
     let logs = api::get_container_logs(&container, tail).await?;
-    if format.is_json() {
-        print_json(&logs)?;
-    } else {
-        for line in logs {
-            println!("{line}");
-        }
+    for line in logs {
+        println!("{line}");
     }
     Ok(())
 }
 
-pub fn get_config(format: OutputFormat) -> Result<()> {
+pub fn get_config() -> Result<()> {
     let config = api::get_config()?;
-    if format.is_json() {
-        print_json(&config)?;
-    } else {
-        print_config_text(&config);
-    }
+    print_config_text(&config);
     Ok(())
 }
 
@@ -139,11 +104,9 @@ fn print_config_text(config: &Config) {
     );
 }
 
-pub async fn get_package_config(format: OutputFormat, name: String) -> Result<()> {
+pub async fn get_package_config(name: String) -> Result<()> {
     let config = api::get_package_config(&name).await?;
-    if format.is_json() {
-        print_json(&config)?;
-    } else if config.values.is_empty() {
+    if config.values.is_empty() {
         println!("No overrides set for {name}");
     } else {
         println!("Overrides for {name}:");
@@ -167,11 +130,9 @@ pub async fn update_package_config(name: String, values: Vec<(String, String)>) 
     Ok(())
 }
 
-pub fn get_capabilities(format: OutputFormat) -> Result<()> {
+pub fn get_capabilities() -> Result<()> {
     let capabilities = api::get_capabilities()?;
-    if format.is_json() {
-        print_json(&capabilities)?;
-    } else if capabilities.is_empty() {
+    if capabilities.is_empty() {
         println!("No capabilities configured");
     } else {
         for capability in &capabilities {
@@ -206,40 +167,28 @@ pub fn delete_kittynode() -> Result<()> {
     Ok(())
 }
 
-pub async fn is_docker_running(format: OutputFormat) -> Result<()> {
+pub async fn is_docker_running() -> Result<()> {
     let running = api::is_docker_running().await;
-    if format.is_json() {
-        print_json(&running)?;
-    } else {
-        println!(
-            "{}",
-            if running {
-                "Docker is running"
-            } else {
-                "Docker is not running"
-            }
-        );
-    }
+    println!(
+        "{}",
+        if running {
+            "Docker is running"
+        } else {
+            "Docker is not running"
+        }
+    );
     Ok(())
 }
 
-pub async fn start_docker_if_needed(format: OutputFormat) -> Result<()> {
+pub async fn start_docker_if_needed() -> Result<()> {
     let status = api::start_docker_if_needed().await?;
-    if format.is_json() {
-        print_json(&status)?;
-    } else {
-        println!("{}", status.as_str());
-    }
+    println!("{}", status.as_str());
     Ok(())
 }
 
-pub async fn get_operational_state(format: OutputFormat) -> Result<()> {
+pub async fn get_operational_state() -> Result<()> {
     let state = api::get_operational_state().await?;
-    if format.is_json() {
-        print_json(&state)?;
-    } else {
-        print_operational_state_text(&state);
-    }
+    print_operational_state_text(&state);
     Ok(())
 }
 
