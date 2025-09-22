@@ -8,7 +8,7 @@ use axum::{
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::types::{
-    Config, LogsQuery, OperationalState, Package, PackageConfig, SystemInfo,
+    Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
 };
 use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus};
 use serde::Deserialize;
@@ -72,6 +72,43 @@ pub async fn delete_package(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(StatusCode::OK)
+}
+
+pub async fn stop_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
+    api::stop_package(&name)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(StatusCode::OK)
+}
+
+pub async fn resume_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
+    api::resume_package(&name)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize)]
+pub struct RuntimeStatesRequest {
+    names: Vec<String>,
+}
+
+pub async fn get_package_runtime_state(
+    Path(name): Path<String>,
+) -> Result<Json<PackageRuntimeState>, (StatusCode, String)> {
+    api::get_package_runtime_state(&name)
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+pub async fn get_package_runtime_states(
+    Json(payload): Json<RuntimeStatesRequest>,
+) -> Result<Json<HashMap<String, PackageRuntimeState>>, (StatusCode, String)> {
+    api::get_packages_runtime_state(&payload.names)
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
 pub async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
@@ -161,7 +198,11 @@ pub fn app() -> Router {
         .route("/get_config", get(get_config))
         .route("/install_package/:name", post(install_package))
         .route("/delete_package/:name", post(delete_package))
+        .route("/stop_package/:name", post(stop_package))
+        .route("/resume_package/:name", post(resume_package))
         .route("/get_installed_packages", get(get_installed_packages))
+        .route("/package_runtime", post(get_package_runtime_states))
+        .route("/package_runtime/:name", get(get_package_runtime_state))
         .route("/is_docker_running", get(is_docker_running))
         .route("/init_kittynode", post(init_kittynode))
         .route("/delete_kittynode", post(delete_kittynode))

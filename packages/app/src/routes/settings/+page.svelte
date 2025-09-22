@@ -10,6 +10,8 @@ import { updates } from "$stores/updates.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
 import { onMount } from "svelte";
 import { Checkbox } from "$lib/components/ui/checkbox";
+import { Input } from "$lib/components/ui/input";
+import * as Dialog from "$lib/components/ui/dialog";
 import {
   Globe,
   Moon,
@@ -32,11 +34,17 @@ import * as Select from "$lib/components/ui/select";
 
 let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
 let updatingAutoStartDocker = $state(false);
+let remoteServerDialogOpen = $state(false);
+let remoteServerUrlInput = $state("");
+let remoteServerError = $state("");
+let remoteDialogLoading = $state(false);
+let remoteDialogAction = $state<"connect" | "disconnect" | null>(null);
 
 const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
 const configInitialized = $derived(appConfigStore.initialized);
 const configLoading = $derived(appConfigStore.loading);
 const downloadsUrl = "https://kittynode.com/download";
+const remoteServerConnected = $derived(serverUrlStore.serverUrl !== "");
 
 onMount(() => {
   void appConfigStore.load().catch((e) => {
@@ -93,37 +101,86 @@ async function disableRemoteAccess() {
   }
 }
 
-async function connectRemote() {
+function validateRemoteUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return "Remote URL cannot be empty";
+  }
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return "Remote URL must start with http:// or https://";
+  }
+  return null;
+}
+
+function openRemoteDialog() {
+  remoteServerUrlInput = serverUrlStore.serverUrl || "http://localhost:3000";
+  remoteServerError = "";
+  remoteDialogAction = null;
+  remoteServerDialogOpen = true;
+}
+
+async function applyRemoteConnection(url: string) {
   try {
-    const current = serverUrlStore.serverUrl || "http://localhost:3000";
-    const input = window.prompt("Enter remote server URL", current);
-    if (input === null) return; // cancelled
-    const url = input.trim();
-    if (!url) {
-      notifyError("Remote URL cannot be empty");
-      return;
-    }
-    if (!/^https?:\/\//i.test(url)) {
-      notifyError("Remote URL must start with http:// or https://");
-      return;
-    }
     await appConfigStore.setServerUrl(url);
     await operationalStateStore.refresh();
     refetchStores();
     notifySuccess("Connected to remote");
+    return true;
   } catch (e) {
     notifyError("Failed to connect to remote", e);
+    return false;
   }
 }
 
-async function disconnectRemote() {
+async function clearRemoteConnection() {
   try {
     await appConfigStore.setServerUrl("");
     await operationalStateStore.refresh();
     refetchStores();
     notifySuccess("Disconnected from remote");
+    return true;
   } catch (e) {
     notifyError("Failed to disconnect from remote", e);
+    return false;
+  }
+}
+
+async function submitRemoteDialog() {
+  const validationError = validateRemoteUrl(remoteServerUrlInput);
+  if (validationError) {
+    remoteServerError = validationError;
+    notifyError(validationError);
+    return;
+  }
+
+  remoteServerError = "";
+  const url = remoteServerUrlInput.trim();
+  remoteServerUrlInput = url;
+  remoteDialogAction = "connect";
+  remoteDialogLoading = true;
+  try {
+    const success = await applyRemoteConnection(url);
+    if (success) {
+      remoteServerDialogOpen = false;
+    }
+  } finally {
+    remoteDialogLoading = false;
+    remoteDialogAction = null;
+  }
+}
+
+async function disconnectRemoteFromDialog() {
+  remoteServerError = "";
+  remoteDialogAction = "disconnect";
+  remoteDialogLoading = true;
+  try {
+    const success = await clearRemoteConnection();
+    if (success) {
+      remoteServerDialogOpen = false;
+    }
+  } finally {
+    remoteDialogLoading = false;
+    remoteDialogAction = null;
   }
 }
 
@@ -225,26 +282,83 @@ async function checkForUpdates() {
             {serverUrlStore.serverUrl || "Not connected"}
           </p>
         </div>
-        {#if serverUrlStore.serverUrl === ""}
-          <Button
-            size="sm"
-            variant="outline"
-            onclick={connectRemote}
-          >
-            <Link2 class="h-4 w-4 mr-1" />
-            Connect
-          </Button>
-        {:else}
-          <Button
-            size="sm"
-            variant="outline"
-            onclick={disconnectRemote}
-          >
-            <Unlink class="h-4 w-4 mr-1" />
-            Disconnect
-          </Button>
-        {/if}
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={openRemoteDialog}
+        >
+          <Link2 class="h-4 w-4 mr-1" />
+          {remoteServerConnected ? "Manage" : "Connect"}
+        </Button>
       </div>
+      <Dialog.Root bind:open={remoteServerDialogOpen}>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>
+              {remoteServerConnected ? "Manage remote connection" : "Connect to remote server"}
+            </Dialog.Title>
+            <Dialog.Description>
+              Enter the server URL you want Kittynode to use when operating remotely.
+            </Dialog.Description>
+          </Dialog.Header>
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium" for="remote-server-url">
+                Server URL
+              </label>
+              <Input
+                id="remote-server-url"
+                type="url"
+                bind:value={remoteServerUrlInput}
+                placeholder="https://example.com"
+                aria-invalid={remoteServerError ? "true" : undefined}
+                disabled={remoteDialogLoading}
+              />
+              {#if remoteServerError}
+                <p class="text-xs text-destructive">{remoteServerError}</p>
+              {/if}
+            </div>
+          </div>
+          <Dialog.Footer>
+            <Button
+              type="button"
+              variant="ghost"
+              onclick={() => (remoteServerDialogOpen = false)}
+              disabled={remoteDialogLoading}
+            >
+              Cancel
+            </Button>
+            {#if remoteServerConnected}
+              <Button
+                type="button"
+                variant="destructive"
+                onclick={disconnectRemoteFromDialog}
+                disabled={remoteDialogLoading}
+                class="gap-2"
+              >
+                {#if remoteDialogLoading && remoteDialogAction === "disconnect"}
+                  <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                {/if}
+                <Unlink class="h-4 w-4" />
+                Disconnect
+              </Button>
+            {/if}
+            <Button
+              type="button"
+              onclick={submitRemoteDialog}
+              disabled={remoteDialogLoading}
+              class="gap-2"
+            >
+              {#if remoteDialogLoading && remoteDialogAction === "connect"}
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              {:else}
+                <Link2 class="h-4 w-4" />
+              {/if}
+              {remoteServerConnected ? "Update connection" : "Connect"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Root>
     </Card.Content>
   </Card.Root>
 

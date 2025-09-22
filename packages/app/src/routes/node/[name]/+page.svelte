@@ -10,9 +10,9 @@ import { packageConfigStore } from "$stores/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
+import { createPackageRuntimeController } from "$lib/runtime/packageRuntime.svelte";
 import {
   Terminal,
-  CircleCheck,
   Trash2,
   Play,
   Square,
@@ -22,6 +22,7 @@ import {
   CircleAlert,
   Wifi,
   WifiOff,
+  PauseCircle,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
@@ -36,6 +37,9 @@ const installedState = $derived(packagesStore.installedState);
 const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
 );
+
+const runtime = createPackageRuntimeController();
+let lastLoadedConfig: string | null = null;
 
 let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
@@ -74,6 +78,28 @@ const installedStatus = $derived(installedState.status);
 const isInstalled = $derived(packageStatus === "installed");
 const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
 
+const statusKind = $derived(
+  runtime.lifecycle === "stopping"
+    ? "stopping"
+    : runtime.lifecycle === "starting"
+      ? "starting"
+      : runtime.loading && runtime.status === "checking"
+        ? "checking"
+        : runtime.status,
+);
+
+const canStopNode = $derived(
+  runtime.lifecycle === "idle" &&
+    runtime.status === "running" &&
+    operationalStateStore.canManage,
+);
+
+const canResumeNode = $derived(
+  runtime.lifecycle === "idle" &&
+    runtime.status === "stopped" &&
+    operationalStateStore.canManage,
+);
+
 async function handleDeletePackage(name: string) {
   await deletePackage(name, { redirectToDashboard: true });
 }
@@ -82,14 +108,59 @@ function toggleLogs(logType: "execution" | "consensus") {
   activeLogType = activeLogType === logType ? null : logType;
 }
 
-async function loadConfig() {
-  if (!packageName) return;
+async function loadConfigFor(name: string) {
+  if (!name || lastLoadedConfig === name) {
+    return;
+  }
+
   try {
-    const config = await packageConfigStore.getConfig(packageName);
+    const config = await packageConfigStore.getConfig(name);
     const network = config.values.network || "hoodi";
-    currentNetwork = selectedNetwork = network;
-  } catch (e) {
-    notifyError("Failed to get package config", e);
+    currentNetwork = network;
+    selectedNetwork = network;
+    lastLoadedConfig = name;
+  } catch (error) {
+    notifyError("Failed to get package config", error);
+  }
+}
+
+async function stopNode() {
+  if (!packageName || !canStopNode) {
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+    }
+    return;
+  }
+
+  try {
+    const success = await runtime.performLifecycle("stopping", () =>
+      packagesStore.stopPackage(packageName),
+    );
+    if (success) {
+      notifySuccess(`Stopped ${packageName}`);
+    }
+  } catch (error) {
+    notifyError(`Failed to stop ${packageName}`, error);
+  }
+}
+
+async function resumeNode() {
+  if (!packageName || !canResumeNode) {
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+    }
+    return;
+  }
+
+  try {
+    const success = await runtime.performLifecycle("starting", () =>
+      packagesStore.resumePackage(packageName),
+    );
+    if (success) {
+      notifySuccess(`Resumed ${packageName}`);
+    }
+  } catch (error) {
+    notifyError(`Failed to resume ${packageName}`, error);
   }
 }
 
@@ -104,17 +175,29 @@ async function updateConfig() {
       },
     });
     currentNetwork = selectedNetwork;
+    lastLoadedConfig = packageName;
     notifySuccess("Configuration updated successfully");
-  } catch (e) {
-    notifyError("Failed to update package config", e);
+  } catch (error) {
+    notifyError("Failed to update package config", error);
   } finally {
     configLoading = false;
   }
 }
 
 $effect(() => {
-  if (isInstalled && packageName) {
-    loadConfig();
+  const name = isInstalled && packageName ? packageName : null;
+  runtime.attach({
+    name,
+    enabled: Boolean(name),
+    pollInterval: operationalStateStore.isStarting ? 2000 : 5000,
+  });
+
+  if (name) {
+    void loadConfigFor(name);
+  } else {
+    lastLoadedConfig = null;
+    selectedNetwork = "hoodi";
+    currentNetwork = "hoodi";
   }
 });
 
@@ -122,15 +205,14 @@ onMount(async () => {
   operationalStateStore.startPolling();
   await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages({ force: true });
-  if (isInstalled) {
-    await loadConfig();
-  }
 });
 
 onDestroy(() => {
   operationalStateStore.stopPolling();
+  runtime.stop();
 });
 </script>
+
 
 {#if pkg}
   <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -142,10 +224,37 @@ onDestroy(() => {
       </div>
       {#if isInstalled}
         <div class="flex items-center space-x-2">
-          <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
-            <Activity class="h-4 w-4 text-green-500 animate-pulse" />
-            <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
-          </div>
+          {#if statusKind === "stopping"}
+            <div class="flex items-center space-x-2 rounded-full bg-amber-500/10 px-3 py-1.5">
+              <div class="h-3 w-3 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+              <span class="text-sm font-medium text-amber-700 dark:text-amber-200">Stopping…</span>
+            </div>
+          {:else if statusKind === "starting"}
+            <div class="flex items-center space-x-2 rounded-full bg-emerald-500/10 px-3 py-1.5">
+              <div class="h-3 w-3 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+              <span class="text-sm font-medium text-emerald-700 dark:text-emerald-200">Starting…</span>
+            </div>
+          {:else if statusKind === "checking"}
+            <div class="flex items-center space-x-2 rounded-full bg-muted px-3 py-1.5">
+              <div class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              <span class="text-sm font-medium text-muted-foreground">Checking status</span>
+            </div>
+          {:else if statusKind === "running"}
+            <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
+              <Activity class="h-4 w-4 text-green-500 animate-pulse" />
+              <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
+            </div>
+          {:else if statusKind === "stopped"}
+            <div class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5">
+              <PauseCircle class="h-4 w-4 text-muted-foreground" />
+              <span class="text-sm font-medium text-muted-foreground">Stopped</span>
+            </div>
+          {:else}
+            <div class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5">
+              <CircleAlert class="h-4 w-4 text-muted-foreground" />
+              <span class="text-sm font-medium text-muted-foreground">Status unknown</span>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -201,16 +310,43 @@ onDestroy(() => {
       <!-- Quick Actions -->
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card.Root>
-          <Card.Header class="pb-3">
-            <Card.Title class="text-sm font-medium">Node Status</Card.Title>
-          </Card.Header>
-          <Card.Content>
+        <Card.Header class="pb-3">
+          <Card.Title class="text-sm font-medium">Node Status</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          {#if statusKind === "stopping"}
+            <div class="flex items-center space-x-2 text-amber-700 dark:text-amber-200">
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+              <span class="text-sm font-medium">Stopping…</span>
+            </div>
+          {:else if statusKind === "starting"}
+            <div class="flex items-center space-x-2 text-emerald-700 dark:text-emerald-200">
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+              <span class="text-sm font-medium">Starting…</span>
+            </div>
+          {:else if statusKind === "checking"}
+            <div class="flex items-center space-x-2 text-muted-foreground">
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              <span class="text-sm font-medium">Checking status...</span>
+            </div>
+          {:else if statusKind === "running"}
             <div class="flex items-center space-x-2">
               <Wifi class="h-4 w-4 text-green-500" />
-              <span class="text-sm font-medium">Connected</span>
+              <span class="text-sm font-medium">Running</span>
             </div>
-          </Card.Content>
-        </Card.Root>
+          {:else if statusKind === "stopped"}
+            <div class="flex items-center space-x-2">
+              <WifiOff class="h-4 w-4 text-muted-foreground" />
+              <span class="text-sm font-medium">Stopped</span>
+            </div>
+          {:else}
+            <div class="flex items-center space-x-2 text-muted-foreground">
+              <CircleAlert class="h-4 w-4" />
+              <span class="text-sm font-medium">Status unavailable</span>
+            </div>
+          {/if}
+        </Card.Content>
+      </Card.Root>
 
         <Card.Root>
           <Card.Header class="pb-3">
@@ -228,24 +364,66 @@ onDestroy(() => {
           <Card.Header class="pb-3">
             <Card.Title class="text-sm font-medium">Actions</Card.Title>
           </Card.Header>
-          <Card.Content>
+        <Card.Content class="space-y-2">
+          {#if statusKind === "checking"}
+            <Button size="sm" variant="outline" disabled class="w-full">
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              Checking status...
+            </Button>
+          {:else if statusKind === "stopping"}
+            <Button size="sm" variant="outline" disabled class="w-full border-amber-200 text-amber-700 dark:border-amber-400/40 dark:text-amber-200">
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+              Stopping…
+            </Button>
+          {:else if statusKind === "starting"}
+            <Button size="sm" variant="outline" disabled class="w-full border-emerald-200 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-200">
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+              Starting…
+            </Button>
+          {:else if runtime.status === "running"}
             <Button
               size="sm"
-              variant="destructive"
-              onclick={() => handleDeletePackage(pkg.name)}
-              disabled={isDeletingPackage}
-              class="w-full"
+              variant="outline"
+              class="w-full border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-400/40 dark:text-amber-200 dark:hover:bg-amber-400/10"
+              onclick={stopNode}
+              disabled={!canStopNode}
             >
-              {#if isDeletingPackage}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Deleting...
-              {:else}
-                <Trash2 class="h-4 w-4 mr-1" />
-                Delete Node
-              {/if}
+              <Square class="h-4 w-4 mr-1" />
+              Stop Node
             </Button>
-          </Card.Content>
-        </Card.Root>
+          {:else if runtime.status === "stopped"}
+            <Button
+              size="sm"
+              variant="outline"
+              class="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/40 dark:text-emerald-200 dark:hover:bg-emerald-400/10"
+              onclick={resumeNode}
+              disabled={!canResumeNode}
+            >
+              <Play class="h-4 w-4 mr-1" />
+              Resume Node
+            </Button>
+          {:else}
+            <Button size="sm" variant="outline" disabled class="w-full">
+              Status unavailable
+            </Button>
+          {/if}
+          <Button
+            size="sm"
+            variant="destructive"
+            onclick={() => handleDeletePackage(pkg.name)}
+            disabled={isDeletingPackage}
+            class="w-full"
+          >
+            {#if isDeletingPackage}
+              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              Deleting...
+            {:else}
+              <Trash2 class="h-4 w-4 mr-1" />
+              Delete Node
+            {/if}
+          </Button>
+        </Card.Content>
+      </Card.Root>
       </div>
 
       <!-- Configuration -->

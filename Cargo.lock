@@ -2101,7 +2101,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-cli"
-version = "0.6.0"
+version = "0.8.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -2117,7 +2117,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-core"
-version = "0.6.0"
+version = "0.8.0"
 dependencies = [
  "blst",
  "bollard",
@@ -2137,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-tauri"
-version = "0.62.0"
+version = "0.64.0"
 dependencies = [
  "async-trait",
  "eyre",
@@ -2159,7 +2159,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-web"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "axum",
  "eyre",

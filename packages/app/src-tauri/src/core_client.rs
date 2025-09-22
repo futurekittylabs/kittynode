@@ -3,7 +3,8 @@ use eyre::{Context, Result, eyre};
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
-    Config, DepositData, OperationalState, Package, PackageConfig, SystemInfo, ValidatorKey,
+    Config, DepositData, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    ValidatorKey,
 };
 use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::Serialize;
@@ -47,6 +48,12 @@ pub trait CoreClient: Send + Sync {
     async fn install_package(&self, name: &str) -> Result<()>;
     /// Delete a package, optionally removing images.
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()>;
+    /// Stop all containers for a package.
+    async fn stop_package(&self, name: &str) -> Result<()>;
+    /// Resume previously stopped containers for a package.
+    async fn resume_package(&self, name: &str) -> Result<()>;
+    /// Retrieve the runtime state for a package.
+    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState>;
     /// Remove Kittynode data from disk.
     async fn delete_kittynode(&self) -> Result<()>;
     /// Initialize Kittynode configuration and directories.
@@ -61,6 +68,11 @@ pub trait CoreClient: Send + Sync {
     async fn start_docker_if_needed(&self) -> Result<DockerStartStatus>;
     /// Report the operational capabilities (install/manage, diagnostics, etc.).
     async fn get_operational_state(&self) -> Result<OperationalState>;
+    /// Retrieve runtime states for multiple packages in a single request.
+    async fn get_package_runtime_states(
+        &self,
+        names: &[String],
+    ) -> Result<HashMap<String, PackageRuntimeState>>;
     /// Generate validator keys on the local filesystem.
     async fn generate_validator_keys(&self, params: GenerateKeysParams) -> Result<ValidatorKey>;
     /// Create deposit data for an existing validator key.
@@ -114,6 +126,18 @@ impl CoreClient for LocalCoreClient {
         api::delete_package(name, include_images).await
     }
 
+    async fn stop_package(&self, name: &str) -> Result<()> {
+        api::stop_package(name).await
+    }
+
+    async fn resume_package(&self, name: &str) -> Result<()> {
+        api::resume_package(name).await
+    }
+
+    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState> {
+        api::get_package_runtime_state(name).await
+    }
+
     async fn delete_kittynode(&self) -> Result<()> {
         api::delete_kittynode()
     }
@@ -140,6 +164,13 @@ impl CoreClient for LocalCoreClient {
 
     async fn get_operational_state(&self) -> Result<OperationalState> {
         api::get_operational_state().await
+    }
+
+    async fn get_package_runtime_states(
+        &self,
+        names: &[String],
+    ) -> Result<HashMap<String, PackageRuntimeState>> {
+        api::get_packages_runtime_state(names).await
     }
 
     async fn generate_validator_keys(&self, params: GenerateKeysParams) -> Result<ValidatorKey> {
@@ -321,6 +352,20 @@ impl CoreClient for HttpCoreClient {
         self.post_unit(&path, Option::<&()>::None).await
     }
 
+    async fn stop_package(&self, name: &str) -> Result<()> {
+        self.post_unit(&format!("/stop_package/{name}"), Option::<&()>::None)
+            .await
+    }
+
+    async fn resume_package(&self, name: &str) -> Result<()> {
+        self.post_unit(&format!("/resume_package/{name}"), Option::<&()>::None)
+            .await
+    }
+
+    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState> {
+        self.get_json(&format!("/package_runtime/{name}")).await
+    }
+
     async fn delete_kittynode(&self) -> Result<()> {
         self.post_unit("/delete_kittynode", Option::<&()>::None)
             .await
@@ -375,6 +420,19 @@ impl CoreClient for HttpCoreClient {
                 state.mode = kittynode_core::api::types::OperationalMode::Remote;
                 state
             })
+    }
+
+    async fn get_package_runtime_states(
+        &self,
+        names: &[String],
+    ) -> Result<HashMap<String, PackageRuntimeState>> {
+        #[derive(Serialize)]
+        struct RuntimeStatesRequest<'a> {
+            names: &'a [String],
+        }
+
+        self.post_json("/package_runtime", Some(&RuntimeStatesRequest { names }))
+            .await
     }
 
     async fn generate_validator_keys(&self, _params: GenerateKeysParams) -> Result<ValidatorKey> {

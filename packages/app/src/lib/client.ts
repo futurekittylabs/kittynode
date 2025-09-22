@@ -5,6 +5,7 @@ import type {
   OperationalState,
   Package,
   PackageConfig,
+  PackageRuntimeState,
   SystemInfo,
 } from "$lib/types";
 
@@ -33,6 +34,18 @@ export const coreClient = {
 
   deletePackage(name: string, includeImages: boolean): Promise<void> {
     return invoke("delete_package", { name, includeImages });
+  },
+
+  stopPackage(name: string): Promise<void> {
+    return invoke("stop_package", { name });
+  },
+
+  resumePackage(name: string): Promise<void> {
+    return invoke("resume_package", { name });
+  },
+
+  getPackageRuntimeState(name: string): Promise<PackageRuntimeState> {
+    return invoke("get_package_runtime_state", { name });
   },
 
   getContainerLogs(
@@ -84,6 +97,12 @@ export const coreClient = {
 
   updatePackageConfig(name: string, config: PackageConfig): Promise<void> {
     return invoke("update_package_config", { name, config });
+  },
+
+  getPackageRuntimeStates(
+    names: string[],
+  ): Promise<Record<string, PackageRuntimeState>> {
+    return invoke("get_package_runtime_states", { names });
   },
 
   deleteKittynode(): Promise<void> {

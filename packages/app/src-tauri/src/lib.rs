@@ -5,7 +5,8 @@ use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
-    Config, DepositData, OperationalState, Package, PackageConfig, SystemInfo, ValidatorKey,
+    Config, DepositData, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    ValidatorKey,
 };
 use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use tauri::{Manager, State};
 use tauri_plugin_http::reqwest;
-use tracing::info;
+use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize)]
 struct LatestManifest {
@@ -152,6 +153,60 @@ async fn delete_package(
 }
 
 #[tauri::command]
+async fn stop_package(
+    name: String,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<(), String> {
+    info!("Stopping package: {}", name);
+    let client = client_state.client();
+    client
+        .stop_package(&name)
+        .await
+        .map(|_| info!("Successfully stopped package: {}", name))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn resume_package(
+    name: String,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<(), String> {
+    info!("Resuming package: {}", name);
+    let client = client_state.client();
+    client
+        .resume_package(&name)
+        .await
+        .map(|_| info!("Successfully resumed package: {}", name))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_package_runtime_state(
+    name: String,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<PackageRuntimeState, String> {
+    debug!("Fetching runtime state for package: {}", name);
+    let client = client_state.client();
+    client
+        .get_package_runtime_state(&name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_package_runtime_states(
+    names: Vec<String>,
+    client_state: State<'_, CoreClientManager>,
+) -> Result<HashMap<String, PackageRuntimeState>, String> {
+    debug!("Fetching runtime state for packages: {:?}", names);
+    let client = client_state.client();
+    client
+        .get_package_runtime_states(&names)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn delete_kittynode(client_state: State<'_, CoreClientManager>) -> Result<(), String> {
     info!("Deleting .kittynode directory");
     let client = client_state.client();
@@ -178,7 +233,7 @@ async fn get_container_logs(
     tail_lines: Option<usize>,
     client_state: State<'_, CoreClientManager>,
 ) -> Result<Vec<String>, String> {
-    info!(
+    debug!(
         "Getting logs for container: {} (tail: {:?})",
         container_name, tail_lines
     );
@@ -354,6 +409,10 @@ pub fn run() -> Result<()> {
             start_docker_if_needed,
             install_package,
             delete_package,
+            stop_package,
+            resume_package,
+            get_package_runtime_state,
+            get_package_runtime_states,
             delete_kittynode,
             system_info,
             init_kittynode,

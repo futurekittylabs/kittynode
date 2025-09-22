@@ -19,8 +19,36 @@ pub async fn get_packages() -> Result<()> {
 
 pub async fn get_installed_packages() -> Result<()> {
     let packages = api::get_installed_packages().await?;
+    let names: Vec<String> = packages.iter().map(|pkg| pkg.name().to_string()).collect();
+    let runtime_states = match api::get_packages_runtime_state(&names).await {
+        Ok(map) => map,
+        Err(error) => {
+            tracing::warn!(%error, "failed to retrieve runtime state information");
+            HashMap::new()
+        }
+    };
+
+    if packages.is_empty() {
+        println!("No packages are currently installed");
+        return Ok(());
+    }
+
     for package in &packages {
-        println!("{}", package);
+        let state = runtime_states
+            .get(package.name())
+            .map(|runtime| {
+                if runtime.running {
+                    "running"
+                } else {
+                    "stopped"
+                }
+            })
+            .unwrap_or("unknown");
+
+        println!("{} [status: {state}]", package.name());
+        println!("  {}", package.description());
+        println!("  Network: {}", package.network_name());
+        println!();
     }
     Ok(())
 }
@@ -38,6 +66,22 @@ pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
         .await
         .wrap_err_with(|| format!("Failed to delete {name}"))?;
     tracing::info!("deleted {name}");
+    Ok(())
+}
+
+pub async fn stop_package(name: String) -> Result<()> {
+    api::stop_package(&name)
+        .await
+        .wrap_err_with(|| format!("Failed to stop {name}"))?;
+    tracing::info!("stopped {name}");
+    Ok(())
+}
+
+pub async fn resume_package(name: String) -> Result<()> {
+    api::resume_package(&name)
+        .await
+        .wrap_err_with(|| format!("Failed to resume {name}"))?;
+    tracing::info!("resumed {name}");
     Ok(())
 }
 
