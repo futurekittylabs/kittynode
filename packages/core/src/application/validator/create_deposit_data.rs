@@ -203,7 +203,7 @@ mod tests {
                 signature: "sig".into(),
                 deposit_message_root: "msg_root".into(),
                 deposit_data_root: "data_root".into(),
-                fork_version: "0x00000000".into(),
+                fork_version: "00000000".into(),
                 network_name: None,
             })
         }
