@@ -2166,6 +2166,7 @@ dependencies = [
  "kittynode-core",
  "serde",
  "tokio",
+ "tower",
  "tracing-subscriber",
 ]
 
