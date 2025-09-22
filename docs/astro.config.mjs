@@ -85,6 +85,10 @@ export default defineConfig({
               label: "Architecture",
               slug: "reference/architecture",
             },
+            {
+              label: "Build from source",
+              slug: "reference/build-from-source",
+            },
           ],
         },
       ],

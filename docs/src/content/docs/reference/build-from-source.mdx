@@ -1,0 +1,70 @@
+---
+title: Build from source
+description: Build Kittynode from source.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Kittynode is free software, in the spirit of that, let's build from source.
+
+### Prerequisites
+
+<Steps>
+
+1. Install [Rust](https://www.rust-lang.org/tools/install):
+
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+
+2. Install [Just](https://github.com/casey/just):
+
+    ```bash
+    cargo install just
+    ```
+
+3. Install [Bun](https://bun.sh).
+
+    ```bash
+    curl -fsSL https://bun.sh/install | bash
+    ```
+
+4. Install [Tauri system dependencies](https://tauri.app/start/prerequisites/#system-dependencies).
+
+</Steps>
+
+### Build from source
+
+<Steps>
+
+1. Clone the repo and change into the directory:
+
+    ```bash
+    git clone git@github.com:futurekittylabs/kittynode.git && cd kittynode
+    ```
+
+2. Install dependencies:
+
+    ```bash
+    bun install
+    ```
+
+3. Install dev tools:
+
+    ```bash
+    just install-dev-tools
+    ```
+
+4. Build all crates (including the CLI app)
+
+    ```bash
+    just build
+    ```
+
+5. Build the desktop app
+
+    ```bash
+    just build-app
+    ```
+
+</Steps>

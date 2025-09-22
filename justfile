@@ -1,14 +1,10 @@
-# build the crates
+# build all crates
 build:
   cargo build
 
-# build the tauri app for macOS
-build-apple-app:
-  cargo tauri build --target aarch64-apple-darwin
-
-# build the tauri app for Linux
-build-linux-app:
-  cargo tauri build --target x86_64-unknown-linux-gnu
+# build the desktop app
+build-app:
+  cargo tauri build
 
 # start the docs dev server
 docs:
