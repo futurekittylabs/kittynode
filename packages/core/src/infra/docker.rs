@@ -11,7 +11,7 @@ use bollard::{
         CreateContainerOptionsBuilder, CreateImageOptionsBuilder, ListContainersOptionsBuilder,
         LogsOptionsBuilder,
     },
-    secret::{ContainerSummary, HostConfig},
+    secret::{ContainerSummary, ContainerSummaryStateEnum, HostConfig},
 };
 #[cfg(target_os = "linux")]
 use eyre::eyre;
@@ -197,6 +197,51 @@ pub(crate) async fn remove_container(docker: &Docker, name: &str) -> Result<()> 
     }
 
     Ok(())
+}
+
+pub(crate) async fn stop_named_container(docker: &Docker, name: &str) -> Result<()> {
+    for container in find_container(docker, name).await? {
+        if !container_is_running(&container) {
+            continue;
+        }
+
+        let id = container
+            .id
+            .ok_or_else(|| eyre::eyre!("Container ID was None"))?;
+
+        info!("Stopping container {}", name);
+        docker
+            .stop_container(&id, None::<bollard::query_parameters::StopContainerOptions>)
+            .await?;
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn start_named_container(docker: &Docker, name: &str) -> Result<()> {
+    for container in find_container(docker, name).await? {
+        if container_is_running(&container) {
+            continue;
+        }
+
+        let id = container
+            .id
+            .ok_or_else(|| eyre::eyre!("Container ID was None"))?;
+
+        info!("Starting container {}", name);
+        docker
+            .start_container(
+                &id,
+                None::<bollard::query_parameters::StartContainerOptions>,
+            )
+            .await?;
+    }
+
+    Ok(())
+}
+
+pub(crate) fn container_is_running(container: &ContainerSummary) -> bool {
+    matches!(container.state, Some(ContainerSummaryStateEnum::RUNNING))
 }
 
 pub(crate) async fn pull_and_start_container(

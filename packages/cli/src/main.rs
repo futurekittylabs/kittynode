@@ -75,6 +75,16 @@ enum PackageCommands {
         #[arg(long = "include-images", help = "Remove associated Docker images")]
         include_images: bool,
     },
+    #[command(about = "Stop all containers that belong to a package")]
+    Stop {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to stop")]
+        name: String,
+    },
+    #[command(about = "Resume containers for a previously stopped package")]
+    Resume {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to resume")]
+        name: String,
+    },
     #[command(about = "Manage package-specific configuration overrides")]
     Config {
         #[command(subcommand)]
@@ -292,6 +302,8 @@ async fn main() -> Result<()> {
                 name,
                 include_images,
             } => commands::delete_package(name, include_images).await?,
+            PackageCommands::Stop { name } => commands::stop_package(name).await?,
+            PackageCommands::Resume { name } => commands::resume_package(name).await?,
             PackageCommands::Config { command } => match command {
                 PackageConfigCommands::Show { name } => commands::get_package_config(name).await?,
                 PackageConfigCommands::Set { name, values } => {

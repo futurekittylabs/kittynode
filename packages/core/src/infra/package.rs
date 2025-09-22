@@ -1,7 +1,7 @@
-use crate::domain::package::{Package, PackageDefinition};
+use crate::domain::package::{Package, PackageDefinition, PackageRuntimeState};
 use crate::infra::docker::{
-    create_or_recreate_network, find_container, get_docker_instance, pull_and_start_container,
-    remove_container,
+    container_is_running, create_or_recreate_network, find_container, get_docker_instance,
+    pull_and_start_container, remove_container, start_named_container, stop_named_container,
 };
 use crate::manifests::ethereum::Ethereum;
 use eyre::Result;
@@ -60,6 +60,46 @@ pub async fn install_package(package: &Package, network: Option<&str>) -> Result
     }
 
     Ok(())
+}
+
+pub async fn stop_package(package: &Package) -> Result<()> {
+    let docker = get_docker_instance().await?;
+
+    for container in &package.containers {
+        info!("Stopping container '{}'", container.name);
+        stop_named_container(&docker, &container.name).await?;
+        info!("Container '{}' stopped", container.name);
+    }
+
+    Ok(())
+}
+
+pub async fn resume_package(package: &Package) -> Result<()> {
+    let docker = get_docker_instance().await?;
+
+    for container in &package.containers {
+        info!("Starting container '{}'", container.name);
+        start_named_container(&docker, &container.name).await?;
+        info!("Container '{}' started", container.name);
+    }
+
+    Ok(())
+}
+
+pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRuntimeState> {
+    let docker = get_docker_instance().await?;
+    let mut running = true;
+
+    for container in &package.containers {
+        let summaries = find_container(&docker, &container.name).await?;
+        let container_running = summaries.iter().any(container_is_running);
+
+        if !container_running {
+            running = false;
+        }
+    }
+
+    Ok(PackageRuntimeState { running })
 }
 
 /// Deletes a package and its associated resources

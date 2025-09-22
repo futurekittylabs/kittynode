@@ -11,6 +11,7 @@ import { operationalStateStore } from "$stores/operationalState.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
+import { runtimeOverviewStore } from "$stores/runtimeOverview.svelte";
 import {
   Package2,
   Settings2,
@@ -20,6 +21,9 @@ import {
   Cpu,
   ArrowRight,
   Download,
+  PauseCircle,
+  Loader2,
+  CircleAlert,
 } from "@lucide/svelte";
 
 const { isInstalling, installPackage } = usePackageInstaller();
@@ -39,9 +43,12 @@ const installedPackageCount = $derived(
     : null,
 );
 
-const runningNodes = $derived(
+const installedPackagesList = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
+
+const runtimeStatuses = $derived(runtimeOverviewStore.statuses);
+const runtimeStatusesLoading = $derived(runtimeOverviewStore.loading);
 
 const featuredAvailablePackages = $derived(
   catalogState.status !== "ready" || installedState.status !== "ready"
@@ -72,8 +79,8 @@ onMount(async () => {
 
   try {
     await appConfigStore.load();
-  } catch (e) {
-    console.error(`Failed to load Kittynode config: ${e}`);
+  } catch (error) {
+    console.error(`Failed to load Kittynode config: ${error}`);
   }
 
   await operationalStateStore.refresh();
@@ -97,10 +104,24 @@ onMount(async () => {
   }
 });
 
+$effect(() => {
+  if (installedState.status === "ready") {
+    const names = packagesStore.installedPackages.map((pkg) => pkg.name);
+    runtimeOverviewStore.sync(names, {
+      enabled: names.length > 0,
+      pollInterval: operationalStateStore.isStarting ? 2000 : 5000,
+    });
+  } else {
+    runtimeOverviewStore.stop();
+  }
+});
+
 onDestroy(() => {
   operationalStateStore.stopPolling();
+  runtimeOverviewStore.stop();
 });
 </script>
+
 
 <div class="space-y-6">
   <div>
@@ -168,7 +189,7 @@ onDestroy(() => {
   </div>
 
   <div class="space-y-4">
-    <h3 class="text-xl font-semibold">Running Nodes</h3>
+    <h3 class="text-xl font-semibold">Installed Nodes</h3>
 
     {#if installedState.status === "loading" || installedState.status === "idle"}
       <Card.Root>
@@ -195,15 +216,26 @@ onDestroy(() => {
           </Button>
         </Card.Content>
       </Card.Root>
-    {:else if runningNodes.length > 0}
+    {:else if installedPackagesList.length > 0}
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {#each runningNodes as pkg}
+        {#each installedPackagesList as pkg}
+          {@const runtimeStatus =
+            runtimeStatuses[pkg.name] ??
+            (runtimeStatusesLoading ? "checking" : "unknown")}
           <Card.Root>
             <Card.Header>
               <div class="flex items-start justify-between">
                 <div class="flex items-start gap-3">
                   <div class="shrink-0">
-                    <Activity class="w-5 h-5 text-green-500 mt-0.5" />
+                    {#if runtimeStatus === "running"}
+                      <Activity class="w-5 h-5 text-green-500 mt-0.5" />
+                    {:else if runtimeStatus === "stopped"}
+                      <PauseCircle class="w-5 h-5 text-muted-foreground mt-0.5" />
+                    {:else if runtimeStatus === "checking"}
+                      <Loader2 class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin" />
+                    {:else}
+                      <CircleAlert class="w-5 h-5 text-muted-foreground mt-0.5" />
+                    {/if}
                   </div>
                   <div class="min-w-0">
                     <Card.Title class="text-base">{pkg.name}</Card.Title>
@@ -212,10 +244,27 @@ onDestroy(() => {
                     </Card.Description>
                   </div>
                 </div>
-                <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1 shrink-0">
-                  <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span class="text-xs font-medium text-green-700 dark:text-green-400">Running</span>
-                </div>
+                {#if runtimeStatus === "running"}
+                  <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1 shrink-0">
+                    <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs font-medium text-green-700 dark:text-green-400">Running</span>
+                  </div>
+                {:else if runtimeStatus === "stopped"}
+                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
+                    <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
+                    <span class="text-xs font-medium text-muted-foreground">Stopped</span>
+                  </div>
+                {:else if runtimeStatus === "checking"}
+                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
+                    <Loader2 class="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span class="text-xs font-medium text-muted-foreground">Checking…</span>
+                  </div>
+                {:else}
+                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
+                    <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
+                    <span class="text-xs font-medium text-muted-foreground">Status unknown</span>
+                  </div>
+                {/if}
               </div>
             </Card.Header>
             <Card.Footer>
@@ -347,5 +396,5 @@ onDestroy(() => {
         </Card.Content>
       </Card.Root>
     {/if}
-  </div>
+</div>
 </div>
