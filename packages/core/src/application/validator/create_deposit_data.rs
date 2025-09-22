@@ -16,6 +16,7 @@ pub struct CreateDepositDataParams {
     pub fork_version: [u8; 4],
     pub genesis_validators_root: String,
     pub overwrite: bool,
+    pub network_name: Option<String>,
 }
 
 impl CreateDepositDataParams {
@@ -28,6 +29,28 @@ impl CreateDepositDataParams {
         genesis_root_hex: &str,
         overwrite: bool,
     ) -> Result<Self> {
+        Self::from_hex_inputs_with_metadata(
+            key_path,
+            output_path,
+            withdrawal_credentials,
+            amount_gwei,
+            fork_version_hex,
+            genesis_root_hex,
+            overwrite,
+            None,
+        )
+    }
+
+    pub fn from_hex_inputs_with_metadata(
+        key_path: PathBuf,
+        output_path: PathBuf,
+        withdrawal_credentials: String,
+        amount_gwei: u64,
+        fork_version_hex: &str,
+        genesis_root_hex: &str,
+        overwrite: bool,
+        network_name: Option<String>,
+    ) -> Result<Self> {
         let fork_version = parse_fork_version_hex(fork_version_hex)?;
         let genesis_validators_root = parse_genesis_validators_root_hex(genesis_root_hex)?;
         Ok(Self {
@@ -38,6 +61,7 @@ impl CreateDepositDataParams {
             fork_version,
             genesis_validators_root,
             overwrite,
+            network_name,
         })
     }
 }
@@ -74,7 +98,7 @@ where
             })?;
     }
 
-    let deposit = crypto
+    let mut deposit = crypto
         .create_deposit_data(
             &key,
             &params.withdrawal_credentials,
@@ -84,8 +108,16 @@ where
         )
         .context("failed to build deposit data")?;
 
+    if deposit.network_name.is_none() {
+        deposit.network_name = params.network_name.clone();
+    }
+
     filesystem
-        .write_json_secure(&params.output_path, &deposit, params.overwrite)
+        .write_json_secure(
+            &params.output_path,
+            &vec![deposit.clone()],
+            params.overwrite,
+        )
         .context("failed to write deposit data")?;
 
     Ok(deposit)
@@ -175,13 +207,14 @@ mod tests {
             _genesis_validators_root: &str,
         ) -> Result<DepositData> {
             Ok(DepositData {
-                public_key: key.public_key.clone(),
+                pubkey: key.public_key.clone(),
                 withdrawal_credentials: withdrawal_credentials.to_string(),
-                amount_gwei,
+                amount: amount_gwei,
                 signature: "sig".into(),
                 deposit_message_root: "msg_root".into(),
                 deposit_data_root: "data_root".into(),
-                fork_version: "0x00000000".into(),
+                fork_version: "00000000".into(),
+                network_name: None,
             })
         }
     }
@@ -208,13 +241,15 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: false,
+            network_name: None,
         };
 
         let deposit = create_deposit_data_with(params, &crypto, &fs).unwrap();
-        assert_eq!(deposit.public_key, "pub");
+        assert_eq!(deposit.pubkey, "pub");
 
-        let stored: DepositData = fs.read_json_secure(&deposit_path).unwrap();
-        assert_eq!(stored.signature, "sig");
+        let stored: Vec<DepositData> = fs.read_json_secure(&deposit_path).unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].signature, "sig");
     }
 
     #[test]
@@ -236,6 +271,7 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: false,
+            network_name: None,
         };
 
         let result = create_deposit_data_with(params, &crypto, &fs);
@@ -272,14 +308,17 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: true,
+            network_name: Some("testnet".into()),
         };
 
         let deposit = create_deposit_data(params).unwrap();
-        let decoded: DepositData =
+        let decoded: Vec<DepositData> =
             serde_json::from_slice(&fs::read(&deposit_path).unwrap()).unwrap();
-        assert_eq!(deposit, decoded);
-        assert_eq!(deposit.public_key.len(), 98);
+        assert_eq!(decoded.len(), 1);
+        assert_eq!(deposit, decoded[0]);
+        assert_eq!(deposit.pubkey.len(), 98);
         assert_eq!(deposit.signature.len(), 194);
         assert_eq!(deposit.deposit_data_root.len(), 66);
+        assert_eq!(deposit.network_name.as_deref(), Some("testnet"));
     }
 }

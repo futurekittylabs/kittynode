@@ -294,9 +294,19 @@ pub fn validator_create_deposit_data(
     amount_gwei: u64,
     fork_version_hex: String,
     genesis_root_hex: String,
+    network_name: Option<String>,
     overwrite: bool,
 ) -> Result<()> {
-    let params = CreateDepositDataParams::from_hex_inputs(
+    let network_name = network_name.and_then(|name| {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    });
+
+    let params = CreateDepositDataParams::from_hex_inputs_with_metadata(
         key_path,
         output_path.clone(),
         withdrawal_credentials,
@@ -304,6 +314,7 @@ pub fn validator_create_deposit_data(
         &fork_version_hex,
         &genesis_root_hex,
         overwrite,
+        network_name,
     )?;
 
     let deposit = api::create_deposit_data(params)?;

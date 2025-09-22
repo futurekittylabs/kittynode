@@ -272,6 +272,12 @@ enum ValidatorCommands {
         )]
         genesis_root: String,
         #[arg(
+            long = "network",
+            value_name = "NAME",
+            help = "Optional network name written to the deposit data file"
+        )]
+        network: Option<String>,
+        #[arg(
             long = "overwrite",
             help = "Replace the output file if it already exists"
         )]
@@ -401,6 +407,7 @@ async fn main() -> Result<()> {
                 amount_gwei,
                 fork_version,
                 genesis_root,
+                network,
                 overwrite,
             } => commands::validator_create_deposit_data(
                 key_path,
@@ -409,6 +416,7 @@ async fn main() -> Result<()> {
                 amount_gwei,
                 fork_version,
                 genesis_root,
+                network,
                 overwrite,
             )?,
         },
