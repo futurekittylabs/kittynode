@@ -5,7 +5,7 @@ license.workspace = true
 name = "kittynode-core"
 readme.workspace = true
 repository.workspace = true
-version = "0.9.0"
+version = "0.10.0"
 
 [dependencies]
 bollard = "0.19.2"
