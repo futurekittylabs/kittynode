@@ -32,10 +32,15 @@ onMount(() => {
   if (!systemInfoStore.systemInfo) {
     fetchSystemInfo();
   }
+  if (remoteAccessStore.status === null) {
+    void remoteAccessStore.refresh();
+  }
+  remoteAccessStore.startPolling();
   operationalStateStore.startPolling();
 
   return () => {
     operationalStateStore.stopPolling();
+    remoteAccessStore.stopPolling();
   };
 });
 </script>
@@ -71,11 +76,21 @@ onMount(() => {
           {#if remoteAccessStore.remoteAccess}
             <Globe class="h-4 w-4 text-green-500" />
             <span class="text-sm font-medium">Enabled</span>
+            {#if remoteAccessStore.port !== null}
+              <span class="text-xs text-muted-foreground">
+                (http://localhost:{remoteAccessStore.port})
+              </span>
+            {/if}
           {:else}
             <WifiOff class="h-4 w-4 text-muted-foreground" />
             <span class="text-sm font-medium">Disabled</span>
           {/if}
         </div>
+        {#if remoteAccessStore.lastError}
+          <p class="mt-2 text-xs text-destructive">
+            {remoteAccessStore.lastError}
+          </p>
+        {/if}
       </Card.Content>
     </Card.Root>
 

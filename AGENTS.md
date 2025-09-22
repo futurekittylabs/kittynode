@@ -9,6 +9,14 @@
 - If needed, read the architecture documentation here: `./docs/src/content/docs/reference/architecture.mdx`.
 - If making changes to the architecture, update the architecture documentation.
 
+### Remote access
+
+- The desktop toggle now starts/stops `kittynode-web` via the CLI binary. When enabled, the service listens on the port reported in Settings/System Info (default 3000).
+- `~/.kittynode/runtime/kittynode-web.json` tracks PID/port, and logs stream to `~/.kittynode/runtime/kittynode-web.log`.
+- Expose the port only on trusted networks; the UI surfaces errors from the toggle so operators can react quickly.
+- The toggle requires the CLI binary (`kittynode`/`kittynode-cli`) to be on disk or provided via `KITTYNODE_CLI_PATH`.
+- A per-launch service token is injected via the `KITTYNODE_WEB_SERVICE_TOKEN` environment variable; ensure untrusted users cannot read parent process memory/environment.
+
 ## Development Setup
 
 ```bash

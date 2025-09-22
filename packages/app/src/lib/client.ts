@@ -7,6 +7,7 @@ import type {
   PackageConfig,
   PackageRuntimeState,
   SystemInfo,
+  WebServiceStatus,
 } from "$lib/types";
 
 export type DockerStartStatus =
@@ -97,6 +98,28 @@ export const coreClient = {
 
   updatePackageConfig(name: string, config: PackageConfig): Promise<void> {
     return invoke("update_package_config", { name, config });
+  },
+
+  /**
+   * Start the local kittynode-web service so remote clients can connect.
+   */
+  startWebService(port?: number): Promise<WebServiceStatus> {
+    const payload = port === undefined ? {} : { port };
+    return invoke<WebServiceStatus>("start_web_service", payload);
+  },
+
+  /**
+   * Stop the kittynode-web service if it is currently running.
+   */
+  stopWebService(): Promise<WebServiceStatus> {
+    return invoke<WebServiceStatus>("stop_web_service");
+  },
+
+  /**
+   * Retrieve the latest kittynode-web runtime status.
+   */
+  getWebServiceStatus(): Promise<WebServiceStatus> {
+    return invoke<WebServiceStatus>("get_web_service_status");
   },
 
   getPackageRuntimeStates(

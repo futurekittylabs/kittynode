@@ -2142,6 +2142,7 @@ dependencies = [
  "async-trait",
  "eyre",
  "kittynode-core",
+ "kittynode-web",
  "once_cell",
  "serde",
  "serde_json",

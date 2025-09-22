@@ -50,6 +50,11 @@ onMount(() => {
   void appConfigStore.load().catch((e) => {
     console.error(`Failed to load Kittynode config: ${e}`);
   });
+  void remoteAccessStore.refresh();
+  remoteAccessStore.startPolling();
+  return () => {
+    remoteAccessStore.stopPolling();
+  };
 });
 
 async function handleAutoStartDockerChange(enabled: boolean) {
@@ -85,8 +90,14 @@ async function handleAutoStartDockerChange(enabled: boolean) {
 
 async function enableRemoteAccess() {
   try {
-    remoteAccessStore.enable();
-    notifySuccess("Remote access enabled");
+    const status = await remoteAccessStore.enable();
+    const portDescription = status.port ?? remoteAccessStore.port;
+    notifySuccess("Remote access enabled", {
+      description:
+        portDescription !== null
+          ? `Listening on http://localhost:${portDescription}`
+          : undefined,
+    });
   } catch (e) {
     notifyError("Failed to enable remote access", e);
   }
@@ -94,7 +105,7 @@ async function enableRemoteAccess() {
 
 async function disableRemoteAccess() {
   try {
-    remoteAccessStore.disable();
+    await remoteAccessStore.disable();
     notifySuccess("Remote access disabled");
   } catch (e) {
     notifyError("Failed to disable remote access", e);
@@ -248,14 +259,29 @@ async function checkForUpdates() {
           <p class="text-xs text-muted-foreground">
             Allow external connections to this node
           </p>
+          {#if remoteAccessStore.remoteAccess && remoteAccessStore.port !== null}
+            <p class="mt-1 text-xs text-muted-foreground">
+              Access via
+              <span class="font-mono">
+                http://localhost:{remoteAccessStore.port}
+              </span>
+            </p>
+          {/if}
+          {#if remoteAccessStore.lastError}
+            <p class="mt-1 text-xs text-destructive">
+              {remoteAccessStore.lastError}
+            </p>
+          {/if}
         </div>
-        {#if remoteAccessStore.remoteAccess === null}
+        {#if remoteAccessStore.status === null}
           <span class="text-sm text-muted-foreground">Loading...</span>
         {:else if !remoteAccessStore.remoteAccess}
           <Button
             size="sm"
             onclick={enableRemoteAccess}
-            disabled={["ios", "android"].includes(platform())}
+            disabled={
+              remoteAccessStore.loading || ["ios", "android"].includes(platform())
+            }
           >
             <Wifi class="h-4 w-4 mr-1" />
             Enable
@@ -265,6 +291,7 @@ async function checkForUpdates() {
             size="sm"
             variant="outline"
             onclick={disableRemoteAccess}
+            disabled={remoteAccessStore.loading}
           >
             <WifiOff class="h-4 w-4 mr-1" />
             Disable

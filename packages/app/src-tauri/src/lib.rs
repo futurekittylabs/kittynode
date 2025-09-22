@@ -1,20 +1,25 @@
 mod core_client;
 
 use crate::core_client::CoreClientManager;
-use eyre::Result;
+use eyre::{Result, eyre};
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
     Config, DepositData, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
     ValidatorKey,
 };
-use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
+use kittynode_core::api::{
+    CreateDepositDataParams, DEFAULT_WEB_PORT, GenerateKeysParams, validate_web_port,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use tauri::{Manager, State};
 use tauri_plugin_http::reqwest;
+use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
+use tokio::time::{Duration, sleep};
 use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize)]
@@ -22,7 +27,59 @@ struct LatestManifest {
     version: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum WebServiceState {
+    Started,
+    AlreadyRunning,
+    Stopped,
+    NotRunning,
+}
+
+#[derive(Serialize)]
+struct WebServiceStatusResponse {
+    status: WebServiceState,
+    port: Option<u16>,
+}
+
+impl WebServiceStatusResponse {
+    fn started(port: u16) -> Self {
+        Self {
+            status: WebServiceState::Started,
+            port: Some(port),
+        }
+    }
+
+    fn already_running(port: u16) -> Self {
+        Self {
+            status: WebServiceState::AlreadyRunning,
+            port: Some(port),
+        }
+    }
+
+    fn stopped(port: u16) -> Self {
+        Self {
+            status: WebServiceState::Stopped,
+            port: Some(port),
+        }
+    }
+
+    fn not_running() -> Self {
+        Self {
+            status: WebServiceState::NotRunning,
+            port: None,
+        }
+    }
+}
+
 pub static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
+
+struct ManagedWebService {
+    port: u16,
+    task: JoinHandle<()>,
+}
+
+static WEB_SERVICE: LazyLock<Mutex<Option<ManagedWebService>>> = LazyLock::new(|| Mutex::new(None));
 
 #[tauri::command]
 async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
@@ -43,6 +100,72 @@ async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
         .json::<LatestManifest>()
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn start_web_service(port: Option<u16>) -> Result<WebServiceStatusResponse, String> {
+    let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT)).map_err(|e| e.to_string())?;
+    let mut guard = WEB_SERVICE.lock().await;
+
+    if let Some(existing) = guard.as_ref()
+        && !existing.task.is_finished()
+    {
+        return Ok(WebServiceStatusResponse::already_running(existing.port));
+    }
+
+    guard.take();
+
+    info!(port, "Starting kittynode-web service from Tauri");
+    let task = tokio::spawn(async move {
+        if let Err(err) = kittynode_web::run_with_port(port).await {
+            tracing::error!(port, error = %err, "kittynode-web exited unexpectedly");
+        }
+    });
+
+    if let Err(err) = wait_for_service_ready(port).await {
+        task.abort();
+        let _ = task.await;
+        return Err(err.to_string());
+    }
+
+    *guard = Some(ManagedWebService { port, task });
+    Ok(WebServiceStatusResponse::started(port))
+}
+
+#[tauri::command]
+async fn stop_web_service() -> Result<WebServiceStatusResponse, String> {
+    let mut guard = WEB_SERVICE.lock().await;
+    let Some(service) = guard.take() else {
+        return Ok(WebServiceStatusResponse::not_running());
+    };
+
+    info!(port = service.port, "Stopping kittynode-web service");
+    if !service.task.is_finished() {
+        service.task.abort();
+    }
+    match service.task.await {
+        Ok(_) => {}
+        Err(err) if err.is_cancelled() => {}
+        Err(err) => {
+            tracing::warn!(port = service.port, error = %err, "kittynode-web task returned error");
+        }
+    }
+
+    Ok(WebServiceStatusResponse::stopped(service.port))
+}
+
+#[tauri::command]
+async fn get_web_service_status() -> Result<WebServiceStatusResponse, String> {
+    let mut guard = WEB_SERVICE.lock().await;
+    if let Some(service) = guard.as_ref() {
+        if service.task.is_finished() {
+            guard.take();
+            return Ok(WebServiceStatusResponse::not_running());
+        }
+        return Ok(WebServiceStatusResponse::already_running(service.port));
+    }
+
+    Ok(WebServiceStatusResponse::not_running())
 }
 
 #[tauri::command]
@@ -72,6 +195,24 @@ async fn add_capability(
         .add_capability(&name)
         .await
         .map_err(|e| e.to_string())
+}
+
+async fn wait_for_service_ready(port: u16) -> Result<()> {
+    const MAX_ATTEMPTS: usize = 50;
+    for _ in 0..MAX_ATTEMPTS {
+        if tokio::net::TcpStream::connect(("127.0.0.1", port))
+            .await
+            .is_ok()
+            || tokio::net::TcpStream::connect(("::1", port)).await.is_ok()
+        {
+            return Ok(());
+        }
+        sleep(Duration::from_millis(100)).await;
+    }
+
+    Err(eyre!(
+        "Timed out waiting for kittynode-web to start on port {port}. If the port is in use, configure a different port."
+    ))
 }
 
 #[tauri::command]
@@ -430,6 +571,9 @@ pub fn run() -> Result<()> {
             get_config,
             set_auto_start_docker,
             set_server_url,
+            get_web_service_status,
+            start_web_service,
+            stop_web_service,
             restart_app
         ])
         .run(tauri::generate_context!())
