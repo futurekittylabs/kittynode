@@ -78,7 +78,6 @@ release:
   git tag "kittynode-app@${ver}" -m "Release crates + kittynode-app@${ver}"
   cargo publish -p kittynode-core --dry-run && cargo publish -p kittynode-core
   cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
-  cargo publish -p kittynode-tauri --dry-run && cargo publish -p kittynode-tauri --locked
   cargo publish -p kittynode-web --dry-run && cargo publish -p kittynode-web --locked
   git push origin HEAD "kittynode-app@${ver}"
 
