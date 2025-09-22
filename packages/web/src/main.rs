@@ -1,5 +1,5 @@
 use eyre::{Result, eyre};
-use kittynode_core::api::DEFAULT_WEB_PORT;
+use kittynode_core::api::{DEFAULT_WEB_PORT, validate_web_port};
 use std::env;
 
 #[tokio::main]
@@ -33,8 +33,5 @@ fn parse_port_value(value: &str) -> Result<u16> {
     let port: u16 = value
         .parse()
         .map_err(|_| eyre!("Invalid port value: {value}"))?;
-    if port == 0 {
-        return Err(eyre!("Port must be greater than zero"));
-    }
-    Ok(port)
+    validate_web_port(port)
 }

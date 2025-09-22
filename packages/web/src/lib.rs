@@ -10,7 +10,7 @@ use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
 };
-use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus};
+use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -220,6 +220,7 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn run_with_port(port: u16) -> Result<()> {
+    validate_web_port(port)?;
     let app = app();
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
     let listener = TcpListener::bind(address).await?;

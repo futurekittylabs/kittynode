@@ -4,9 +4,13 @@ pub const DEFAULT_WEB_PORT: u16 = 3000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WebServiceStatus {
+    /// A new web service process was spawned successfully.
     Started { pid: u32, port: u16 },
+    /// An existing web service is already running and matches the tracked state.
     AlreadyRunning { pid: u32, port: u16 },
+    /// A previously tracked web service was stopped.
     Stopped { pid: u32, port: u16 },
+    /// No active web service process could be found for the tracked state.
     NotRunning,
 }
 

@@ -31,6 +31,7 @@ pub use crate::application::update_package_config;
 pub use crate::application::validator::{
     CreateDepositDataParams, GenerateKeysParams, create_deposit_data, generate_keys,
 };
+pub use crate::application::web_service::validate_web_port;
 pub use crate::domain::web_service::DEFAULT_WEB_PORT;
 
 pub mod types;

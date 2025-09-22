@@ -3,11 +3,12 @@ use crate::infra::web_service::{self, WebProcessState};
 use eyre::{Result, WrapErr, eyre};
 use rand::RngCore;
 use std::ffi::{OsStr, OsString};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream};
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::Duration;
-use sysinfo::{Pid, System};
+use sysinfo::{Pid, Process, System};
 use tracing::info;
 
 pub fn start_web_service(
@@ -15,10 +16,7 @@ pub fn start_web_service(
     binary_path: &Path,
     args: &[&str],
 ) -> Result<WebServiceStatus> {
-    let port = port.unwrap_or(DEFAULT_WEB_PORT);
-    if port == 0 {
-        return Err(eyre!("Port must be greater than zero"));
-    }
+    let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
     if let Some(state) = web_service::load_state()? {
         if process_matches(&state) {
             return Ok(WebServiceStatus::AlreadyRunning {
@@ -49,19 +47,7 @@ pub fn start_web_service(
         .spawn()
         .wrap_err("Failed to spawn kittynode-web process")?;
 
-    thread::sleep(Duration::from_millis(100));
-    if let Some(status) = child
-        .try_wait()
-        .wrap_err("Failed to poll kittynode-web process state")?
-    {
-        let detail = status
-            .code()
-            .map(|code| format!("exit code {code}"))
-            .unwrap_or_else(|| "terminated by signal".to_string());
-        return Err(eyre!(
-            "kittynode-web process exited immediately ({detail}); check logs for details"
-        ));
-    }
+    wait_for_service_ready(&mut child, port)?;
 
     let pid = child.id();
 
@@ -77,9 +63,13 @@ pub fn start_web_service(
             let _ = child.wait();
         }
         let err = match kill_result {
-            Ok(_) => err.wrap_err("Failed to persist kittynode-web state; terminated spawned process"),
+            Ok(_) => err.wrap_err(format!(
+                "Failed to persist kittynode-web state for pid {} on port {} and terminated spawned process",
+                pid, port
+            )),
             Err(kill_err) => err.wrap_err(format!(
-                "Failed to persist kittynode-web state and could not terminate spawned process: {kill_err}"
+                "Failed to persist kittynode-web state for pid {} on port {} and could not terminate spawned process: {kill_err}",
+                pid, port
             )),
         };
         return Err(err);
@@ -154,7 +144,7 @@ fn paths_match(left: &Path, right: &Path) -> bool {
     }
 }
 
-fn cmd_contains_token(process: &sysinfo::Process, token: Option<&str>) -> bool {
+fn cmd_contains_token(process: &Process, token: Option<&str>) -> bool {
     let Some(token) = token else {
         return false;
     };
@@ -174,4 +164,51 @@ fn generate_service_token() -> String {
     let mut buf = [0u8; 16];
     rand::rng().fill_bytes(&mut buf);
     hex::encode(buf)
+}
+
+pub fn validate_web_port(port: u16) -> Result<u16> {
+    if port == 0 {
+        return Err(eyre!("Port must be greater than zero"));
+    }
+    Ok(port)
+}
+
+fn wait_for_service_ready(child: &mut Child, port: u16) -> Result<()> {
+    const MAX_ATTEMPTS: u32 = 50;
+    const RETRY_DELAY: Duration = Duration::from_millis(100);
+    let targets = [
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port),
+        SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), port),
+    ];
+
+    for _ in 0..MAX_ATTEMPTS {
+        if let Some(status) = child
+            .try_wait()
+            .wrap_err("Failed to poll kittynode-web process state")?
+        {
+            let detail = status
+                .code()
+                .map(|code| format!("exit code {code}"))
+                .unwrap_or_else(|| "terminated by signal".to_string());
+            return Err(eyre!(
+                "kittynode-web process exited immediately ({detail}); check logs for details"
+            ));
+        }
+
+        if targets
+            .iter()
+            .any(|addr| TcpStream::connect_timeout(addr, Duration::from_millis(50)).is_ok())
+        {
+            return Ok(());
+        }
+
+        thread::sleep(RETRY_DELAY);
+    }
+
+    let _ = child.kill();
+    let _ = child.wait();
+    Err(eyre!(
+        "Timed out waiting for kittynode-web to bind on port {}",
+        port
+    ))
 }
