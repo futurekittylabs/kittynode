@@ -67,13 +67,20 @@ lint-rs:
 lint-rs-pedantic:
   cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::too_many_lines && cargo fmt --all -- --check
 
-# release the desktop app
+# release crates + desktop app
 release:
-  cargo set-version -p kittynode-tauri --bump minor
-  cargo generate-lockfile
-  git add packages/app/src-tauri/Cargo.toml Cargo.lock
-  git commit -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
-  git tag "kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)" -m "Release kittynode-app@$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  cargo set-version --bump minor
+  ver="$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
+  git add $(git ls-files "*/Cargo.toml") Cargo.toml Cargo.lock
+  git commit -m "Release crates + kittynode-app@${ver}"
+  git tag "kittynode-app@${ver}" -m "Release crates + kittynode-app@${ver}"
+  cargo publish -p kittynode-core --dry-run && cargo publish -p kittynode-core
+  cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
+  cargo publish -p kittynode-tauri --dry-run && cargo publish -p kittynode-tauri --locked
+  cargo publish -p kittynode-web --dry-run && cargo publish -p kittynode-web --locked
+  git push origin HEAD "kittynode-app@${ver}"
 
 # set up the project
 setup:
