@@ -52,6 +52,11 @@ enum Commands {
         #[command(subcommand)]
         command: ValidatorCommands,
     },
+    #[command(about = "Control the Kittynode web service")]
+    Web {
+        #[command(subcommand)]
+        command: WebCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -264,6 +269,37 @@ enum ValidatorCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum WebCommands {
+    #[command(name = "start", about = "Start the Kittynode web service")]
+    Start {
+        #[arg(
+            long = "port",
+            value_name = "PORT",
+            help = "Port to bind the Kittynode web service"
+        )]
+        port: Option<u16>,
+    },
+    #[command(name = "stop", about = "Stop the Kittynode web service")]
+    Stop,
+    #[command(name = "__internal-run", hide = true)]
+    RunInternal {
+        #[arg(
+            long = "port",
+            value_name = "PORT",
+            help = "Port to bind the Kittynode web service"
+        )]
+        port: Option<u16>,
+        #[arg(
+            long = "service-token",
+            value_name = "TOKEN",
+            hide = true,
+            help = "Internal token used to bind the web host to the parent process"
+        )]
+        service_token: Option<String>,
+    },
+}
+
 fn parse_key_val(s: &str) -> Result<(String, String), String> {
     let position = s
         .find('=')
@@ -346,6 +382,14 @@ async fn main() -> Result<()> {
                 genesis_root,
                 overwrite,
             )?,
+        },
+        Commands::Web { command } => match command {
+            WebCommands::Start { port } => commands::start_web_service(port)?,
+            WebCommands::Stop => commands::stop_web_service()?,
+            WebCommands::RunInternal {
+                port,
+                service_token,
+            } => commands::run_web_service(port, service_token).await?,
         },
     }
 
