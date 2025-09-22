@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { remoteAccessStore } from "$stores/remoteAccess.svelte";
+import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { systemInfoStore } from "$stores/systemInfo.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { Skeleton } from "$lib/components/ui/skeleton";
@@ -13,9 +13,9 @@ import {
   HardDrive,
   Activity,
   Server,
-  WifiOff,
   RefreshCw,
   Globe,
+  WifiOff,
 } from "@lucide/svelte";
 
 function calculateUsagePercentage(used: number, total: number): number {
@@ -64,18 +64,27 @@ onMount(() => {
 
     <Card.Root>
       <Card.Header class="pb-3">
-        <Card.Title class="text-sm font-medium">Remote Access</Card.Title>
+        <Card.Title class="text-sm font-medium">Remote Server</Card.Title>
       </Card.Header>
-      <Card.Content>
+      <Card.Content class="space-y-2">
         <div class="flex items-center space-x-2">
-          {#if remoteAccessStore.remoteAccess}
+          {#if serverUrlStore.serverUrl}
             <Globe class="h-4 w-4 text-green-500" />
-            <span class="text-sm font-medium">Enabled</span>
+            <span class="text-sm font-medium">Connected</span>
           {:else}
             <WifiOff class="h-4 w-4 text-muted-foreground" />
-            <span class="text-sm font-medium">Disabled</span>
+            <span class="text-sm font-medium">Not connected</span>
           {/if}
         </div>
+        {#if serverUrlStore.serverUrl}
+          <p class="text-xs text-muted-foreground break-all">
+            {serverUrlStore.serverUrl}
+          </p>
+        {:else if serverUrlStore.lastServerUrl}
+          <p class="text-xs text-muted-foreground break-all">
+            Last connected: {serverUrlStore.lastServerUrl}
+          </p>
+        {/if}
       </Card.Content>
     </Card.Root>
 

@@ -3,7 +3,6 @@ import { coreClient } from "$lib/client";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
-import { remoteAccessStore } from "$stores/remoteAccess.svelte";
 import { serverUrlStore, normalizeServerUrl } from "$stores/serverUrl.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { updates } from "$stores/updates.svelte";
@@ -22,8 +21,6 @@ import {
   ArrowUpRight,
   MessageSquare,
   Trash2,
-  Wifi,
-  WifiOff,
   Link2,
   Unlink,
 } from "@lucide/svelte";
@@ -80,24 +77,6 @@ async function handleAutoStartDockerChange(enabled: boolean) {
     }
   } finally {
     updatingAutoStartDocker = false;
-  }
-}
-
-async function enableRemoteAccess() {
-  try {
-    remoteAccessStore.enable();
-    notifySuccess("Remote access enabled");
-  } catch (e) {
-    notifyError("Failed to enable remote access", e);
-  }
-}
-
-async function disableRemoteAccess() {
-  try {
-    remoteAccessStore.disable();
-    notifySuccess("Remote access disabled");
-  } catch (e) {
-    notifyError("Failed to disable remote access", e);
   }
 }
 
@@ -253,44 +232,11 @@ async function checkForUpdates() {
         Network
       </Card.Title>
       <Card.Description>
-        Configure remote access and connections
+        Connect Kittynode to a remote server
       </Card.Description>
     </Card.Header>
     <Card.Content class="space-y-4">
-      <!-- Remote Access -->
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium">Remote Access</p>
-          <p class="text-xs text-muted-foreground">
-            Allow external connections to this node
-          </p>
-        </div>
-        {#if remoteAccessStore.remoteAccess === null}
-          <span class="text-sm text-muted-foreground">Loading...</span>
-        {:else if !remoteAccessStore.remoteAccess}
-          <Button
-            size="sm"
-            onclick={enableRemoteAccess}
-            disabled={["ios", "android"].includes(platform())}
-          >
-            <Wifi class="h-4 w-4 mr-1" />
-            Enable
-          </Button>
-        {:else}
-          <Button
-            size="sm"
-            variant="outline"
-            onclick={disableRemoteAccess}
-          >
-            <WifiOff class="h-4 w-4 mr-1" />
-            Disable
-          </Button>
-        {/if}
-      </div>
-
-      <div class="border-t pt-4"></div>
-
-      <!-- Remote Connection -->
+      <!-- Remote Server -->
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium">Remote Server</p>
@@ -298,11 +244,7 @@ async function checkForUpdates() {
             {serverUrlStore.serverUrl || "Not connected"}
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onclick={openRemoteDialog}
-        >
+        <Button size="sm" variant="outline" onclick={openRemoteDialog}>
           <Link2 class="h-4 w-4 mr-1" />
           {remoteServerConnected ? "Manage" : "Connect"}
         </Button>
