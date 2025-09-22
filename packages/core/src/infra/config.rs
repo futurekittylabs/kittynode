@@ -10,11 +10,11 @@ impl ConfigStore {
     pub fn load() -> Result<Config> {
         let config_path = Self::config_file_path()?;
         if !config_path.exists() {
-            return Ok(Config::default());
+            return Ok(Config::default().normalize());
         }
         let toml_str = fs::read_to_string(config_path)?;
-        let config = toml::from_str(&toml_str)?;
-        Ok(config)
+        let config: Config = toml::from_str(&toml_str)?;
+        Ok(config.normalize())
     }
 
     /// Saves the configuration to a TOML file.
@@ -23,7 +23,8 @@ impl ConfigStore {
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let toml_str = toml::to_string(config)?;
+        let normalized = config.clone().normalize();
+        let toml_str = toml::to_string(&normalized)?;
         fs::write(config_path, toml_str)?;
         Ok(())
     }

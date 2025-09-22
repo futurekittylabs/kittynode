@@ -113,7 +113,10 @@ function validateRemoteUrl(url: string) {
 }
 
 function openRemoteDialog() {
-  remoteServerUrlInput = serverUrlStore.serverUrl || "http://localhost:3000";
+  remoteServerUrlInput =
+    serverUrlStore.serverUrl ||
+    serverUrlStore.lastServerUrl ||
+    "http://127.0.0.1:3000";
   remoteServerError = "";
   remoteDialogAction = null;
   remoteServerDialogOpen = true;

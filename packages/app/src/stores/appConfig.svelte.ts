@@ -11,7 +11,7 @@ async function loadConfig(): Promise<void> {
   loading = true;
   try {
     config = await coreClient.getConfig();
-    serverUrlStore.setFromConfig(config.serverUrl);
+    serverUrlStore.setFromConfig(config.serverUrl, config.lastServerUrl);
     initialized = true;
   } catch (e) {
     console.error(`Failed to load Kittynode config: ${e}`);
@@ -65,12 +65,23 @@ export const appConfigStore = {
     }
   },
   async setServerUrl(endpoint: string) {
+    const trimmedEndpoint = endpoint.trim();
+    const previousLast = config?.lastServerUrl ?? "";
+
     try {
-      await coreClient.setServerUrl(endpoint);
+      await coreClient.setServerUrl(trimmedEndpoint);
+      const nextLast = trimmedEndpoint !== "" ? trimmedEndpoint : previousLast;
+
       if (config) {
-        config = { ...config, serverUrl: endpoint };
+        config = {
+          ...config,
+          serverUrl: trimmedEndpoint,
+          lastServerUrl: nextLast,
+          remoteConnected: trimmedEndpoint !== "",
+        };
       }
-      serverUrlStore.setFromConfig(endpoint);
+
+      serverUrlStore.setFromConfig(trimmedEndpoint, nextLast);
     } catch (e) {
       console.error(`Failed to update server URL: ${e}`);
       throw e;
