@@ -3,6 +3,8 @@ title: Operate Ethereum
 description: Operate the world computer.
 ---
 
+import { Steps } from '@astrojs/starlight/components';
+
 This guide will go over how to operate the world computer with Kittynode.
 
 ## Getting hardware
@@ -13,66 +15,102 @@ Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.
 
 ## Set up an Ubuntu machine
 
-- Install [Ubuntu desktop or server](https://ubuntu.com/download)
-- Install basic utils:
-  ```bash
-  sudo apt update
-  sudo apt install -y build-essential curl git
-  ```
-- Install Tailscale:
-  ```bash
-  curl -fsSL https://tailscale.com/install.sh | sh
-  ```
+<Steps>
+
+1. Install [Ubuntu desktop or server](https://ubuntu.com/download).
+
+2. Install basic utils:
+
+    ```bash
+    sudo apt update
+    sudo apt install -y build-essential curl git
+    ```
+
+3. Install Tailscale:
+
+    ```bash
+    curl -fsSL https://tailscale.com/install.sh | sh
+    ```
+
+</Steps>
 
 ### Set up SSH access over Tailscale
 
-- Install openssh-server:
-  ```bash
-  sudo apt update
-  sudo apt install -y openssh-server
-  ```
-- Enable and start the SSH service:
-  ```bash
-  sudo systemctl enable ssh
-  sudo systemctl start ssh
-  ```
+<Steps>
+
+1. Install openssh-server:
+
+    ```bash
+    sudo apt update
+    sudo apt install -y openssh-server
+    ```
+
+2. Enable and start the SSH service:
+
+    ```bash
+    sudo systemctl enable ssh
+    sudo systemctl start ssh
+    ```
+
+</Steps>
 
 ### Install Docker
 
-- Uninstall any conflicting packages:
-  ```bash
-  for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
-  ```
+<Steps>
 
-- Install Docker:
-  ```bash
-  sudo apt-get update
-  sudo apt-get install ca-certificates curl
-  sudo install -m 0755 -d /etc/apt/keyrings
-  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  sudo chmod a+r /etc/apt/keyrings/docker.asc
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-    $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  sudo apt-get update
-  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-  ```
+1. Uninstall any conflicting packages:
 
-- Verify Docker is installed:
-  ```bash
-  sudo docker run hello-world
-  ```
+    ```bash
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
+    ```
 
-- Add user to docker group:
-  ```bash
-  sudo usermod -aG docker $USER
-  newgrp docker
-  ```
+2. Install Docker:
 
-### Install kittynode CLI and connect kittynode desktop
+    ```bash
+    sudo apt-get update
+    sudo apt-get install ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    ```
 
-- Install kittynode-cli:
-  ```bash
-  cargo install kittynode-cli
-  ```
+3. Verify Docker is installed:
+
+    ```bash
+    sudo docker run hello-world
+    ```
+
+4. Add your user to the docker group:
+
+    ```bash
+    sudo usermod -aG docker $USER
+    newgrp docker
+    ```
+
+</Steps>
+
+### Connect to remote Kittynode
+
+<Steps>
+
+1. Install kittynode-cli:
+
+    ```bash
+    cargo install kittynode-cli
+    ```
+
+2. Start the local web server:
+
+    ```bash
+    kittynode web start
+    ```
+
+3. On the Kittynode desktop app, visit settings and connect to the local web server.
+
+</Steps>
