@@ -4,7 +4,7 @@ use assert_cmd::Command;
 fn get_packages_outputs_known_package() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
     let output = cmd
-        .args(["get-packages"])
+        .args(["package", "list"])
         .assert()
         .success()
         .get_output()
@@ -21,7 +21,7 @@ fn get_packages_outputs_known_package() {
 fn get_config_outputs_readable_text() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
     let output = cmd
-        .args(["get-config"])
+        .args(["config", "show"])
         .assert()
         .success()
         .get_output()

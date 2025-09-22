@@ -5,7 +5,11 @@ use eyre::Result;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(about, version)]
+#[command(
+    version,
+    about = "Manage your Kittynode installation from the terminal",
+    long_about = "Use kittynode commands to install packages, inspect configuration, and work with validator tooling."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -13,36 +17,90 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    GetPackages,
-    GetInstalledPackages,
-    InstallPackage {
-        #[arg(value_name = "PACKAGE_NAME")]
+    #[command(about = "Manage packages available to Kittynode")]
+    Package {
+        #[command(subcommand)]
+        command: PackageCommands,
+    },
+    #[command(about = "Inspect or update Kittynode configuration")]
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommands,
+    },
+    #[command(about = "Manage capability flags on this Kittynode")]
+    Capability {
+        #[command(subcommand)]
+        command: CapabilityCommands,
+    },
+    #[command(about = "Inspect system diagnostics and environment")]
+    System {
+        #[command(subcommand)]
+        command: SystemCommands,
+    },
+    #[command(about = "Control Docker services used by Kittynode")]
+    Docker {
+        #[command(subcommand)]
+        command: DockerCommands,
+    },
+    #[command(about = "Inspect managed containers")]
+    Container {
+        #[command(subcommand)]
+        command: ContainerCommands,
+    },
+    #[command(about = "Validator tooling for key management and deposits")]
+    Validator {
+        #[command(subcommand)]
+        command: ValidatorCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum PackageCommands {
+    #[command(name = "list", about = "List packages available to install")]
+    List,
+    #[command(
+        name = "installed",
+        about = "Show packages currently installed on this Kittynode"
+    )]
+    Installed,
+    #[command(about = "Install a package from the Kittynode registry")]
+    Install {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to install")]
         name: String,
     },
-    DeletePackage {
-        #[arg(value_name = "PACKAGE_NAME")]
+    #[command(about = "Uninstall a package and optionally remove its Docker images")]
+    Uninstall {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to uninstall")]
         name: String,
         #[arg(long = "include-images", help = "Remove associated Docker images")]
         include_images: bool,
     },
-    SystemInfo,
-    GetContainerLogs {
-        #[arg(value_name = "CONTAINER_NAME")]
-        container: String,
-        #[arg(
-            long = "tail",
-            value_name = "LINES",
-            help = "Number of log lines to fetch"
-        )]
-        tail: Option<usize>,
+    #[command(about = "Manage package-specific configuration overrides")]
+    Config {
+        #[command(subcommand)]
+        command: PackageConfigCommands,
     },
-    GetConfig,
-    GetPackageConfig {
-        #[arg(value_name = "PACKAGE_NAME")]
+}
+
+#[derive(Subcommand)]
+enum PackageConfigCommands {
+    #[command(
+        name = "show",
+        about = "Show configuration overrides applied to a package"
+    )]
+    Show {
+        #[arg(
+            value_name = "PACKAGE_NAME",
+            help = "Package whose overrides should be shown"
+        )]
         name: String,
     },
-    UpdatePackageConfig {
-        #[arg(value_name = "PACKAGE_NAME")]
+    #[command(name = "set", about = "Set configuration overrides for a package")]
+    Set {
+        #[arg(
+            value_name = "PACKAGE_NAME",
+            help = "Package whose overrides should be updated"
+        )]
         name: String,
         #[arg(
             long = "value",
@@ -52,54 +110,156 @@ enum Commands {
         )]
         values: Vec<(String, String)>,
     },
-    GetCapabilities,
-    AddCapability {
-        #[arg(value_name = "CAPABILITY")]
+}
+
+#[derive(Subcommand)]
+enum ConfigCommands {
+    #[command(name = "show", about = "Print global Kittynode configuration values")]
+    Show,
+    #[command(
+        name = "init",
+        about = "Initialize Kittynode data directories and defaults"
+    )]
+    Init,
+    #[command(
+        name = "delete",
+        about = "Delete local Kittynode data and configuration"
+    )]
+    Delete,
+}
+
+#[derive(Subcommand)]
+enum CapabilityCommands {
+    #[command(name = "list", about = "List capabilities enabled on this Kittynode")]
+    List,
+    #[command(about = "Enable a capability in the local Kittynode config")]
+    Add {
+        #[arg(value_name = "CAPABILITY", help = "Capability identifier to enable")]
         name: String,
     },
-    RemoveCapability {
-        #[arg(value_name = "CAPABILITY")]
+    #[command(about = "Disable a capability in the local Kittynode config")]
+    Remove {
+        #[arg(value_name = "CAPABILITY", help = "Capability identifier to disable")]
         name: String,
     },
-    InitKittynode,
-    DeleteKittynode,
-    IsDockerRunning,
-    StartDockerIfNeeded,
-    GetOperationalState,
-    Validator {
-        #[command(subcommand)]
-        command: ValidatorCommands,
+}
+
+#[derive(Subcommand)]
+enum SystemCommands {
+    #[command(
+        name = "info",
+        about = "Display hardware and OS details used by Kittynode"
+    )]
+    Info,
+    #[command(
+        name = "state",
+        about = "Show overall operational status and readiness flags"
+    )]
+    State,
+}
+
+#[derive(Subcommand)]
+enum DockerCommands {
+    #[command(
+        name = "status",
+        about = "Check whether Docker is reachable from Kittynode"
+    )]
+    Status,
+    #[command(name = "start", about = "Start Docker if it is not already running")]
+    Start,
+}
+
+#[derive(Subcommand)]
+enum ContainerCommands {
+    #[command(name = "logs", about = "Show recent logs from a managed container")]
+    Logs {
+        #[arg(value_name = "CONTAINER_NAME", help = "Managed container to inspect")]
+        container: String,
+        #[arg(
+            long = "tail",
+            value_name = "LINES",
+            help = "Number of log lines to fetch"
+        )]
+        tail: Option<usize>,
     },
 }
 
 #[derive(Subcommand)]
 enum ValidatorCommands {
-    #[command(name = "generate-keys")]
+    #[command(
+        name = "generate-keys",
+        about = "Create a new validator keypair on disk"
+    )]
     GenerateKeys {
-        #[arg(long = "output-dir", value_name = "PATH")]
+        #[arg(
+            long = "output-dir",
+            value_name = "PATH",
+            help = "Folder where key files should be written"
+        )]
         output_dir: PathBuf,
-        #[arg(long = "entropy", value_name = "STRING")]
+        #[arg(
+            long = "entropy",
+            value_name = "STRING",
+            help = "Entropy string used to derive the keys"
+        )]
         entropy: String,
-        #[arg(long = "file-name", value_name = "NAME")]
+        #[arg(
+            long = "file-name",
+            value_name = "NAME",
+            help = "Optional custom base name for the key files"
+        )]
         file_name: Option<String>,
-        #[arg(long = "overwrite")]
+        #[arg(
+            long = "overwrite",
+            help = "Replace existing key files if they already exist"
+        )]
         overwrite: bool,
     },
-    #[command(name = "create-deposit-data")]
+    #[command(
+        name = "create-deposit-data",
+        about = "Build deposit data for an existing validator key"
+    )]
     CreateDepositData {
-        #[arg(long = "key", value_name = "PATH")]
+        #[arg(
+            long = "key",
+            value_name = "PATH",
+            help = "Path to the validator key file"
+        )]
         key_path: PathBuf,
-        #[arg(long = "output", value_name = "PATH")]
+        #[arg(
+            long = "output",
+            value_name = "PATH",
+            help = "Destination file for the deposit data JSON"
+        )]
         output_path: PathBuf,
-        #[arg(long = "withdrawal-credentials", value_name = "HEX")]
+        #[arg(
+            long = "withdrawal-credentials",
+            value_name = "HEX",
+            help = "Hex-encoded withdrawal credentials"
+        )]
         withdrawal_credentials: String,
-        #[arg(long = "amount-gwei", default_value_t = 32_000_000_000)]
+        #[arg(
+            long = "amount-gwei",
+            default_value_t = 32_000_000_000,
+            help = "Deposit amount in gwei (defaults to 32 ETH)"
+        )]
         amount_gwei: u64,
-        #[arg(long = "fork-version", default_value = "00000000")]
+        #[arg(
+            long = "fork-version",
+            default_value = "00000000",
+            help = "Fork version for the target network in hex"
+        )]
         fork_version: String,
-        #[arg(long = "genesis-root", value_name = "HEX")]
+        #[arg(
+            long = "genesis-root",
+            value_name = "HEX",
+            help = "Genesis validators root for the target network"
+        )]
         genesis_root: String,
-        #[arg(long = "overwrite")]
+        #[arg(
+            long = "overwrite",
+            help = "Replace the output file if it already exists"
+        )]
         overwrite: bool,
     },
 }
@@ -124,30 +284,44 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::GetPackages => commands::get_packages().await?,
-        Commands::GetInstalledPackages => commands::get_installed_packages().await?,
-        Commands::InstallPackage { name } => commands::install_package(name).await?,
-        Commands::DeletePackage {
-            name,
-            include_images,
-        } => commands::delete_package(name, include_images).await?,
-        Commands::SystemInfo => commands::system_info().await?,
-        Commands::GetContainerLogs { container, tail } => {
-            commands::get_container_logs(container, tail).await?
-        }
-        Commands::GetConfig => commands::get_config()?,
-        Commands::GetPackageConfig { name } => commands::get_package_config(name).await?,
-        Commands::UpdatePackageConfig { name, values } => {
-            commands::update_package_config(name, values).await?
-        }
-        Commands::GetCapabilities => commands::get_capabilities()?,
-        Commands::AddCapability { name } => commands::add_capability(name)?,
-        Commands::RemoveCapability { name } => commands::remove_capability(name)?,
-        Commands::InitKittynode => commands::init_kittynode()?,
-        Commands::DeleteKittynode => commands::delete_kittynode()?,
-        Commands::IsDockerRunning => commands::is_docker_running().await?,
-        Commands::StartDockerIfNeeded => commands::start_docker_if_needed().await?,
-        Commands::GetOperationalState => commands::get_operational_state().await?,
+        Commands::Package { command } => match command {
+            PackageCommands::List => commands::get_packages().await?,
+            PackageCommands::Installed => commands::get_installed_packages().await?,
+            PackageCommands::Install { name } => commands::install_package(name).await?,
+            PackageCommands::Uninstall {
+                name,
+                include_images,
+            } => commands::delete_package(name, include_images).await?,
+            PackageCommands::Config { command } => match command {
+                PackageConfigCommands::Show { name } => commands::get_package_config(name).await?,
+                PackageConfigCommands::Set { name, values } => {
+                    commands::update_package_config(name, values).await?
+                }
+            },
+        },
+        Commands::Config { command } => match command {
+            ConfigCommands::Show => commands::get_config()?,
+            ConfigCommands::Init => commands::init_kittynode()?,
+            ConfigCommands::Delete => commands::delete_kittynode()?,
+        },
+        Commands::Capability { command } => match command {
+            CapabilityCommands::List => commands::get_capabilities()?,
+            CapabilityCommands::Add { name } => commands::add_capability(name)?,
+            CapabilityCommands::Remove { name } => commands::remove_capability(name)?,
+        },
+        Commands::System { command } => match command {
+            SystemCommands::Info => commands::system_info().await?,
+            SystemCommands::State => commands::get_operational_state().await?,
+        },
+        Commands::Docker { command } => match command {
+            DockerCommands::Status => commands::is_docker_running().await?,
+            DockerCommands::Start => commands::start_docker_if_needed().await?,
+        },
+        Commands::Container { command } => match command {
+            ContainerCommands::Logs { container, tail } => {
+                commands::get_container_logs(container, tail).await?
+            }
+        },
         Commands::Validator { command } => match command {
             ValidatorCommands::GenerateKeys {
                 output_dir,
