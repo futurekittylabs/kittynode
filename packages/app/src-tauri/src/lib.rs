@@ -335,15 +335,6 @@ async fn create_validator_deposit_data(
         network_name,
     } = args;
 
-    let network_name = network_name.and_then(|name| {
-        let trimmed = name.trim();
-        if trimmed.is_empty() {
-            None
-        } else {
-            Some(trimmed.to_string())
-        }
-    });
-
     let params = CreateDepositDataParams::from_hex_inputs(
         PathBuf::from(&key_path),
         PathBuf::from(&output_path),

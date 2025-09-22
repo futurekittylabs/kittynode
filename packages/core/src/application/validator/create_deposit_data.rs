@@ -44,7 +44,14 @@ impl CreateDepositDataParams {
     }
 
     pub fn with_network_name(mut self, network_name: Option<String>) -> Self {
-        self.network_name = network_name;
+        self.network_name = network_name.and_then(|name| {
+            let trimmed = name.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        });
         self
     }
 }
@@ -196,7 +203,7 @@ mod tests {
                 signature: "sig".into(),
                 deposit_message_root: "msg_root".into(),
                 deposit_data_root: "data_root".into(),
-                fork_version: "00000000".into(),
+                fork_version: "0x00000000".into(),
                 network_name: None,
             })
         }

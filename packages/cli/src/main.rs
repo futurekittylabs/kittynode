@@ -411,15 +411,6 @@ async fn main() -> Result<()> {
                 network,
                 overwrite,
             } => {
-                let network = network.and_then(|name| {
-                    let trimmed = name.trim();
-                    if trimmed.is_empty() {
-                        None
-                    } else {
-                        Some(trimmed.to_string())
-                    }
-                });
-
                 let params = CreateDepositDataParams::from_hex_inputs(
                     key_path,
                     output_path,

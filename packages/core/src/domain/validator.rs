@@ -8,9 +8,6 @@ pub struct ValidatorKey {
 }
 
 /// Deposit data payload used for validator activation on the beacon chain.
-///
-/// The structure mirrors the Ethereum staking launchpad `deposit-cli` output so
-/// that generated files can be uploaded without additional transformation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DepositData {
     pub pubkey: String,
