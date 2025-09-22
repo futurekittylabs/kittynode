@@ -344,7 +344,7 @@ async fn create_validator_deposit_data(
         &genesis_root,
         overwrite,
     )
-    .map(|params| params.with_network_name(network_name))
+    .and_then(|params| params.with_network_name(network_name))
     .map_err(|err| err.to_string())?;
     let client = client_state.client();
     client

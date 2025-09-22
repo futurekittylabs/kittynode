@@ -4,7 +4,7 @@ use crate::application::validator::input::{
 };
 use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
-use eyre::{Context, Result};
+use eyre::{Context, Result, eyre};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -43,16 +43,29 @@ impl CreateDepositDataParams {
         })
     }
 
-    pub fn with_network_name(mut self, network_name: Option<String>) -> Self {
-        self.network_name = network_name.and_then(|name| {
+    pub fn with_network_name(mut self, network_name: Option<String>) -> Result<Self> {
+        let normalized = network_name.and_then(|name| {
             let trimmed = name.trim();
             if trimmed.is_empty() {
                 None
             } else {
-                Some(trimmed.to_string())
+                Some(trimmed.to_lowercase())
             }
         });
-        self
+
+        if let Some(name) = normalized {
+            if matches!(name.as_str(), "mainnet" | "sepolia" | "hoodi") {
+                self.network_name = Some(name);
+            } else {
+                return Err(eyre!(
+                    "unsupported network name '{name}'. Expected one of mainnet, sepolia, hoodi"
+                ));
+            }
+        } else {
+            self.network_name = None;
+        }
+
+        Ok(self)
     }
 }
 
@@ -295,7 +308,7 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: true,
-            network_name: Some("testnet".into()),
+            network_name: Some("hoodi".into()),
         };
 
         let deposit = create_deposit_data(params).unwrap();
@@ -306,7 +319,7 @@ mod tests {
         assert_eq!(deposit.pubkey.len(), 98);
         assert_eq!(deposit.signature.len(), 194);
         assert_eq!(deposit.deposit_data_root.len(), 66);
-        assert_eq!(deposit.network_name.as_deref(), Some("testnet"));
+        assert_eq!(deposit.network_name.as_deref(), Some("hoodi"));
     }
 
     #[test]
@@ -322,14 +335,30 @@ mod tests {
         )
         .unwrap();
 
-        let trimmed = base.clone().with_network_name(Some(" holesky ".into()));
-        assert_eq!(trimmed.network_name.as_deref(), Some("holesky"));
+        let trimmed = base
+            .clone()
+            .with_network_name(Some(" hoodi ".into()))
+            .unwrap();
+        assert_eq!(trimmed.network_name.as_deref(), Some("hoodi"));
 
-        let empty = base.clone().with_network_name(Some("   ".into()));
+        let empty = base.clone().with_network_name(Some("   ".into())).unwrap();
         assert!(empty.network_name.is_none());
 
-        let none = base.with_network_name(None);
+        let none = base.with_network_name(None).unwrap();
         assert!(none.network_name.is_none());
+
+        let invalid = CreateDepositDataParams::from_hex_inputs(
+            PathBuf::from("/validators/key.json"),
+            PathBuf::from("/validators/deposit.json"),
+            "cred".into(),
+            32_000_000_000,
+            "00000000",
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            false,
+        )
+        .unwrap()
+        .with_network_name(Some("unknownnet".into()));
+        assert!(invalid.is_err());
     }
 
     #[test]

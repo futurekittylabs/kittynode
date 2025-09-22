@@ -275,7 +275,7 @@ enum ValidatorCommands {
         #[arg(
             long = "network",
             value_name = "NAME",
-            help = "Optional network name written to the deposit data file (e.g. mainnet, holesky, sepolia)"
+            help = "Optional network name written to the deposit data file (mainnet, sepolia, hoodi only)"
         )]
         network: Option<String>,
         #[arg(
@@ -420,7 +420,7 @@ async fn main() -> Result<()> {
                     &genesis_root,
                     overwrite,
                 )?
-                .with_network_name(network);
+                .with_network_name(network)?;
 
                 commands::validator_create_deposit_data(params)?
             }
