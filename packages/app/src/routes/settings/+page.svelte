@@ -8,7 +8,7 @@ import { operationalStateStore } from "$stores/operationalState.svelte";
 import { updates } from "$stores/updates.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
 import { onMount } from "svelte";
-import { Checkbox } from "$lib/components/ui/checkbox";
+import { Switch } from "$lib/components/ui/switch";
 import { Input } from "$lib/components/ui/input";
 import * as Dialog from "$lib/components/ui/dialog";
 import {
@@ -334,7 +334,9 @@ async function checkForUpdates() {
     <Card.Content>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium">Auto-start Docker</p>
+          <p id="auto-start-docker-label" class="text-sm font-medium">
+            Auto-start Docker
+          </p>
           <p class="text-xs text-muted-foreground">
             Start Docker Desktop when Kittynode launches
           </p>
@@ -344,22 +346,24 @@ async function checkForUpdates() {
         {:else if !configInitialized}
           <span class="text-sm text-destructive">Failed to load</span>
         {:else}
-          <label class="flex items-center gap-2">
-            <Checkbox
-              id="auto-start-docker"
-              checked={autoStartDockerEnabled}
-              onCheckedChange={handleAutoStartDockerChange}
-              disabled={!configInitialized || updatingAutoStartDocker}
-            />
-            <span class="text-sm text-muted-foreground">
-              {autoStartDockerEnabled ? "Enabled" : "Disabled"}
-            </span>
-          </label>
+          <Switch
+            id="auto-start-docker"
+            checked={autoStartDockerEnabled}
+            onCheckedChange={handleAutoStartDockerChange}
+            disabled={!configInitialized || updatingAutoStartDocker}
+            aria-labelledby="auto-start-docker-label"
+            aria-describedby={platform() === "linux" ? "auto-start-docker-helper" : undefined}
+          />
         {/if}
       </div>
-      <p class="mt-3 text-xs text-muted-foreground">
-        Enabling this may prompt for your system password on Linux the next time Kittynode starts.
-      </p>
+      {#if platform() === "linux"}
+        <p
+          id="auto-start-docker-helper"
+          class="mt-3 text-xs text-muted-foreground"
+        >
+          Enabling this may prompt for your system password the next time Kittynode starts.
+        </p>
+      {/if}
     </Card.Content>
   </Card.Root>
 
