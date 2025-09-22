@@ -1,13 +1,15 @@
-use eyre::{Result, WrapErr};
+use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
 };
 use kittynode_core::api::{
     self, CreateDepositDataParams, DEFAULT_WEB_PORT, GenerateKeysParams, validate_web_port,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::env;
-use std::path::PathBuf;
+use std::fs::OpenOptions;
+use std::io::{BufRead, BufReader, ErrorKind, Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
 
 pub async fn get_packages() -> Result<()> {
     let packages = api::get_packages()?;
@@ -315,6 +317,9 @@ pub fn start_web_service(port: Option<u16>) -> Result<()> {
     let port = port.map(validate_web_port).transpose()?;
     let status = api::start_web_service(port, &binary, &["web", WEB_INTERNAL_SUBCOMMAND])?;
     println!("{}", status);
+    if let Ok(path) = api::get_web_service_log_path() {
+        println!("Logs: {}", path.display());
+    }
     Ok(())
 }
 
@@ -322,6 +327,89 @@ pub fn stop_web_service() -> Result<()> {
     let status = api::stop_web_service()?;
     println!("{}", status);
     Ok(())
+}
+
+pub fn web_logs(follow: bool, tail: Option<usize>) -> Result<()> {
+    let tail = tail.filter(|value| *value > 0);
+    let path =
+        api::get_web_service_log_path().wrap_err("Failed to locate kittynode web service logs")?;
+    stream_log_file(&path, tail, follow)
+        .wrap_err_with(|| format!("Failed to stream logs from {}", path.display()))?;
+    Ok(())
+}
+
+fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()> {
+    let mut file = OpenOptions::new()
+        .read(true)
+        .open(path)
+        .map_err(|err| eyre!("Failed to open log file: {err}"))?;
+
+    {
+        let mut reader = BufReader::new(
+            file.try_clone()
+                .map_err(|err| eyre!("Failed to clone log file handle: {err}"))?,
+        );
+        if let Some(limit) = tail {
+            let mut buffer = VecDeque::with_capacity(limit);
+            let mut line = String::new();
+            loop {
+                line.clear();
+                let bytes = match reader.read_line(&mut line) {
+                    Ok(count) => count,
+                    Err(err) if err.kind() == ErrorKind::Interrupted => continue,
+                    Err(err) => {
+                        return Err(eyre!("Failed to read kittynode web log file: {err}"));
+                    }
+                };
+                if bytes == 0 {
+                    break;
+                }
+                if buffer.len() == limit {
+                    buffer.pop_front();
+                }
+                buffer.push_back(line.clone());
+            }
+            for entry in buffer {
+                print!("{entry}");
+            }
+        } else {
+            let mut content = String::new();
+            reader
+                .read_to_string(&mut content)
+                .map_err(|err| eyre!("Failed to read kittynode web log file: {err}"))?;
+            print!("{content}");
+        }
+    }
+
+    std::io::stdout()
+        .flush()
+        .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
+
+    if !follow {
+        return Ok(());
+    }
+
+    file.seek(SeekFrom::End(0))
+        .map_err(|err| eyre!("Failed to seek log file: {err}"))?;
+    let mut reader = BufReader::new(file);
+    let mut line = String::new();
+    loop {
+        match reader.read_line(&mut line) {
+            Ok(0) => {
+                line.clear();
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }
+            Ok(_) => {
+                print!("{line}");
+                std::io::stdout()
+                    .flush()
+                    .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
+                line.clear();
+            }
+            Err(err) if err.kind() == ErrorKind::Interrupted => continue,
+            Err(err) => return Err(eyre!("Failed while streaming logs: {err}")),
+        }
+    }
 }
 
 pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -> Result<()> {

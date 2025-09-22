@@ -3,8 +3,9 @@ use crate::infra::web_service::{self, WebProcessState};
 use eyre::{Result, WrapErr, eyre};
 use rand::RngCore;
 use std::ffi::{OsStr, OsString};
+use std::fs::{self, OpenOptions};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::Duration;
@@ -17,8 +18,12 @@ pub fn start_web_service(
     args: &[&str],
 ) -> Result<WebServiceStatus> {
     let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
-    if let Some(state) = web_service::load_state()? {
+    if let Some(mut state) = web_service::load_state()? {
         if process_matches(&state) {
+            if state.log_path.is_none() {
+                state.log_path = Some(web_service::log_file_path()?);
+                let _ = web_service::save_state(&state);
+            }
             return Ok(WebServiceStatus::AlreadyRunning {
                 pid: state.pid,
                 port: state.port,
@@ -33,10 +38,25 @@ pub fn start_web_service(
     let token = generate_service_token();
 
     let mut command = Command::new(&binary_path);
+    let log_path = web_service::log_file_path()?;
+    if let Some(parent) = log_path.parent() {
+        fs::create_dir_all(parent)
+            .wrap_err("Failed to create directories for kittynode-web log file")?;
+    }
+    let log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&log_path)
+        .wrap_err("Failed to open kittynode-web log file")?;
+    let stdout = log_file
+        .try_clone()
+        .wrap_err("Failed to duplicate log handle for stdout")?;
+
     command
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(Stdio::from(stdout))
+        .stderr(Stdio::from(log_file))
         .args(args)
         .arg("--port")
         .arg(port.to_string())
@@ -56,6 +76,7 @@ pub fn start_web_service(
         port,
         binary: binary_path.clone(),
         token: Some(token),
+        log_path: Some(log_path.clone()),
     };
     if let Err(err) = web_service::save_state(&state) {
         let kill_result = child.kill();
@@ -82,6 +103,25 @@ pub fn start_web_service(
         pid: state.pid,
         port: state.port,
     })
+}
+
+pub fn get_web_service_log_path() -> Result<PathBuf> {
+    let path = web_service::log_file_path()?;
+    if path.exists() {
+        return Ok(path);
+    }
+
+    if let Some(state) = web_service::load_state()?
+        && process_matches(&state)
+    {
+        return Err(eyre!(
+            "Kittynode web service logs are not available yet; restart the service to enable logging"
+        ));
+    }
+
+    Err(eyre!(
+        "Kittynode web service is not running; start it with `kittynode web start`"
+    ))
 }
 
 pub fn stop_web_service() -> Result<WebServiceStatus> {

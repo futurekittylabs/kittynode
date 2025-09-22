@@ -14,6 +14,7 @@ pub use crate::application::get_packages;
 pub use crate::application::get_packages_runtime_state;
 pub use crate::application::get_server_url;
 pub use crate::application::get_system_info;
+pub use crate::application::get_web_service_log_path;
 pub use crate::application::init_kittynode;
 pub use crate::application::install_package;
 pub use crate::application::is_docker_running;

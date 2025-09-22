@@ -292,6 +292,21 @@ enum WebCommands {
     },
     #[command(name = "stop", about = "Stop the Kittynode web service")]
     Stop,
+    #[command(name = "logs", about = "Stream logs from the Kittynode web service")]
+    Logs {
+        #[arg(
+            long = "follow",
+            short = 'f',
+            help = "Follow log output until interrupted"
+        )]
+        follow: bool,
+        #[arg(
+            long = "tail",
+            value_name = "LINES",
+            help = "Number of lines to show from the end of the log"
+        )]
+        tail: Option<usize>,
+    },
     #[command(name = "__internal-run", hide = true)]
     RunInternal {
         #[arg(
@@ -398,6 +413,7 @@ async fn main() -> Result<()> {
         Commands::Web { command } => match command {
             WebCommands::Start { port } => commands::start_web_service(port)?,
             WebCommands::Stop => commands::stop_web_service()?,
+            WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail)?,
             WebCommands::RunInternal {
                 port,
                 service_token,
