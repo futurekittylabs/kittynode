@@ -1,4 +1,5 @@
 @import "@fontsource-variable/literata";
+@import "@fontsource-variable/space-grotesk";
 
 @import "tailwindcss";
 
@@ -143,6 +144,10 @@
   .kittynode-brand {
     font-family: "Literata Variable", serif;
     font-weight: 500;
-    font-size: 1.5rem;
+    font-size: 1.65rem;
+  }
+
+  .kittynode-onboard-font {
+    font-family: "Space Grotesk Variable", sans-serif;
   }
 }

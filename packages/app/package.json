@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@fontsource-variable/literata": "^5.2.6",
+    "@fontsource-variable/space-grotesk": "^5.2.9",
     "@internationalized/date": "^3.9.0",
     "@lucide/svelte": "^0.515.0",
     "@sveltejs/adapter-static": "^3.0.9",
