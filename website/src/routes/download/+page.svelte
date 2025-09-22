@@ -132,29 +132,7 @@ const cliInstallCommand = "cargo install kittynode-cli";
 	</div>
 
 
-	<Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
-		<div class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
-			<div class="overflow-hidden rounded-lg border">
-				<CollapsibleTrigger class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none">
-					<span class="flex items-center gap-2">
-						<CircleQuestionMark class="h-4 w-4 text-link" />
-						Looking for another Linux package format?
-					</span>
-					<ChevronDown class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`} />
-				</CollapsibleTrigger>
-				<CollapsibleContent class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground">
-					<p>
-						We're expanding our Linux packaging support beyond the options listed above.
-					</p>
-					<p>
-						Please reach out on <a href={discordUrl} class="link">Discord</a> or <a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
-					</p>
-				</CollapsibleContent>
-			</div>
-		</div>
-	</Collapsible>
-
-	<div class="mt-12 overflow-hidden rounded-lg border bg-card">
+	<div class="mt-10 overflow-hidden rounded-lg border bg-card">
 		<div class="grid min-[900px]:grid-cols-[1.4fr_1fr]">
 			<div class="flex flex-col gap-4 px-6 py-6">
 				<div class="flex items-center gap-3">
@@ -184,5 +162,27 @@ const cliInstallCommand = "cargo install kittynode-cli";
 			</div>
 		</div>
 	</div>
+
+	<Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
+		<div class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
+			<div class="overflow-hidden rounded-lg border">
+				<CollapsibleTrigger class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none">
+					<span class="flex items-center gap-2">
+						<CircleQuestionMark class="h-4 w-4 text-link" />
+						Looking for another Linux package format?
+					</span>
+					<ChevronDown class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`} />
+				</CollapsibleTrigger>
+				<CollapsibleContent class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground">
+					<p>
+						We're expanding our Linux packaging support beyond the options listed above.
+					</p>
+					<p>
+						Please reach out on <a href={discordUrl} class="link">Discord</a> or <a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
+					</p>
+				</CollapsibleContent>
+			</div>
+		</div>
+	</Collapsible>
 
 </div>
