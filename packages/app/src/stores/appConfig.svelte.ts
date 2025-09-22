@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
 import type { KittynodeConfig } from "$lib/types";
-import { serverUrlStore } from "./serverUrl.svelte";
+import { serverUrlStore, normalizeServerUrl } from "./serverUrl.svelte";
 
 let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);
@@ -11,7 +11,7 @@ async function loadConfig(): Promise<void> {
   loading = true;
   try {
     config = await coreClient.getConfig();
-    serverUrlStore.setFromConfig(config.serverUrl);
+    serverUrlStore.setFromConfig(config.serverUrl, config.lastServerUrl);
     initialized = true;
   } catch (e) {
     console.error(`Failed to load Kittynode config: ${e}`);
@@ -65,14 +65,32 @@ export const appConfigStore = {
     }
   },
   async setServerUrl(endpoint: string) {
+    const normalizedEndpoint = normalizeServerUrl(endpoint);
+    const previousLast = normalizeServerUrl(
+      config?.lastServerUrl ?? serverUrlStore.lastServerUrl ?? "",
+    );
+
     try {
-      await coreClient.setServerUrl(endpoint);
+      await coreClient.setServerUrl(normalizedEndpoint);
+      const nextLast =
+        normalizedEndpoint !== "" ? normalizedEndpoint : previousLast;
+
       if (config) {
-        config = { ...config, serverUrl: endpoint };
+        config = {
+          ...config,
+          serverUrl: normalizedEndpoint,
+          lastServerUrl: nextLast,
+          hasRemoteServer: normalizedEndpoint !== "",
+        };
       }
-      serverUrlStore.setFromConfig(endpoint);
+
+      serverUrlStore.setFromConfig(normalizedEndpoint, nextLast);
     } catch (e) {
       console.error(`Failed to update server URL: ${e}`);
+      serverUrlStore.setFromConfig(
+        config?.serverUrl ?? serverUrlStore.serverUrl,
+        config?.lastServerUrl ?? previousLast,
+      );
       throw e;
     }
   },

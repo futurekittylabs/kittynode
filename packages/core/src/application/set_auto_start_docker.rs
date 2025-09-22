@@ -6,7 +6,7 @@ use tracing::info;
 pub fn set_auto_start_docker(enabled: bool) -> Result<()> {
     let mut config = ConfigStore::load()?;
     config.auto_start_docker = enabled;
-    ConfigStore::save(&config)?;
+    ConfigStore::save_normalized(&mut config)?;
     info!("Set auto start docker to: {}", enabled);
     Ok(())
 }

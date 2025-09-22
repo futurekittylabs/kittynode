@@ -10,12 +10,12 @@ pub fn init_kittynode() -> Result<()> {
     let onboarding_completed = existing_config.onboarding_completed;
 
     // Create fresh config but preserve onboarding state
-    let config = Config {
+    let mut config = Config {
         onboarding_completed,
         ..Default::default()
     };
 
-    ConfigStore::save(&config)?;
+    ConfigStore::save_normalized(&mut config)?;
     info!(
         "Initialized Kittynode, preserved onboarding_completed: {}",
         onboarding_completed
