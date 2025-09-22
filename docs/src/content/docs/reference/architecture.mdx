@@ -12,7 +12,7 @@ Kittynode is split into packages that cover the core logic, user interfaces, and
 | Package          | What it does                                                                                               |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | `kittynode-core` | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
-| `kittynode-cli`  | Thin command-line wrapper that forwards subcommands to the core API for headless environments              |
+| `kittynode-cli`  | Thin command-line wrapper that forwards subcommands to the core API for headless environments and can host the web service when requested |
 | `kittynode-app`  | Tauri desktop/mobile shell with the Svelte UI that talks to the core directly or through HTTP              |
 | `kittynode-web`  | Axum HTTP service that exposes the core API for remote management and automation                           |
 
@@ -51,7 +51,7 @@ Kittynode has three user facing apps:
 
 Every app uses the same core library, and the desktop/mobile app uses the same frontend codebase. By re-using components, Kittynode is easier to audit and more secure, with less lines of code.
 
-The Tauri app switches between a local client and an HTTP client (`kittynode-web`) based on the configured server URL, so we can manage a remote node without changing UI code. Remote mode disables sensitive flows like key generation on the controlling device but still surfaces live status from the node.
+The Tauri app switches between a local client and an HTTP client (`kittynode-web`) based on the configured server URL, so we can manage a remote node without changing UI code. Remote mode disables sensitive flows like key generation on the controlling device but still surfaces live status from the node. When operators enable the web API from the CLI, the same binary spawns a background process that runs `kittynode-web`, so installing `kittynode-cli` is sufficient to expose HTTP bindings.
 
 ## Capabilities
 

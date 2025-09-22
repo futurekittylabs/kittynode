@@ -7,12 +7,13 @@ use axum::{
 };
 use eyre::Result;
 use kittynode_core::api;
-use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
 };
+use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::net::{Ipv4Addr, SocketAddr};
 use tokio::net::TcpListener;
 
 pub async fn hello_world() -> &'static str {
@@ -188,6 +189,7 @@ pub async fn get_operational_state() -> Result<Json<OperationalState>, (StatusCo
 
 pub fn app() -> Router {
     Router::new()
+        .without_v07_checks()
         .route("/", get(hello_world))
         .route("/add_capability/:name", post(add_capability))
         .route("/remove_capability/:name", post(remove_capability))
@@ -213,9 +215,15 @@ pub fn app() -> Router {
 }
 
 pub async fn run() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    let _ = tracing_subscriber::fmt::try_init();
+    run_with_port(DEFAULT_WEB_PORT).await
+}
+
+pub async fn run_with_port(port: u16) -> Result<()> {
+    validate_web_port(port)?;
     let app = app();
-    let listener = TcpListener::bind("0.0.0.0:3000").await?;
+    let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
+    let listener = TcpListener::bind(address).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }

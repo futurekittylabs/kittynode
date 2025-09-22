@@ -2,8 +2,11 @@ use eyre::{Result, WrapErr};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
 };
-use kittynode_core::api::{self, CreateDepositDataParams, GenerateKeysParams};
+use kittynode_core::api::{
+    self, CreateDepositDataParams, DEFAULT_WEB_PORT, GenerateKeysParams, validate_web_port,
+};
 use std::collections::HashMap;
+use std::env;
 use std::path::PathBuf;
 
 pub async fn get_packages() -> Result<()> {
@@ -306,3 +309,28 @@ pub fn validator_create_deposit_data(
     println!("Deposit data root: {}", deposit.deposit_data_root);
     Ok(())
 }
+
+pub fn start_web_service(port: Option<u16>) -> Result<()> {
+    let binary = env::current_exe().wrap_err("Failed to locate kittynode binary")?;
+    let port = port.map(validate_web_port).transpose()?;
+    let status = api::start_web_service(port, &binary, &["web", WEB_INTERNAL_SUBCOMMAND])?;
+    println!("{}", status);
+    Ok(())
+}
+
+pub fn stop_web_service() -> Result<()> {
+    let status = api::stop_web_service()?;
+    println!("{}", status);
+    Ok(())
+}
+
+pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -> Result<()> {
+    let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
+    let Some(_token) = service_token else {
+        return Err(eyre::eyre!("web service run invoked without token"));
+    };
+    kittynode_web::run_with_port(port).await?;
+    Ok(())
+}
+
+pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";

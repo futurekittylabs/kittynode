@@ -24,10 +24,14 @@ pub use crate::application::set_onboarding_completed;
 pub use crate::application::set_server_url;
 pub use crate::application::start_docker;
 pub use crate::application::start_docker_if_needed;
+pub use crate::application::start_web_service;
 pub use crate::application::stop_package;
+pub use crate::application::stop_web_service;
 pub use crate::application::update_package_config;
 pub use crate::application::validator::{
     CreateDepositDataParams, GenerateKeysParams, create_deposit_data, generate_keys,
 };
+pub use crate::application::web_service::validate_web_port;
+pub use crate::domain::web_service::DEFAULT_WEB_PORT;
 
 pub mod types;
