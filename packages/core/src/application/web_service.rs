@@ -161,6 +161,26 @@ pub fn stop_web_service() -> Result<WebServiceStatus> {
     })
 }
 
+pub fn get_web_service_status() -> Result<WebServiceStatus> {
+    let Some(mut state) = web_service::load_state()? else {
+        return Ok(WebServiceStatus::NotRunning);
+    };
+
+    if process_matches(&state) {
+        if state.log_path.is_none() {
+            state.log_path = Some(web_service::log_file_path()?);
+            let _ = web_service::save_state(&state);
+        }
+        return Ok(WebServiceStatus::AlreadyRunning {
+            pid: state.pid,
+            port: state.port,
+        });
+    }
+
+    web_service::clear_state()?;
+    Ok(WebServiceStatus::NotRunning)
+}
+
 fn process_matches(state: &WebProcessState) -> bool {
     let system = System::new_all();
     let pid = Pid::from_u32(state.pid);

@@ -1,6 +1,6 @@
 use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
-    Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo,
+    Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo, WebServiceStatus,
 };
 use kittynode_core::api::{
     self, CreateDepositDataParams, DEFAULT_WEB_PORT, GenerateKeysParams, validate_web_port,
@@ -326,6 +326,25 @@ pub fn start_web_service(port: Option<u16>) -> Result<()> {
 pub fn stop_web_service() -> Result<()> {
     let status = api::stop_web_service()?;
     println!("{}", status);
+    Ok(())
+}
+
+pub fn web_status() -> Result<()> {
+    match api::get_web_service_status()? {
+        WebServiceStatus::Started { pid, port }
+        | WebServiceStatus::AlreadyRunning { pid, port } => {
+            println!("Kittynode web service running on port {port} (pid {pid})");
+            if let Ok(path) = api::get_web_service_log_path() {
+                println!("Logs: {}", path.display());
+            }
+        }
+        WebServiceStatus::Stopped { pid, port } => {
+            println!("Kittynode web service stopped (last seen pid {pid}, port {port})");
+        }
+        WebServiceStatus::NotRunning => {
+            println!("Kittynode web service is not running");
+        }
+    }
     Ok(())
 }
 

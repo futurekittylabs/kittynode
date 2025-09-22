@@ -62,6 +62,21 @@ fn web_start_and_stop_roundtrip() {
         "expected web state file to exist after start"
     );
 
+    let status_running = Command::cargo_bin("kittynode")
+        .unwrap()
+        .env("HOME", sandbox.home())
+        .args(["web", "status"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let status_running_stdout = String::from_utf8_lossy(&status_running);
+    assert!(
+        status_running_stdout.to_lowercase().contains("running"),
+        "expected status output to mention running state, got {status_running_stdout}"
+    );
+
     let stop_output = Command::cargo_bin("kittynode")
         .unwrap()
         .env("HOME", sandbox.home())
@@ -79,6 +94,21 @@ fn web_start_and_stop_roundtrip() {
     assert!(
         !sandbox.state_path().exists(),
         "expected web state file to be removed after stop"
+    );
+
+    let status_stopped = Command::cargo_bin("kittynode")
+        .unwrap()
+        .env("HOME", sandbox.home())
+        .args(["web", "status"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let status_stopped_stdout = String::from_utf8_lossy(&status_stopped);
+    assert!(
+        status_stopped_stdout.to_lowercase().contains("not running"),
+        "expected status output to mention not running state, got {status_stopped_stdout}"
     );
 }
 

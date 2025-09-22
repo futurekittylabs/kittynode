@@ -14,7 +14,6 @@ pub use crate::application::get_packages;
 pub use crate::application::get_packages_runtime_state;
 pub use crate::application::get_server_url;
 pub use crate::application::get_system_info;
-pub use crate::application::get_web_service_log_path;
 pub use crate::application::init_kittynode;
 pub use crate::application::install_package;
 pub use crate::application::is_docker_running;
@@ -33,6 +32,7 @@ pub use crate::application::validator::{
     CreateDepositDataParams, GenerateKeysParams, create_deposit_data, generate_keys,
 };
 pub use crate::application::web_service::validate_web_port;
+pub use crate::application::{get_web_service_log_path, get_web_service_status};
 pub use crate::domain::web_service::DEFAULT_WEB_PORT;
 
 pub mod types;

@@ -55,4 +55,6 @@ pub use start_docker::start_docker;
 pub use start_docker_if_needed::{DockerStartStatus, start_docker_if_needed};
 pub use stop_package::stop_package;
 pub use update_package_config::update_package_config;
-pub use web_service::{get_web_service_log_path, start_web_service, stop_web_service};
+pub use web_service::{
+    get_web_service_log_path, get_web_service_status, start_web_service, stop_web_service,
+};
