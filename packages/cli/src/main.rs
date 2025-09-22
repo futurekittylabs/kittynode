@@ -275,7 +275,7 @@ enum ValidatorCommands {
         #[arg(
             long = "network",
             value_name = "NAME",
-            help = "Optional network name written to the deposit data file (mainnet, sepolia, hoodi only)"
+            help = "Optional network name (mainnet, sepolia, hoodi)"
         )]
         network: Option<String>,
         #[arg(

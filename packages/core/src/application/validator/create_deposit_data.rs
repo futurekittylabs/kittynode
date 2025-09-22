@@ -6,6 +6,7 @@ use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
 use eyre::{Context, Result};
 use std::path::PathBuf;
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct CreateDepositDataParams {
@@ -20,6 +21,8 @@ pub struct CreateDepositDataParams {
 }
 
 impl CreateDepositDataParams {
+    pub const SUPPORTED_NETWORKS: &'static [&'static str] = &["mainnet", "sepolia", "hoodi"];
+
     pub fn from_hex_inputs(
         key_path: PathBuf,
         output_path: PathBuf,
@@ -44,8 +47,6 @@ impl CreateDepositDataParams {
     }
 
     pub fn with_network_name(mut self, network_name: Option<String>) -> Result<Self> {
-        const EXPECTED: &[&str] = &["mainnet", "sepolia", "hoodi"];
-
         let normalized = network_name.and_then(|name| {
             let trimmed = name.trim();
             if trimmed.is_empty() {
@@ -56,12 +57,12 @@ impl CreateDepositDataParams {
         });
 
         if let Some(name) = normalized {
-            if EXPECTED.contains(&name.as_str()) {
+            if Self::SUPPORTED_NETWORKS.contains(&name.as_str()) {
                 self.network_name = Some(name);
             } else {
                 return Err(eyre::eyre!(
                     "unsupported network name '{name}'. Expected one of {}",
-                    EXPECTED.join(", ")
+                    Self::SUPPORTED_NETWORKS.join(", ")
                 ));
             }
         } else {
@@ -116,6 +117,10 @@ where
 
     if deposit.network_name.is_none() {
         deposit.network_name = params.network_name.clone();
+    }
+
+    if let Some(ref network) = deposit.network_name {
+        info!("Creating deposit data for network {network}");
     }
 
     let deposit_slice = std::slice::from_ref(&deposit);
