@@ -64,6 +64,12 @@ Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.
   sudo docker run hello-world
   ```
 
+- Add user to docker group:
+  ```bash
+  sudo usermod -aG docker $USER
+  newgrp docker
+  ```
+
 ### Install kittynode CLI and connect kittynode desktop
 
 - Right now I'm building kittynode CLI [from source](https://docs.kittynode.com/reference/build-from-source/)
