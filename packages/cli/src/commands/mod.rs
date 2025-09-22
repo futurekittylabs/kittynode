@@ -287,25 +287,8 @@ pub fn validator_generate_keys(
     Ok(())
 }
 
-pub fn validator_create_deposit_data(
-    key_path: PathBuf,
-    output_path: PathBuf,
-    withdrawal_credentials: String,
-    amount_gwei: u64,
-    fork_version_hex: String,
-    genesis_root_hex: String,
-    overwrite: bool,
-) -> Result<()> {
-    let params = CreateDepositDataParams::from_hex_inputs(
-        key_path,
-        output_path.clone(),
-        withdrawal_credentials,
-        amount_gwei,
-        &fork_version_hex,
-        &genesis_root_hex,
-        overwrite,
-    )?;
-
+pub fn validator_create_deposit_data(params: CreateDepositDataParams) -> Result<()> {
+    let output_path = params.output_path.clone();
     let deposit = api::create_deposit_data(params)?;
     println!("Stored deposit data at {}", output_path.display());
     println!("Deposit data root: {}", deposit.deposit_data_root);

@@ -115,7 +115,7 @@ mod tests {
             Ok(())
         }
 
-        fn write_json_secure<T: Serialize>(
+        fn write_json_secure<T: Serialize + ?Sized>(
             &self,
             path: &Path,
             value: &T,

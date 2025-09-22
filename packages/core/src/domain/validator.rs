@@ -10,11 +10,13 @@ pub struct ValidatorKey {
 /// Deposit data payload used for validator activation on the beacon chain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DepositData {
-    pub public_key: String,
+    pub pubkey: String,
     pub withdrawal_credentials: String,
-    pub amount_gwei: u64,
+    pub amount: u64,
     pub signature: String,
     pub deposit_message_root: String,
     pub deposit_data_root: String,
     pub fork_version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_name: Option<String>,
 }

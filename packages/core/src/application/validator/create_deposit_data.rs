@@ -6,6 +6,7 @@ use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
 use eyre::{Context, Result};
 use std::path::PathBuf;
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct CreateDepositDataParams {
@@ -16,9 +17,12 @@ pub struct CreateDepositDataParams {
     pub fork_version: [u8; 4],
     pub genesis_validators_root: String,
     pub overwrite: bool,
+    pub network_name: Option<String>,
 }
 
 impl CreateDepositDataParams {
+    pub const SUPPORTED_NETWORKS: &'static [&'static str] = &["mainnet", "sepolia", "hoodi"];
+
     pub fn from_hex_inputs(
         key_path: PathBuf,
         output_path: PathBuf,
@@ -38,7 +42,34 @@ impl CreateDepositDataParams {
             fork_version,
             genesis_validators_root,
             overwrite,
+            network_name: None,
         })
+    }
+
+    pub fn with_network_name(mut self, network_name: Option<String>) -> Result<Self> {
+        let normalized = network_name.and_then(|name| {
+            let trimmed = name.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_lowercase())
+            }
+        });
+
+        if let Some(name) = normalized {
+            if Self::SUPPORTED_NETWORKS.contains(&name.as_str()) {
+                self.network_name = Some(name);
+            } else {
+                return Err(eyre::eyre!(
+                    "unsupported network name '{name}'. Expected one of {}",
+                    Self::SUPPORTED_NETWORKS.join(", ")
+                ));
+            }
+        } else {
+            self.network_name = None;
+        }
+
+        Ok(self)
     }
 }
 
@@ -74,7 +105,7 @@ where
             })?;
     }
 
-    let deposit = crypto
+    let mut deposit = crypto
         .create_deposit_data(
             &key,
             &params.withdrawal_credentials,
@@ -84,8 +115,17 @@ where
         )
         .context("failed to build deposit data")?;
 
+    if deposit.network_name.is_none() {
+        deposit.network_name = params.network_name.clone();
+    }
+
+    if let Some(ref network) = deposit.network_name {
+        info!("Creating deposit data for network {network}");
+    }
+
+    let deposit_slice = std::slice::from_ref(&deposit);
     filesystem
-        .write_json_secure(&params.output_path, &deposit, params.overwrite)
+        .write_json_secure(&params.output_path, deposit_slice, params.overwrite)
         .context("failed to write deposit data")?;
 
     Ok(deposit)
@@ -126,7 +166,7 @@ mod tests {
             Ok(())
         }
 
-        fn write_json_secure<T: Serialize>(
+        fn write_json_secure<T: Serialize + ?Sized>(
             &self,
             path: &Path,
             value: &T,
@@ -175,13 +215,14 @@ mod tests {
             _genesis_validators_root: &str,
         ) -> Result<DepositData> {
             Ok(DepositData {
-                public_key: key.public_key.clone(),
+                pubkey: key.public_key.clone(),
                 withdrawal_credentials: withdrawal_credentials.to_string(),
-                amount_gwei,
+                amount: amount_gwei,
                 signature: "sig".into(),
                 deposit_message_root: "msg_root".into(),
                 deposit_data_root: "data_root".into(),
-                fork_version: "0x00000000".into(),
+                fork_version: "00000000".into(),
+                network_name: None,
             })
         }
     }
@@ -208,13 +249,15 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: false,
+            network_name: None,
         };
 
         let deposit = create_deposit_data_with(params, &crypto, &fs).unwrap();
-        assert_eq!(deposit.public_key, "pub");
+        assert_eq!(deposit.pubkey, "pub");
 
-        let stored: DepositData = fs.read_json_secure(&deposit_path).unwrap();
-        assert_eq!(stored.signature, "sig");
+        let stored: Vec<DepositData> = fs.read_json_secure(&deposit_path).unwrap();
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].signature, "sig");
     }
 
     #[test]
@@ -236,6 +279,7 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: false,
+            network_name: None,
         };
 
         let result = create_deposit_data_with(params, &crypto, &fs);
@@ -272,14 +316,99 @@ mod tests {
             genesis_validators_root:
                 "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
             overwrite: true,
+            network_name: Some("hoodi".into()),
         };
 
         let deposit = create_deposit_data(params).unwrap();
-        let decoded: DepositData =
+        let decoded: Vec<DepositData> =
             serde_json::from_slice(&fs::read(&deposit_path).unwrap()).unwrap();
-        assert_eq!(deposit, decoded);
-        assert_eq!(deposit.public_key.len(), 98);
+        assert_eq!(decoded.len(), 1);
+        assert_eq!(deposit, decoded[0]);
+        assert_eq!(deposit.pubkey.len(), 98);
         assert_eq!(deposit.signature.len(), 194);
         assert_eq!(deposit.deposit_data_root.len(), 66);
+        assert_eq!(deposit.network_name.as_deref(), Some("hoodi"));
+    }
+
+    #[test]
+    fn with_network_name_trims_and_filters() {
+        let base = CreateDepositDataParams::from_hex_inputs(
+            PathBuf::from("/validators/key.json"),
+            PathBuf::from("/validators/deposit.json"),
+            "cred".into(),
+            32_000_000_000,
+            "00000000",
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            false,
+        )
+        .unwrap();
+
+        let trimmed = base
+            .clone()
+            .with_network_name(Some(" hoodi ".into()))
+            .unwrap();
+        assert_eq!(trimmed.network_name.as_deref(), Some("hoodi"));
+
+        let empty = base.clone().with_network_name(Some("   ".into())).unwrap();
+        assert!(empty.network_name.is_none());
+
+        let none = base.with_network_name(None).unwrap();
+        assert!(none.network_name.is_none());
+
+        let invalid = CreateDepositDataParams::from_hex_inputs(
+            PathBuf::from("/validators/key.json"),
+            PathBuf::from("/validators/deposit.json"),
+            "cred".into(),
+            32_000_000_000,
+            "00000000",
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            false,
+        )
+        .unwrap()
+        .with_network_name(Some("unknownnet".into()));
+        assert!(invalid.is_err());
+    }
+
+    #[test]
+    fn writes_array_wrapper_json() {
+        let fs = TestFilesystem::default();
+        let crypto = TestCrypto;
+        let key_path = PathBuf::from("/validators/key.json");
+        let deposit_path = PathBuf::from("/validators/deposit.json");
+
+        let key = ValidatorKey {
+            public_key: "pub".into(),
+            secret_key: "sec".into(),
+        };
+        fs.write_json_secure(&key_path, &key, true).unwrap();
+
+        let params = CreateDepositDataParams {
+            key_path: key_path.clone(),
+            output_path: deposit_path.clone(),
+            withdrawal_credentials: "cred".into(),
+            amount_gwei: 32_000_000_000,
+            fork_version: [0, 0, 0, 0],
+            genesis_validators_root:
+                "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
+            overwrite: false,
+            network_name: None,
+        };
+
+        create_deposit_data_with(params, &crypto, &fs).unwrap();
+
+        let stored_json = fs
+            .files
+            .lock()
+            .expect("mutex poisoned")
+            .get(&deposit_path)
+            .expect("missing deposit file")
+            .clone();
+
+        let trimmed = stored_json.trim();
+        assert!(
+            trimmed.starts_with('['),
+            "expected array start, got {trimmed}"
+        );
+        assert!(trimmed.ends_with(']'), "expected array end, got {trimmed}");
     }
 }

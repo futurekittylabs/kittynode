@@ -66,13 +66,14 @@ impl CryptoProvider for SimpleCryptoProvider {
         );
 
         Ok(DepositData {
-            public_key: public_hex,
+            pubkey: public_hex,
             withdrawal_credentials: encode_hex(&withdrawal_bytes),
-            amount_gwei,
+            amount: amount_gwei,
             signature: encode_hex(&signature_bytes),
             deposit_message_root: encode_hex(&deposit_message_root),
             deposit_data_root: encode_hex(&deposit_data_root),
-            fork_version: encode_hex(&fork_version),
+            fork_version: hex::encode(fork_version),
+            network_name: None,
         })
     }
 }
@@ -241,7 +242,7 @@ impl ValidatorFilesystem for StdValidatorFilesystem {
         Ok(())
     }
 
-    fn write_json_secure<T: serde::Serialize>(
+    fn write_json_secure<T: serde::Serialize + ?Sized>(
         &self,
         path: &Path,
         value: &T,
@@ -374,6 +375,7 @@ mod tests {
             &signature_bytes,
         );
 
+        assert_eq!(deposit.pubkey, encode_hex(&public_bytes));
         assert_eq!(deposit.deposit_message_root, encode_hex(&message_root));
         assert_eq!(deposit.signature, encode_hex(&signature_bytes));
         assert_eq!(deposit.deposit_data_root, encode_hex(&data_root));
@@ -381,7 +383,7 @@ mod tests {
             deposit.withdrawal_credentials,
             encode_hex(&withdrawal_bytes)
         );
-        assert_eq!(deposit.fork_version, "0x00000000");
+        assert_eq!(deposit.fork_version, "00000000");
     }
 
     #[test]
