@@ -53,7 +53,7 @@ fn apply_server_url(config: &mut Config, endpoint: &str) -> Result<()> {
 pub fn set_server_url(endpoint: String) -> Result<()> {
     let mut config = ConfigStore::load()?;
     apply_server_url(&mut config, &endpoint)?;
-    ConfigStore::save(&mut config)?;
+    ConfigStore::save_normalized(&mut config)?;
     Ok(())
 }
 

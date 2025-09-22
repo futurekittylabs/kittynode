@@ -15,7 +15,7 @@ pub fn init_kittynode() -> Result<()> {
         ..Default::default()
     };
 
-    ConfigStore::save(&mut config)?;
+    ConfigStore::save_normalized(&mut config)?;
     info!(
         "Initialized Kittynode, preserved onboarding_completed: {}",
         onboarding_completed

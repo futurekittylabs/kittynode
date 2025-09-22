@@ -20,13 +20,13 @@ impl ConfigStore {
         Ok(config)
     }
 
-    /// Saves the configuration to a TOML file after normalizing in place.
-    pub fn save(config: &mut Config) -> Result<()> {
+    /// Saves the configuration to a TOML file after normalizing it in place.
+    pub fn save_normalized(config: &mut Config) -> Result<()> {
+        config.normalize();
         let config_path = Self::config_file_path()?;
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        config.normalize();
         let toml_str = toml::to_string(config)?;
         fs::write(config_path, toml_str)?;
         Ok(())

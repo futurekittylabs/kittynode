@@ -6,6 +6,6 @@ pub fn remove_capability(capability: &str) -> Result<()> {
     if let Some(pos) = config.capabilities.iter().position(|x| x == capability) {
         config.capabilities.remove(pos);
     }
-    ConfigStore::save(&mut config)?;
+    ConfigStore::save_normalized(&mut config)?;
     Ok(())
 }
