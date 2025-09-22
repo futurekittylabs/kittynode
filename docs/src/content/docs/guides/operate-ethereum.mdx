@@ -1,0 +1,42 @@
+---
+title: Operate Ethereum
+description: Operate the world computer.
+---
+
+This guide will go over how to operate the world computer with Kittynode.
+
+## Purchase hardware
+
+To run an Ethereum node, it's best to use dedicated hardware. I would recommend the [ASUS NUC 14 Pro](https://www.newegg.com/asus-nuc-configurator/ASUS-NUC-14-Pro/56-110-266) with 64GB RAM and 4TB SSD. Minisforum and Beelink would be good options as well.
+
+Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.ethereum.org/EIPS/eip-7870) for further guidance. Kevaundray's [post on hardware requirements](https://hackmd.io/@kevaundray/S1hUQuV4Jx) is also helpful.
+
+## Set up an Ubuntu machine
+
+- Install [Ubuntu desktop or server](https://ubuntu.com/download)
+- Install basic utils:
+  ```bash
+  sudo apt update
+  sudo apt install -y build-essential curl git
+  ```
+- Install Tailscale:
+  ```bash
+  curl -fsSL https://tailscale.com/install.sh | sh
+  ```
+
+### Set up SSH access over Tailscale
+
+- Install openssh-server:
+  ```bash
+  sudo apt update
+  sudo apt install -y openssh-server
+  ```
+- Enable and start the SSH service:
+  ```bash
+  sudo systemctl enable ssh
+  sudo systemctl start ssh
+  ```
+
+### Install kittynode CLI and connect kittynode desktop
+
+- Right now I'm building kittynode CLI [from source](https://docs.kittynode.com/reference/build-from-source/)

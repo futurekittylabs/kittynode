@@ -8,7 +8,7 @@ import starlightLinksValidator from "starlight-links-validator";
 // https://astro.build/config
 export default defineConfig({
   redirects: {
-    "/": "/reference/architecture",
+    "/": "/guides/build-from-source",
   },
   adapter: cloudflare({
     imageService: "compile",
@@ -79,15 +79,25 @@ export default defineConfig({
       ],
       sidebar: [
         {
+          label: "Guides",
+          items: [
+            {
+              label: "Build from source",
+              slug: "guides/build-from-source",
+            },
+            {
+              label: "Operate Ethereum",
+              slug: "guides/operate-ethereum",
+              badge: "New",
+            },
+          ],
+        },
+        {
           label: "Reference",
           items: [
             {
               label: "Architecture",
               slug: "reference/architecture",
-            },
-            {
-              label: "Build from source",
-              slug: "reference/build-from-source",
             },
           ],
         },
