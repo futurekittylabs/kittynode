@@ -5,7 +5,7 @@ description: Operate the world computer.
 
 This guide will go over how to operate the world computer with Kittynode.
 
-## Purchase hardware
+## Getting hardware
 
 To run an Ethereum node, it's best to use dedicated hardware. I would recommend the [ASUS NUC 14 Pro](https://www.newegg.com/asus-nuc-configurator/ASUS-NUC-14-Pro/56-110-266) with 64GB RAM and 4TB SSD. Minisforum and Beelink would be good options as well.
 
@@ -35,6 +35,33 @@ Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.
   ```bash
   sudo systemctl enable ssh
   sudo systemctl start ssh
+  ```
+
+### Install Docker
+
+- Uninstall any conflicting packages:
+  ```bash
+  for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
+  ```
+
+- Install Docker:
+  ```bash
+  sudo apt-get update
+  sudo apt-get install ca-certificates curl
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update
+  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  ```
+
+- Verify Docker is installed:
+  ```bash
+  sudo docker run hello-world
   ```
 
 ### Install kittynode CLI and connect kittynode desktop
