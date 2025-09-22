@@ -19,7 +19,7 @@ pub trait CryptoProvider: Send + Sync {
 /// Filesystem operations needed for persisting validator artifacts.
 pub trait ValidatorFilesystem: Send + Sync {
     fn ensure_secure_directory(&self, path: &Path) -> Result<()>;
-    fn write_json_secure<T: Serialize>(
+    fn write_json_secure<T: Serialize + ?Sized>(
         &self,
         path: &Path,
         value: &T,

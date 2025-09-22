@@ -242,7 +242,7 @@ impl ValidatorFilesystem for StdValidatorFilesystem {
         Ok(())
     }
 
-    fn write_json_secure<T: serde::Serialize>(
+    fn write_json_secure<T: serde::Serialize + ?Sized>(
         &self,
         path: &Path,
         value: &T,

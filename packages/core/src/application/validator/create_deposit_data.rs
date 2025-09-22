@@ -102,12 +102,9 @@ where
         deposit.network_name = params.network_name.clone();
     }
 
+    let deposit_slice = std::slice::from_ref(&deposit);
     filesystem
-        .write_json_secure(
-            &params.output_path,
-            &vec![deposit.clone()],
-            params.overwrite,
-        )
+        .write_json_secure(&params.output_path, deposit_slice, params.overwrite)
         .context("failed to write deposit data")?;
 
     Ok(deposit)
@@ -148,7 +145,7 @@ mod tests {
             Ok(())
         }
 
-        fn write_json_secure<T: Serialize>(
+        fn write_json_secure<T: Serialize + ?Sized>(
             &self,
             path: &Path,
             value: &T,
@@ -310,5 +307,71 @@ mod tests {
         assert_eq!(deposit.signature.len(), 194);
         assert_eq!(deposit.deposit_data_root.len(), 66);
         assert_eq!(deposit.network_name.as_deref(), Some("testnet"));
+    }
+
+    #[test]
+    fn with_network_name_trims_and_filters() {
+        let base = CreateDepositDataParams::from_hex_inputs(
+            PathBuf::from("/validators/key.json"),
+            PathBuf::from("/validators/deposit.json"),
+            "cred".into(),
+            32_000_000_000,
+            "00000000",
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            false,
+        )
+        .unwrap();
+
+        let trimmed = base.clone().with_network_name(Some(" holesky ".into()));
+        assert_eq!(trimmed.network_name.as_deref(), Some("holesky"));
+
+        let empty = base.clone().with_network_name(Some("   ".into()));
+        assert!(empty.network_name.is_none());
+
+        let none = base.with_network_name(None);
+        assert!(none.network_name.is_none());
+    }
+
+    #[test]
+    fn writes_array_wrapper_json() {
+        let fs = TestFilesystem::default();
+        let crypto = TestCrypto;
+        let key_path = PathBuf::from("/validators/key.json");
+        let deposit_path = PathBuf::from("/validators/deposit.json");
+
+        let key = ValidatorKey {
+            public_key: "pub".into(),
+            secret_key: "sec".into(),
+        };
+        fs.write_json_secure(&key_path, &key, true).unwrap();
+
+        let params = CreateDepositDataParams {
+            key_path: key_path.clone(),
+            output_path: deposit_path.clone(),
+            withdrawal_credentials: "cred".into(),
+            amount_gwei: 32_000_000_000,
+            fork_version: [0, 0, 0, 0],
+            genesis_validators_root:
+                "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
+            overwrite: false,
+            network_name: None,
+        };
+
+        create_deposit_data_with(params, &crypto, &fs).unwrap();
+
+        let stored_json = fs
+            .files
+            .lock()
+            .expect("mutex poisoned")
+            .get(&deposit_path)
+            .expect("missing deposit file")
+            .clone();
+
+        let trimmed = stored_json.trim();
+        assert!(
+            trimmed.starts_with('['),
+            "expected array start, got {trimmed}"
+        );
+        assert!(trimmed.ends_with(']'), "expected array end, got {trimmed}");
     }
 }
