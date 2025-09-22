@@ -45,3 +45,23 @@ impl fmt::Display for Package {
         Ok(())
     }
 }
+
+impl Package {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn network_name(&self) -> &str {
+        &self.network_name
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PackageRuntimeState {
+    pub running: bool,
+}

@@ -29,3 +29,7 @@ export interface Binding {
   destination: string;
   options?: string;
 }
+
+export interface PackageRuntimeState {
+  running: boolean;
+}

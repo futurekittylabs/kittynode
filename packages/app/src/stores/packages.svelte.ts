@@ -181,6 +181,44 @@ export const packagesStore = {
     }
   },
 
+  async stopPackage(name: string) {
+    try {
+      await coreClient.stopPackage(name);
+    } catch (e) {
+      console.error(`Failed to stop ${name}: ${e}`);
+      throw e;
+    }
+  },
+
+  async resumePackage(name: string) {
+    try {
+      await coreClient.resumePackage(name);
+    } catch (e) {
+      console.error(`Failed to resume ${name}: ${e}`);
+      throw e;
+    }
+  },
+
+  async getPackageRuntimeState(name: string) {
+    try {
+      return await coreClient.getPackageRuntimeState(name);
+    } catch (e) {
+      console.error(`Failed to fetch runtime state for ${name}: ${e}`);
+      throw e;
+    }
+  },
+
+  async getPackageRuntimeStates(names: string[]) {
+    try {
+      return await coreClient.getPackageRuntimeStates(names);
+    } catch (e) {
+      console.error(
+        `Failed to fetch runtime states for [${names.join(", ")}] : ${e}`,
+      );
+      throw e;
+    }
+  },
+
   handleOperationalStateChange(state: OperationalState | null) {
     if (!state) {
       return;
