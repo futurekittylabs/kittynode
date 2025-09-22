@@ -4,7 +4,7 @@ use crate::application::validator::input::{
 };
 use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
-use eyre::{Context, Result, eyre};
+use eyre::{Context, Result};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -44,6 +44,8 @@ impl CreateDepositDataParams {
     }
 
     pub fn with_network_name(mut self, network_name: Option<String>) -> Result<Self> {
+        const EXPECTED: &[&str] = &["mainnet", "sepolia", "hoodi"];
+
         let normalized = network_name.and_then(|name| {
             let trimmed = name.trim();
             if trimmed.is_empty() {
@@ -54,11 +56,12 @@ impl CreateDepositDataParams {
         });
 
         if let Some(name) = normalized {
-            if matches!(name.as_str(), "mainnet" | "sepolia" | "hoodi") {
+            if EXPECTED.contains(&name.as_str()) {
                 self.network_name = Some(name);
             } else {
-                return Err(eyre!(
-                    "unsupported network name '{name}'. Expected one of mainnet, sepolia, hoodi"
+                return Err(eyre::eyre!(
+                    "unsupported network name '{name}'. Expected one of {}",
+                    EXPECTED.join(", ")
                 ));
             }
         } else {
