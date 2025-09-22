@@ -4,7 +4,7 @@ import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
 import { remoteAccessStore } from "$stores/remoteAccess.svelte";
-import { serverUrlStore } from "$stores/serverUrl.svelte";
+import { serverUrlStore, normalizeServerUrl } from "$stores/serverUrl.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { updates } from "$stores/updates.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
@@ -102,13 +102,26 @@ async function disableRemoteAccess() {
 }
 
 function validateRemoteUrl(url: string) {
-  const trimmed = url.trim();
-  if (!trimmed) {
+  const normalized = normalizeServerUrl(url);
+  if (!normalized) {
     return "Remote URL cannot be empty";
   }
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return "Remote URL must start with http:// or https://";
+
+  try {
+    const parsed = new URL(normalized);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return "Remote URL must use http or https";
+    }
+    if (!parsed.hostname) {
+      return "Remote URL must include a host";
+    }
+    if (parsed.username || parsed.password) {
+      return "Remote URL cannot include credentials";
+    }
+  } catch {
+    return "Remote URL must be a valid URL";
   }
+
   return null;
 }
 
@@ -157,12 +170,12 @@ async function submitRemoteDialog() {
   }
 
   remoteServerError = "";
-  const url = remoteServerUrlInput.trim();
-  remoteServerUrlInput = url;
+  const normalized = normalizeServerUrl(remoteServerUrlInput);
+  remoteServerUrlInput = normalized;
   remoteDialogAction = "connect";
   remoteDialogLoading = true;
   try {
-    const success = await applyRemoteConnection(url);
+    const success = await applyRemoteConnection(normalized);
     if (success) {
       remoteServerDialogOpen = false;
     }

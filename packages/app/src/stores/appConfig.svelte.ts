@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
 import type { KittynodeConfig } from "$lib/types";
-import { serverUrlStore } from "./serverUrl.svelte";
+import { serverUrlStore, normalizeServerUrl } from "./serverUrl.svelte";
 
 let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);
@@ -65,26 +65,32 @@ export const appConfigStore = {
     }
   },
   async setServerUrl(endpoint: string) {
-    const trimmedEndpoint = endpoint.trim();
-    const previousLast =
-      config?.lastServerUrl ?? serverUrlStore.lastServerUrl ?? "";
+    const normalizedEndpoint = normalizeServerUrl(endpoint);
+    const previousLast = normalizeServerUrl(
+      config?.lastServerUrl ?? serverUrlStore.lastServerUrl ?? "",
+    );
 
     try {
-      await coreClient.setServerUrl(trimmedEndpoint);
-      const nextLast = trimmedEndpoint !== "" ? trimmedEndpoint : previousLast;
+      await coreClient.setServerUrl(normalizedEndpoint);
+      const nextLast =
+        normalizedEndpoint !== "" ? normalizedEndpoint : previousLast;
 
       if (config) {
         config = {
           ...config,
-          serverUrl: trimmedEndpoint,
+          serverUrl: normalizedEndpoint,
           lastServerUrl: nextLast,
-          hasRemoteServer: trimmedEndpoint !== "",
+          hasRemoteServer: normalizedEndpoint !== "",
         };
       }
 
-      serverUrlStore.setFromConfig(trimmedEndpoint, nextLast);
+      serverUrlStore.setFromConfig(normalizedEndpoint, nextLast);
     } catch (e) {
       console.error(`Failed to update server URL: ${e}`);
+      serverUrlStore.setFromConfig(
+        config?.serverUrl ?? serverUrlStore.serverUrl,
+        config?.lastServerUrl ?? previousLast,
+      );
       throw e;
     }
   },

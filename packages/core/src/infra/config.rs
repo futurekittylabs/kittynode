@@ -6,7 +6,7 @@ use std::{fs, path::PathBuf};
 pub struct ConfigStore;
 
 impl ConfigStore {
-    /// Loads the configuration from a TOML file.
+    /// Loads the configuration from a TOML file and normalizes it before returning.
     pub fn load() -> Result<Config> {
         let config_path = Self::config_file_path()?;
         if !config_path.exists() {
@@ -20,7 +20,7 @@ impl ConfigStore {
         Ok(config)
     }
 
-    /// Saves the configuration to a TOML file.
+    /// Saves the configuration to a TOML file after normalizing in place.
     pub fn save(config: &mut Config) -> Result<()> {
         let config_path = Self::config_file_path()?;
         if let Some(parent) = config_path.parent() {

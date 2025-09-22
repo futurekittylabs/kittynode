@@ -1,7 +1,7 @@
 let serverUrl = $state("");
 let lastServerUrl = $state("");
 
-function normalize(url: string) {
+export function normalizeServerUrl(url: string) {
   return url.trim();
 }
 
@@ -13,8 +13,8 @@ export const serverUrlStore = {
     return lastServerUrl;
   },
   setFromConfig(currentUrl: string, lastUrl: string) {
-    const normalizedCurrent = normalize(currentUrl);
-    const normalizedLast = normalize(lastUrl) || normalizedCurrent;
+    const normalizedCurrent = normalizeServerUrl(currentUrl);
+    const normalizedLast = normalizeServerUrl(lastUrl) || normalizedCurrent;
 
     serverUrl = normalizedCurrent;
     lastServerUrl = normalizedLast;

@@ -14,7 +14,7 @@ fn validate_server_url(endpoint: &str) -> Result<()> {
         "http" | "https" => {}
         other => {
             return Err(eyre!(
-                "invalid server URL '{endpoint}': unsupported scheme '{other}'"
+                "invalid server URL '{endpoint}': unsupported scheme '{other}' (expected http or https)"
             ));
         }
     }
@@ -93,6 +93,16 @@ mod tests {
         assert_eq!(config.server_url, "");
         assert_eq!(config.last_server_url, "http://example.com");
         assert!(!config.has_remote_server);
+    }
+
+    #[test]
+    fn apply_preserves_trailing_slash() {
+        let mut config = Config::default();
+        apply_server_url(&mut config, "https://example.com/ ").expect("apply should succeed");
+
+        assert_eq!(config.server_url, "https://example.com/");
+        assert_eq!(config.last_server_url, "https://example.com/");
+        assert!(config.has_remote_server);
     }
 
     #[test]
