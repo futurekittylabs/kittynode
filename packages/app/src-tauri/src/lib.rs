@@ -344,7 +344,7 @@ async fn create_validator_deposit_data(
         }
     });
 
-    let params = CreateDepositDataParams::from_hex_inputs_with_metadata(
+    let params = CreateDepositDataParams::from_hex_inputs(
         PathBuf::from(&key_path),
         PathBuf::from(&output_path),
         withdrawal_credentials,
@@ -352,8 +352,8 @@ async fn create_validator_deposit_data(
         &fork_version,
         &genesis_root,
         overwrite,
-        network_name,
     )
+    .map(|params| params.with_network_name(network_name))
     .map_err(|err| err.to_string())?;
     let client = client_state.client();
     client

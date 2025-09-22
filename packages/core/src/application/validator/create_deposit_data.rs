@@ -29,28 +29,6 @@ impl CreateDepositDataParams {
         genesis_root_hex: &str,
         overwrite: bool,
     ) -> Result<Self> {
-        Self::from_hex_inputs_with_metadata(
-            key_path,
-            output_path,
-            withdrawal_credentials,
-            amount_gwei,
-            fork_version_hex,
-            genesis_root_hex,
-            overwrite,
-            None,
-        )
-    }
-
-    pub fn from_hex_inputs_with_metadata(
-        key_path: PathBuf,
-        output_path: PathBuf,
-        withdrawal_credentials: String,
-        amount_gwei: u64,
-        fork_version_hex: &str,
-        genesis_root_hex: &str,
-        overwrite: bool,
-        network_name: Option<String>,
-    ) -> Result<Self> {
         let fork_version = parse_fork_version_hex(fork_version_hex)?;
         let genesis_validators_root = parse_genesis_validators_root_hex(genesis_root_hex)?;
         Ok(Self {
@@ -61,8 +39,13 @@ impl CreateDepositDataParams {
             fork_version,
             genesis_validators_root,
             overwrite,
-            network_name,
+            network_name: None,
         })
+    }
+
+    pub fn with_network_name(mut self, network_name: Option<String>) -> Self {
+        self.network_name = network_name;
+        self
     }
 }
 

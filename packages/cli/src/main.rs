@@ -2,6 +2,7 @@ mod commands;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
+use kittynode_core::api::CreateDepositDataParams;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -409,16 +410,29 @@ async fn main() -> Result<()> {
                 genesis_root,
                 network,
                 overwrite,
-            } => commands::validator_create_deposit_data(
-                key_path,
-                output_path,
-                withdrawal_credentials,
-                amount_gwei,
-                fork_version,
-                genesis_root,
-                network,
-                overwrite,
-            )?,
+            } => {
+                let network = network.and_then(|name| {
+                    let trimmed = name.trim();
+                    if trimmed.is_empty() {
+                        None
+                    } else {
+                        Some(trimmed.to_string())
+                    }
+                });
+
+                let params = CreateDepositDataParams::from_hex_inputs(
+                    key_path,
+                    output_path,
+                    withdrawal_credentials,
+                    amount_gwei,
+                    &fork_version,
+                    &genesis_root,
+                    overwrite,
+                )?
+                .with_network_name(network);
+
+                commands::validator_create_deposit_data(params)?
+            }
         },
         Commands::Web { command } => match command {
             WebCommands::Start { port } => commands::start_web_service(port)?,
