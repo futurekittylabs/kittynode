@@ -5,7 +5,7 @@ use eyre::Result;
 pub fn add_capability(capability: &str) -> Result<()> {
     let mut config = ConfigStore::load()?;
     add_to_capabilities(&mut config.capabilities, capability);
-    ConfigStore::save(&config)?;
+    ConfigStore::save(&mut config)?;
     Ok(())
 }
 

@@ -66,7 +66,8 @@ export const appConfigStore = {
   },
   async setServerUrl(endpoint: string) {
     const trimmedEndpoint = endpoint.trim();
-    const previousLast = config?.lastServerUrl ?? "";
+    const previousLast =
+      config?.lastServerUrl ?? serverUrlStore.lastServerUrl ?? "";
 
     try {
       await coreClient.setServerUrl(trimmedEndpoint);
@@ -77,7 +78,7 @@ export const appConfigStore = {
           ...config,
           serverUrl: trimmedEndpoint,
           lastServerUrl: nextLast,
-          remoteConnected: trimmedEndpoint !== "",
+          hasRemoteServer: trimmedEndpoint !== "",
         };
       }
 
