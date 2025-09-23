@@ -8,12 +8,12 @@ import { toast } from "svelte-sonner";
 import { Button } from "$lib/components/ui/button";
 import { Progress } from "$lib/components/ui/progress";
 import { mode } from "mode-watcher";
-import { ArrowUpRight } from "@lucide/svelte";
+import { AlertTriangle, ArrowUpRight } from "@lucide/svelte";
 
 let currentPlatform = $state("");
 let currentStep = $state(0);
 
-const totalSteps = 2;
+const totalSteps = 3;
 const isFirstStep = $derived(currentStep === 0);
 const isLastStep = $derived(currentStep === totalSteps - 1);
 const progressValue = $derived(
@@ -188,7 +188,7 @@ async function initKittynode() {
     <div class="kittynode-onboard-font mt-8 min-h-[240px]">
       {#if currentStep === 0}
         <div class="flex h-full flex-col justify-center gap-6 text-left">
-          <div class="space-y-2">
+          <div class="space-y-4">
             <h1 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">
               Welcome to Kittynode
             </h1>
@@ -197,9 +197,9 @@ async function initKittynode() {
             </p>
           </div>
         </div>
-      {:else}
+      {:else if currentStep === 1}
         <div class="flex h-full flex-col justify-center gap-6 text-left">
-          <div class="space-y-2">
+          <div class="space-y-4">
             <h2 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">
               Install Docker Desktop
             </h2>
@@ -208,23 +208,59 @@ async function initKittynode() {
             </p>
           </div>
         </div>
+      {:else}
+        <div class="flex h-full flex-col justify-center gap-6 text-left">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 sm:h-9 sm:w-9">
+                <AlertTriangle class="h-5 w-5" aria-hidden="true" />
+              </span>
+              <h2 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">Warning</h2>
+            </div>
+            <div class="space-y-4 text-base text-muted-foreground sm:text-lg">
+              <p>
+                Kittynode has <strong>not been audited</strong>, and may not be using audited subcomponents at this time. It is
+                <strong>not recommended for mainnet validators</strong>.
+                For guidance on mainnet validators please visit
+                <a
+                  class="link inline-flex items-center gap-1 font-medium"
+                  href="https://ethereum.org/staking/solo"
+                  rel="noreferrer noopener"
+                  target="_blank"
+                >
+                  ethereum.org/staking/solo
+                  <ArrowUpRight class="h-4 w-4" />
+                </a>.
+              </p>
+              <p>
+                Thank you for giving Kittynode a try.
+              </p>
+              <p>
+                &mdash; dionysuz.eth
+              </p>
+            </div>
+          </div>
+        </div>
       {/if}
     </div>
 
     <footer class="kittynode-onboard-font mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      {#if currentStep === totalSteps - 1}
-        <a
-          class="link inline-flex items-center gap-1 text-base font-medium"
-          href="https://www.docker.com/products/docker-desktop/"
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          Download Docker Desktop
-          <ArrowUpRight class="h-4 w-4" />
-        </a>
-      {:else}
-        <span class="text-sm text-muted-foreground">Step 1 of 2</span>
-      {/if}
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <span class="text-sm text-muted-foreground">
+          Step {currentStep + 1} of {totalSteps}
+        </span>
+        {#if currentStep === 1}
+          <a
+            class="link inline-flex items-center gap-1 text-base font-medium"
+            href="https://www.docker.com/products/docker-desktop/"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Download Docker Desktop
+            <ArrowUpRight class="h-4 w-4" />
+          </a>
+        {/if}
+      </div>
       <div class="flex justify-end gap-2">
         <Button
           variant="outline"
