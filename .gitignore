@@ -28,5 +28,6 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Worktrees
+# Temp
 .worktrees
+tmp
