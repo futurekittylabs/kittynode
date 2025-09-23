@@ -9,9 +9,7 @@ import Splash from "./Splash.svelte";
 import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
-import { getVersion } from "@tauri-apps/api/app";
 import { coreClient } from "$lib/client";
-import { Button } from "$lib/components/ui/button";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
 import {
@@ -48,8 +46,6 @@ const navigationItems = [
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-let appVersion = $state("");
-let versionError = $state(false);
 let onboardingCompleted = $state(false);
 let checkingOnboarding = $state(true);
 
@@ -80,14 +76,6 @@ onMount(async () => {
   await packagesStore.loadPackages();
   await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages();
-
-  try {
-    appVersion = await getVersion();
-    versionError = false;
-  } catch (error) {
-    console.error(`Failed to get app version: ${error}`);
-    versionError = true;
-  }
 
   try {
     await updates.getUpdate();
@@ -174,21 +162,6 @@ onMount(async () => {
                 >
                   <MessageSquare class="h-4 w-4" />
                   <span>Feedback</span>
-                </a>
-              {/snippet}
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton>
-              {#snippet child({ props })}
-                <a
-                  href="https://github.com/futurekittylabs/kittynode"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  {...props}
-                >
-                  <Github class="h-4 w-4" />
-                  <span>GitHub</span>
                 </a>
               {/snippet}
             </Sidebar.MenuButton>
