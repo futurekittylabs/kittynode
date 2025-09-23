@@ -90,7 +90,7 @@ fn derive_secret_key(entropy: &str) -> Result<SecretKey> {
 }
 
 fn encode_hex(bytes: &[u8]) -> String {
-    format!("0x{}", hex::encode(bytes))
+    hex::encode(bytes)
 }
 
 fn decode_hex(input: &str) -> Result<Vec<u8>> {
@@ -264,8 +264,7 @@ impl ValidatorFilesystem for StdValidatorFilesystem {
             fs::remove_file(path).wrap_err("failed to remove existing file")?;
         }
 
-        let json =
-            serde_json::to_vec_pretty(value).wrap_err("failed to serialize validator artifact")?;
+        let json = serde_json::to_vec(value).wrap_err("failed to serialize validator artifact")?;
         let mut temp_file =
             NamedTempFile::new_in(&parent_dir).wrap_err("failed to create temp file")?;
 
