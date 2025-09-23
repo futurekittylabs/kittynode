@@ -249,11 +249,12 @@ enum ValidatorCommands {
         )]
         output_path: PathBuf,
         #[arg(
-            long = "withdrawal-credentials",
-            value_name = "HEX",
-            help = "Hex-encoded withdrawal credentials"
+            long = "withdrawal-address",
+            visible_alias = "withdrawal-credentials",
+            value_name = "ADDRESS",
+            help = "Execution withdrawal address to receive exit payouts"
         )]
-        withdrawal_credentials: String,
+        withdrawal_address: String,
         #[arg(
             long = "amount-gwei",
             default_value_t = 32_000_000_000,
@@ -261,23 +262,11 @@ enum ValidatorCommands {
         )]
         amount_gwei: u64,
         #[arg(
-            long = "fork-version",
-            default_value = "00000000",
-            help = "Fork version for the target network in hex"
-        )]
-        fork_version: String,
-        #[arg(
-            long = "genesis-root",
-            value_name = "HEX",
-            help = "Genesis validators root for the target network"
-        )]
-        genesis_root: String,
-        #[arg(
             long = "network",
             value_name = "NAME",
-            help = "Optional network name (mainnet, sepolia, hoodi)"
+            help = "Network to target (mainnet, sepolia, hoodi)"
         )]
-        network: Option<String>,
+        network: String,
         #[arg(
             long = "overwrite",
             help = "Replace the output file if it already exists"
@@ -404,23 +393,19 @@ async fn main() -> Result<()> {
             ValidatorCommands::CreateDepositData {
                 key_path,
                 output_path,
-                withdrawal_credentials,
+                withdrawal_address,
                 amount_gwei,
-                fork_version,
-                genesis_root,
                 network,
                 overwrite,
             } => {
-                let params = CreateDepositDataParams::from_hex_inputs(
+                let params = CreateDepositDataParams::for_network(
                     key_path,
                     output_path,
-                    withdrawal_credentials,
+                    &withdrawal_address,
                     amount_gwei,
-                    &fork_version,
-                    &genesis_root,
+                    &network,
                     overwrite,
-                )?
-                .with_network_name(network)?;
+                )?;
 
                 commands::validator_create_deposit_data(params)?
             }

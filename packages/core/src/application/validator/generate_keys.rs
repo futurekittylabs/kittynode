@@ -221,7 +221,7 @@ mod tests {
         let written = fs::read_to_string(output_dir.join(DEFAULT_KEY_FILENAME)).unwrap();
         let decoded: ValidatorKey = serde_json::from_str(&written).unwrap();
         assert_eq!(decoded, key);
-        assert_eq!(key.public_key.len(), 98);
-        assert_eq!(key.secret_key.len(), 66);
+        assert_eq!(key.public_key.len(), 96);
+        assert_eq!(key.secret_key.len(), 64);
     }
 }

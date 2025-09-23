@@ -1,12 +1,36 @@
 use super::ports::{CryptoProvider, ValidatorFilesystem};
-use crate::application::validator::input::{
-    parse_fork_version_hex, parse_genesis_validators_root_hex,
-};
 use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
-use eyre::{Context, Result};
+use eyre::{Context, Result, eyre};
 use std::path::PathBuf;
 use tracing::info;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct NetworkConfig {
+    name: &'static str,
+    fork_version: [u8; 4],
+    genesis_validators_root: &'static str,
+}
+
+const MAINNET_CONFIG: NetworkConfig = NetworkConfig {
+    name: "mainnet",
+    fork_version: [0x00, 0x00, 0x00, 0x00],
+    genesis_validators_root: "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95",
+};
+
+const SEPOLIA_CONFIG: NetworkConfig = NetworkConfig {
+    name: "sepolia",
+    fork_version: [0x90, 0x00, 0x00, 0x69],
+    genesis_validators_root: "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078",
+};
+
+const HOODI_CONFIG: NetworkConfig = NetworkConfig {
+    name: "hoodi",
+    fork_version: [0x10, 0x00, 0x09, 0x10],
+    genesis_validators_root: "0x212f13fc4df078b6cb7db228f1c8307566dcecf900867401a92023d7ba99cb5f",
+};
+
+const NETWORK_CONFIGS: &[NetworkConfig] = &[MAINNET_CONFIG, SEPOLIA_CONFIG, HOODI_CONFIG];
 
 #[derive(Debug, Clone)]
 pub struct CreateDepositDataParams {
@@ -21,56 +45,69 @@ pub struct CreateDepositDataParams {
 }
 
 impl CreateDepositDataParams {
-    pub const SUPPORTED_NETWORKS: &'static [&'static str] = &["mainnet", "sepolia", "hoodi"];
+    pub const SUPPORTED_NETWORKS: &'static [&'static str] =
+        &[MAINNET_CONFIG.name, SEPOLIA_CONFIG.name, HOODI_CONFIG.name];
 
-    pub fn from_hex_inputs(
+    pub fn for_network(
         key_path: PathBuf,
         output_path: PathBuf,
-        withdrawal_credentials: String,
+        withdrawal_address: &str,
         amount_gwei: u64,
-        fork_version_hex: &str,
-        genesis_root_hex: &str,
+        network: &str,
         overwrite: bool,
     ) -> Result<Self> {
-        let fork_version = parse_fork_version_hex(fork_version_hex)?;
-        let genesis_validators_root = parse_genesis_validators_root_hex(genesis_root_hex)?;
+        let config = resolve_network_config(network)?;
+        let withdrawal_credentials = withdrawal_credentials_from_address(withdrawal_address)?;
         Ok(Self {
             key_path,
             output_path,
             withdrawal_credentials,
             amount_gwei,
-            fork_version,
-            genesis_validators_root,
+            fork_version: config.fork_version,
+            genesis_validators_root: config.genesis_validators_root.to_string(),
             overwrite,
-            network_name: None,
+            network_name: Some(config.name.to_string()),
         })
     }
+}
 
-    pub fn with_network_name(mut self, network_name: Option<String>) -> Result<Self> {
-        let normalized = network_name.and_then(|name| {
-            let trimmed = name.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_lowercase())
-            }
-        });
+fn resolve_network_config(input: &str) -> Result<NetworkConfig> {
+    let normalized = input.trim().to_lowercase();
+    NETWORK_CONFIGS
+        .iter()
+        .copied()
+        .find(|config| config.name == normalized)
+        .ok_or_else(|| {
+            eyre!(
+                "unsupported network name '{input}'. Expected one of {}",
+                CreateDepositDataParams::SUPPORTED_NETWORKS.join(", ")
+            )
+        })
+}
 
-        if let Some(name) = normalized {
-            if Self::SUPPORTED_NETWORKS.contains(&name.as_str()) {
-                self.network_name = Some(name);
-            } else {
-                return Err(eyre::eyre!(
-                    "unsupported network name '{name}'. Expected one of {}",
-                    Self::SUPPORTED_NETWORKS.join(", ")
-                ));
-            }
-        } else {
-            self.network_name = None;
-        }
-
-        Ok(self)
+fn withdrawal_credentials_from_address(address: &str) -> Result<String> {
+    let trimmed = address.trim();
+    let without_prefix = trimmed
+        .strip_prefix("0x")
+        .or_else(|| trimmed.strip_prefix("0X"))
+        .unwrap_or(trimmed);
+    if without_prefix.len() != 40 {
+        return Err(eyre!(
+            "withdrawal address must be 20 bytes (40 hex characters), received {}",
+            address
+        ));
     }
+
+    if !without_prefix.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        return Err(eyre!("withdrawal address must be hex-encoded"));
+    }
+
+    let normalized = without_prefix.to_lowercase();
+    let mut credentials = String::with_capacity(64);
+    credentials.push_str("02");
+    credentials.push_str("0000000000000000000000");
+    credentials.push_str(&normalized);
+    Ok(credentials)
 }
 
 pub fn create_deposit_data(params: CreateDepositDataParams) -> Result<DepositData> {
@@ -306,67 +343,70 @@ mod tests {
         generate_keys(key_params).unwrap();
 
         let deposit_path = dir.path().join("deposit_data.json");
-        let params = CreateDepositDataParams {
-            key_path: key_path.clone(),
-            output_path: deposit_path.clone(),
-            withdrawal_credentials:
-                "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
-            amount_gwei: 32_000_000_000,
-            fork_version: [0, 0, 0, 0],
-            genesis_validators_root:
-                "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".into(),
-            overwrite: true,
-            network_name: Some("hoodi".into()),
-        };
+        let params = CreateDepositDataParams::for_network(
+            key_path.clone(),
+            deposit_path.clone(),
+            "0x000102030405060708090a0b0c0d0e0f10111213",
+            32_000_000_000,
+            "hoodi",
+            true,
+        )
+        .unwrap();
 
         let deposit = create_deposit_data(params).unwrap();
         let decoded: Vec<DepositData> =
             serde_json::from_slice(&fs::read(&deposit_path).unwrap()).unwrap();
         assert_eq!(decoded.len(), 1);
         assert_eq!(deposit, decoded[0]);
-        assert_eq!(deposit.pubkey.len(), 98);
-        assert_eq!(deposit.signature.len(), 194);
-        assert_eq!(deposit.deposit_data_root.len(), 66);
+        assert_eq!(deposit.pubkey.len(), 96);
+        assert_eq!(deposit.signature.len(), 192);
+        assert_eq!(deposit.deposit_data_root.len(), 64);
         assert_eq!(deposit.network_name.as_deref(), Some("hoodi"));
     }
 
     #[test]
-    fn with_network_name_trims_and_filters() {
-        let base = CreateDepositDataParams::from_hex_inputs(
+    fn for_network_normalizes_and_validates() {
+        let params = CreateDepositDataParams::for_network(
             PathBuf::from("/validators/key.json"),
             PathBuf::from("/validators/deposit.json"),
-            "cred".into(),
+            "0X9cAD4b41470bD949e1c4248ebA867E53aB3ceFEF",
             32_000_000_000,
-            "00000000",
-            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            " Hoodi ",
             false,
         )
         .unwrap();
 
-        let trimmed = base
-            .clone()
-            .with_network_name(Some(" hoodi ".into()))
-            .unwrap();
-        assert_eq!(trimmed.network_name.as_deref(), Some("hoodi"));
+        assert_eq!(params.network_name.as_deref(), Some("hoodi"));
+        assert_eq!(params.fork_version, [0x10, 0x00, 0x09, 0x10]);
+        assert_eq!(
+            params.withdrawal_credentials,
+            "0200000000000000000000009cad4b41470bd949e1c4248eba867e53ab3cefef"
+        );
 
-        let empty = base.clone().with_network_name(Some("   ".into())).unwrap();
-        assert!(empty.network_name.is_none());
-
-        let none = base.with_network_name(None).unwrap();
-        assert!(none.network_name.is_none());
-
-        let invalid = CreateDepositDataParams::from_hex_inputs(
+        let err = CreateDepositDataParams::for_network(
             PathBuf::from("/validators/key.json"),
             PathBuf::from("/validators/deposit.json"),
-            "cred".into(),
+            "0x1111",
             32_000_000_000,
-            "00000000",
-            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "hoodi",
             false,
         )
-        .unwrap()
-        .with_network_name(Some("unknownnet".into()));
-        assert!(invalid.is_err());
+        .unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("withdrawal address must be 20 bytes")
+        );
+
+        let network_err = CreateDepositDataParams::for_network(
+            PathBuf::from("/validators/key.json"),
+            PathBuf::from("/validators/deposit.json"),
+            "0x0000000000000000000000000000000000000000",
+            32_000_000_000,
+            "unknown",
+            false,
+        )
+        .unwrap_err();
+        assert!(network_err.to_string().contains("unsupported network name"));
     }
 
     #[test]

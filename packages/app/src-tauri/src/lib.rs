@@ -310,13 +310,10 @@ async fn generate_validator_keys(
 struct CreateDepositDataArgs {
     key_path: String,
     output_path: String,
-    withdrawal_credentials: String,
+    withdrawal_address: String,
     amount_gwei: u64,
-    fork_version: String,
-    genesis_root: String,
     overwrite: bool,
-    #[serde(default)]
-    network_name: Option<String>,
+    network: String,
 }
 
 #[tauri::command]
@@ -327,24 +324,20 @@ async fn create_validator_deposit_data(
     let CreateDepositDataArgs {
         key_path,
         output_path,
-        withdrawal_credentials,
+        withdrawal_address,
         amount_gwei,
-        fork_version,
-        genesis_root,
         overwrite,
-        network_name,
+        network,
     } = args;
 
-    let params = CreateDepositDataParams::from_hex_inputs(
+    let params = CreateDepositDataParams::for_network(
         PathBuf::from(&key_path),
         PathBuf::from(&output_path),
-        withdrawal_credentials,
+        &withdrawal_address,
         amount_gwei,
-        &fork_version,
-        &genesis_root,
+        &network,
         overwrite,
     )
-    .and_then(|params| params.with_network_name(network_name))
     .map_err(|err| err.to_string())?;
     let client = client_state.client();
     client
