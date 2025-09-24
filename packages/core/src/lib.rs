@@ -1,7 +1,7 @@
 // Public modules
 pub mod api;
 
-// Internal modules (touched to retrigger CI sidecar build)
+// Internal modules
 mod application;
 mod domain;
 mod infra;

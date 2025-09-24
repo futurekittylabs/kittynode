@@ -19,6 +19,7 @@ pub async fn start_docker() -> Result<()> {
                 eyre!("Failed to start Docker Desktop: {}. Please ensure Docker Desktop is installed.", e)
             })?;
         info!("Docker Desktop start command sent on macOS");
+        info!("I love kitties!");
     }
 
     #[cfg(target_os = "linux")]
