@@ -1,4 +1,5 @@
 mod core_client;
+mod validator_cli;
 
 use crate::core_client::CoreClientManager;
 use eyre::Result;
@@ -13,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use tauri::{Manager, State};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_http::reqwest;
 use tracing::{debug, info};
 
@@ -347,6 +348,16 @@ async fn create_validator_deposit_data(
 }
 
 #[tauri::command]
+async fn validator_generate_new_mnemonic(
+    app: AppHandle,
+    params: validator_cli::GenerateMnemonicRequest,
+) -> Result<validator_cli::GenerateMnemonicResponse, String> {
+    validator_cli::generate_new_mnemonic(&app, params)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn get_onboarding_completed() -> Result<bool, String> {
     info!("Getting onboarding completed status");
     api::get_onboarding_completed().map_err(|e| e.to_string())
@@ -432,6 +443,7 @@ pub fn run() -> Result<()> {
             get_operational_state,
             generate_validator_keys,
             create_validator_deposit_data,
+            validator_generate_new_mnemonic,
             get_onboarding_completed,
             set_onboarding_completed,
             get_config,
