@@ -20,6 +20,45 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Prepare deposit sidecar binary
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+import json
+import os
+import pathlib
+import urllib.request
+
+API_URL = "https://api.github.com/repos/eth-educators/ethstaker-deposit-cli/releases/latest"
+with urllib.request.urlopen(API_URL) as response:
+    release = json.load(response)
+
+asset = next(
+    (item for item in release["assets"] if item["name"].endswith("linux-amd64.tar.gz")),
+    None,
+)
+if asset is None:
+    raise SystemExit("Could not locate linux-amd64 asset for ethstaker deposit CLI")
+
+download_url = asset["browser_download_url"]
+archive_path = pathlib.Path("/tmp/deposit-cli.tar.gz")
+urllib.request.urlretrieve(download_url, archive_path)
+
+import tarfile
+
+with tarfile.open(archive_path) as tar:
+    member = next(m for m in tar.getmembers() if m.name.endswith("/deposit"))
+    extracted = tar.extractfile(member)
+    data = extracted.read()
+
+target_dir = pathlib.Path("packages/app/src-tauri/bin")
+target_dir.mkdir(parents=True, exist_ok=True)
+target_path = target_dir / "deposit-x86_64-unknown-linux-gnu"
+with open(target_path, "wb") as fh:
+    fh.write(data)
+os.chmod(target_path, 0o755)
+PY
+
       - name: Create dist directory for tauri dev build (workaround)
         run: mkdir -p ./packages/app/build
 
