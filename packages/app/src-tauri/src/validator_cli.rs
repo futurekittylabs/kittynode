@@ -153,6 +153,7 @@ pub async fn generate_new_mnemonic(
 
     let deposit_files = collect_matching_files(&keys_dir, |name| name.starts_with("deposit_data"))?;
     let keystore_files = collect_matching_files(&keys_dir, |name| name.starts_with("keystore"))?;
+    enforce_keystore_permissions(&keystore_files)?;
 
     let response = GenerateMnemonicResponse {
         mnemonic: mnemonic.clone(),
@@ -338,6 +339,28 @@ fn validate_password(password: &str) -> Result<()> {
     } else {
         Ok(())
     }
+}
+
+fn enforce_keystore_permissions(paths: &[String]) -> Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        for entry in paths {
+            let path = PathBuf::from(entry);
+            let metadata = fs::metadata(&path)
+                .wrap_err_with(|| format!("failed to inspect keystore {}", entry))?;
+            let mut perms = metadata.permissions();
+            let mode = perms.mode();
+            if mode & 0o077 != 0 {
+                perms.set_mode(0o600);
+                fs::set_permissions(&path, perms)
+                    .wrap_err_with(|| format!("failed to set secure permissions on {}", entry))?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
