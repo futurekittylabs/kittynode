@@ -27,6 +27,7 @@ jobs:
           import json
           import os
           import pathlib
+          import time
           import urllib.request
 
           API_URL = "https://api.github.com/repos/eth-educators/ethstaker-deposit-cli/releases/latest"
@@ -42,7 +43,14 @@ jobs:
 
           download_url = asset["browser_download_url"]
           archive_path = pathlib.Path("/tmp/deposit-cli.tar.gz")
-          urllib.request.urlretrieve(download_url, archive_path)
+          for attempt in range(5):
+              try:
+                  urllib.request.urlretrieve(download_url, archive_path)
+                  break
+              except Exception as exc:
+                  if attempt == 4:
+                      raise
+                  time.sleep(2)
 
           import tarfile
 
@@ -97,6 +105,7 @@ jobs:
           import json
           import os
           import pathlib
+          import time
           import urllib.request
 
           API_URL = "https://api.github.com/repos/eth-educators/ethstaker-deposit-cli/releases/latest"
@@ -112,7 +121,14 @@ jobs:
 
           download_url = asset["browser_download_url"]
           archive_path = pathlib.Path("/tmp/deposit-cli.tar.gz")
-          urllib.request.urlretrieve(download_url, archive_path)
+          for attempt in range(5):
+              try:
+                  urllib.request.urlretrieve(download_url, archive_path)
+                  break
+              except Exception as exc:
+                  if attempt == 4:
+                      raise
+                  time.sleep(2)
 
           import tarfile
 

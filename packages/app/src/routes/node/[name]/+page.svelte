@@ -28,6 +28,7 @@ import {
   PauseCircle,
   KeyRound,
   ClipboardCopy,
+  AlertTriangle,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
@@ -61,6 +62,7 @@ let newMnemonicUsePbkdf2 = $state(false);
 let generatingNewMnemonic = $state(false);
 let newMnemonicResult = $state<GenerateMnemonicResult | null>(null);
 let showNewMnemonicLogs = $state(false);
+let showMnemonic = $state(false);
 
 const networks = [
   { value: "mainnet", label: "Mainnet" },
@@ -296,6 +298,7 @@ async function handleGenerateNewMnemonic() {
     });
     newMnemonicResult = response;
     showNewMnemonicLogs = false;
+    showMnemonic = false;
     notifySuccess("Generated validator keys with EthStaker CLI");
   } catch (error) {
     notifyError("Failed to generate validator keys", error);
@@ -730,7 +733,14 @@ onDestroy(() => {
         </form>
         {#if newMnemonicResult}
           {@const result = newMnemonicResult}
-          <div class="space-y-4 rounded-lg border border-border bg-muted/10 p-4">
+            <div class="space-y-4 rounded-lg border border-border bg-muted/10 p-4">
+            <Alert.Root variant="destructive">
+              <AlertTriangle class="size-4" />
+              <Alert.Title>Store this mnemonic safely</Alert.Title>
+              <Alert.Description>
+                Write the phrase down offline. Anyone with access can control your validator.
+              </Alert.Description>
+            </Alert.Root>
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 text-sm font-medium">
                 <KeyRound class="h-4 w-4" />
@@ -739,16 +749,37 @@ onDestroy(() => {
               <Button
                 size="sm"
                 variant="outline"
-                onclick={() => copyToClipboard(result.mnemonic, "Mnemonic copied to clipboard")}
+                onclick={() => {
+                  if (!showMnemonic) {
+                    showMnemonic = true;
+                  }
+                  copyToClipboard(result.mnemonic, "Mnemonic copied to clipboard");
+                }}
                 class="gap-1"
               >
                 <ClipboardCopy class="h-3 w-3" />
                 Copy
               </Button>
             </div>
-            <p class="rounded-md bg-background p-3 font-mono text-sm leading-relaxed break-words">
-              {result.mnemonic}
-            </p>
+            <div class="space-y-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onclick={() => (showMnemonic = !showMnemonic)}
+                class="gap-2"
+              >
+                {showMnemonic ? "Hide mnemonic" : "Reveal mnemonic"}
+              </Button>
+              {#if showMnemonic}
+                <p class="rounded-md bg-background p-3 font-mono text-sm leading-relaxed break-words">
+                  {result.mnemonic}
+                </p>
+              {:else}
+                <p class="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                  Mnemonic hidden. Click “Reveal mnemonic” to view.
+                </p>
+              {/if}
+            </div>
             <div class="space-y-3">
               <div class="space-y-1">
                 <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">

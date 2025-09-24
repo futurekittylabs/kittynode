@@ -10,6 +10,7 @@ use tauri::async_runtime::Receiver;
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::{Command as ShellCommand, CommandChild, CommandEvent};
 use tracing::{debug, warn};
+use zeroize::Zeroize;
 
 const DEPOSIT_BIN_NAME: &str = "deposit";
 const DEPOSIT_BIN_ENV: &str = "KITTYNODE_DEPOSIT_BIN";
@@ -47,10 +48,18 @@ pub async fn generate_new_mnemonic(
 ) -> Result<GenerateMnemonicResponse> {
     let (run_dir, keys_dir_hint) = prepare_output_dirs()?;
 
-    let mnemonic_language = params
-        .mnemonic_language
-        .clone()
-        .unwrap_or_else(|| DEFAULT_LANGUAGE.to_string());
+    let GenerateMnemonicRequest {
+        num_validators,
+        chain,
+        mut keystore_password,
+        withdrawal_address,
+        compounding,
+        amount,
+        mnemonic_language,
+        pbkdf2,
+    } = params;
+
+    let mnemonic_language = mnemonic_language.unwrap_or_else(|| DEFAULT_LANGUAGE.to_string());
 
     let mut command = new_deposit_command(app)?
         .arg("--language")
@@ -60,22 +69,21 @@ pub async fn generate_new_mnemonic(
         .arg("--mnemonic_language")
         .arg(&mnemonic_language)
         .arg("--num_validators")
-        .arg(params.num_validators.to_string())
+        .arg(num_validators.to_string())
         .arg("--chain")
-        .arg(&params.chain)
+        .arg(&chain)
         .arg("--keystore_password")
-        .arg(&params.keystore_password)
+        .arg(&keystore_password)
         .arg("--folder")
         .arg(run_dir.to_string_lossy().as_ref());
 
-    if params.compounding {
+    if compounding {
         command = command.arg("--compounding");
     } else {
         command = command.arg("--regular-withdrawal");
     }
 
-    if let Some(amount) = params
-        .amount
+    if let Some(amount) = amount
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
@@ -83,18 +91,13 @@ pub async fn generate_new_mnemonic(
         command = command.arg("--amount").arg(amount);
     }
 
-    if params.keystore_password.contains('\n') {
-        return Err(eyre::eyre!(
-            "keystore password must not contain newline characters"
-        ));
-    }
+    validate_password(&keystore_password)?;
 
-    if params.pbkdf2 {
+    if pbkdf2 {
         command = command.arg("--pbkdf2");
     }
 
-    if let Some(addr) = params
-        .withdrawal_address
+    if let Some(addr) = withdrawal_address
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
@@ -145,21 +148,26 @@ pub async fn generate_new_mnemonic(
 
     ensure_success(exit_status)?;
 
-    let mnemonic = mnemonic.context("Failed to capture mnemonic from deposit CLI output")?;
+    let mut mnemonic = mnemonic.context("Failed to capture mnemonic from deposit CLI output")?;
     let keys_dir = keys_dir_reported.unwrap_or_else(|| keys_dir_hint.join("validator_keys"));
 
     let deposit_files = collect_matching_files(&keys_dir, |name| name.starts_with("deposit_data"))?;
     let keystore_files = collect_matching_files(&keys_dir, |name| name.starts_with("keystore"))?;
 
-    Ok(GenerateMnemonicResponse {
-        mnemonic,
+    let response = GenerateMnemonicResponse {
+        mnemonic: mnemonic.clone(),
         run_directory: run_dir.to_string_lossy().into(),
         validator_keys_dir: keys_dir.to_string_lossy().into(),
         deposit_files,
         keystore_files,
         stdout,
         stderr,
-    })
+    };
+
+    mnemonic.zeroize();
+    keystore_password.zeroize();
+
+    Ok(response)
 }
 
 fn new_deposit_command(app: &AppHandle) -> Result<ShellCommand> {
@@ -322,6 +330,16 @@ fn ensure_success(code: Option<i32>) -> Result<()> {
     }
 }
 
+fn validate_password(password: &str) -> Result<()> {
+    if password.contains('\n') {
+        Err(eyre::eyre!(
+            "keystore password must not contain newline characters"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,5 +380,11 @@ mod tests {
     fn clean_line_trims_newlines() {
         assert_eq!(clean_line(b"hello\n"), "hello");
         assert_eq!(clean_line(b"hello\r\n"), "hello");
+    }
+
+    #[test]
+    fn validate_password_rejects_newlines() {
+        assert!(validate_password("good-pass").is_ok());
+        assert!(validate_password("bad\npass").is_err());
     }
 }
