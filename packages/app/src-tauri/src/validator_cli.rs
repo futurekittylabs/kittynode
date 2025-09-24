@@ -88,13 +88,13 @@ pub async fn generate_new_mnemonic(
         command = command.arg("--pbkdf2");
     }
 
-    match params.withdrawal_address.as_deref() {
-        Some(addr) if !addr.trim().is_empty() => {
-            command = command.arg("--withdrawal_address").arg(addr.trim());
-        }
-        _ => {
-            command = command.arg("--withdrawal_address").arg("");
-        }
+    if let Some(addr) = params
+        .withdrawal_address
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        command = command.arg("--withdrawal_address").arg(addr);
     }
 
     let (mut rx, mut child) = spawn_command(command)?;
@@ -208,9 +208,7 @@ fn extract_mnemonic(line: &str) -> Option<String> {
     }
 
     let words: Vec<&str> = trimmed.split_whitespace().collect();
-    if words.len() == MNEMONIC_WORD_COUNT
-        && words.iter().all(|w| w.chars().all(|c| c.is_alphabetic()))
-    {
+    if words.len() == MNEMONIC_WORD_COUNT {
         Some(trimmed.to_string())
     } else {
         None
@@ -299,7 +297,9 @@ where
     }
 
     // Ensure stdin is closed so the process can exit cleanly
-    let _ = child.write(&[]);
+    if let Err(err) = child.write(&[]) {
+        warn!("failed to signal EOF to deposit CLI stdin: {}", err);
+    }
 
     Ok(exit_code)
 }
@@ -314,5 +314,48 @@ fn ensure_success(code: Option<i32>) -> Result<()> {
         Some(0) => Ok(()),
         Some(value) => Err(eyre::eyre!("deposit CLI exited with status {value}")),
         None => Err(eyre::eyre!("deposit CLI terminated without an exit code")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_mnemonic_accepts_ascii_words() {
+        let phrase = "word ".repeat(MNEMONIC_WORD_COUNT).trim().to_string();
+        assert_eq!(extract_mnemonic(&phrase), Some(phrase));
+    }
+
+    #[test]
+    fn extract_mnemonic_accepts_unicode() {
+        let words = vec!["áccent"; MNEMONIC_WORD_COUNT].join(" ");
+        assert_eq!(extract_mnemonic(&words), Some(words.clone()));
+
+        let with_tabs = format!("\t{}\t", words);
+        assert_eq!(extract_mnemonic(&with_tabs), Some(words));
+    }
+
+    #[test]
+    fn extract_mnemonic_rejects_incorrect_length() {
+        assert!(extract_mnemonic("one two three").is_none());
+    }
+
+    #[test]
+    fn extract_keys_path_parses_output_line() {
+        let line = "Success!\nYour keys can be found at: /tmp/keys";
+        let path = extract_keys_path(line).expect("path should be parsed");
+        assert_eq!(path, PathBuf::from("/tmp/keys"));
+    }
+
+    #[test]
+    fn extract_keys_path_returns_none_when_missing() {
+        assert!(extract_keys_path("nope").is_none());
+    }
+
+    #[test]
+    fn clean_line_trims_newlines() {
+        assert_eq!(clean_line(b"hello\n"), "hello");
+        assert_eq!(clean_line(b"hello\r\n"), "hello");
     }
 }

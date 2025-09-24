@@ -217,6 +217,23 @@ function normalizeOptionalAmount(raw: string | number): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
+function isValidWithdrawalAddress(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed === "") return true;
+  return /^0x[a-fA-F0-9]{40}$/.test(trimmed);
+}
+
+function validateCompoundingAmount(
+  amount: string | null,
+  network: string,
+): boolean {
+  if (!amount) return false;
+  const parsed = Number.parseFloat(amount);
+  if (!Number.isFinite(parsed)) return false;
+  const minimum = network === "mainnet" ? 32 : 1;
+  return parsed >= minimum;
+}
+
 async function handleGenerateNewMnemonic() {
   if (generatingNewMnemonic) return;
 
@@ -226,8 +243,8 @@ async function handleGenerateNewMnemonic() {
     return;
   }
 
-  if (!newMnemonicPassword) {
-    notifyError("Enter a keystore password before generating keys");
+  if (newMnemonicPassword.length < 12) {
+    notifyError("Keystore password must be at least 12 characters long");
     return;
   }
 
@@ -236,10 +253,28 @@ async function handleGenerateNewMnemonic() {
     return;
   }
 
+  if (!isValidWithdrawalAddress(newMnemonicWithdrawal)) {
+    notifyError("Withdrawal address must be a 0x-prefixed checksum address");
+    return;
+  }
+
   generatingNewMnemonic = true;
   try {
     const withdrawal = newMnemonicWithdrawal.trim();
     const amountOverride = normalizeOptionalAmount(newMnemonicAmount);
+
+    if (
+      newMnemonicCompounding &&
+      !validateCompoundingAmount(amountOverride, selectedNetwork)
+    ) {
+      notifyError(
+        selectedNetwork === "mainnet"
+          ? "Compounding validators require an amount of at least 32 ETH"
+          : "Compounding validators require an amount of at least 1 ETH",
+      );
+      generatingNewMnemonic = false;
+      return;
+    }
 
     const response = await coreClient.generateValidatorMnemonic({
       num_validators: numValidators,
