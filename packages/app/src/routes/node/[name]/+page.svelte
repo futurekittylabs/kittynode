@@ -248,6 +248,14 @@ async function handleGenerateNewMnemonic() {
     return;
   }
 
+  if (
+    newMnemonicPassword.includes("\n") ||
+    newMnemonicPassword.includes("\r")
+  ) {
+    notifyError("Keystore password cannot contain newline characters");
+    return;
+  }
+
   if (newMnemonicPassword !== newMnemonicPasswordConfirm) {
     notifyError("Keystore password confirmation does not match");
     return;

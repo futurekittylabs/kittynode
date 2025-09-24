@@ -53,7 +53,6 @@ pub async fn generate_new_mnemonic(
         .unwrap_or_else(|| DEFAULT_LANGUAGE.to_string());
 
     let mut command = new_deposit_command(app)?
-        .env("PYTEST_CURRENT_TEST", "1")
         .arg("--language")
         .arg(DEFAULT_LANGUAGE)
         .arg("--non_interactive")
@@ -82,6 +81,12 @@ pub async fn generate_new_mnemonic(
         .filter(|value| !value.is_empty())
     {
         command = command.arg("--amount").arg(amount);
+    }
+
+    if params.keystore_password.contains('\n') {
+        return Err(eyre::eyre!(
+            "keystore password must not contain newline characters"
+        ));
     }
 
     if params.pbkdf2 {
