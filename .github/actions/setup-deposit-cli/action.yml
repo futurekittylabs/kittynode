@@ -24,7 +24,7 @@ runs:
         import sys
 
         VERSION = "${{ inputs.version }}"
-        API_URL = f"https://api.github.com/repos/eth-educators/ethstaker-deposit-cli/releases/tag/{VERSION}"
+        API_URL = f"https://api.github.com/repos/ethstaker/ethstaker-deposit-cli/releases/tags/{VERSION}"
 
         # Checksums for v1.2.2 binaries
         # These should be updated when changing versions
