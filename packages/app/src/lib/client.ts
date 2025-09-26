@@ -19,6 +19,28 @@ export interface LatestManifest {
   version: string;
 }
 
+export interface GenerateMnemonicParams {
+  num_validators: number;
+  chain: string;
+  keystore_password: string;
+  withdrawal_address?: string | null;
+  compounding?: boolean;
+  amount?: string | null;
+  mnemonic_language?: string;
+  pbkdf2?: boolean;
+  generation_id?: string | null;
+}
+
+export interface GenerateMnemonicResult {
+  mnemonic: string;
+  run_directory: string;
+  validator_keys_dir: string;
+  deposit_files: string[];
+  keystore_files: string[];
+  stdout: string[];
+  stderr: string[];
+}
+
 export const coreClient = {
   getPackages(): Promise<Record<string, Package>> {
     return invoke("get_packages");
@@ -115,5 +137,11 @@ export const coreClient = {
 
   fetchLatestManifest(url: string): Promise<LatestManifest> {
     return invoke("fetch_latest_manifest", { url });
+  },
+
+  generateValidatorMnemonic(
+    params: GenerateMnemonicParams,
+  ): Promise<GenerateMnemonicResult> {
+    return invoke("validator_generate_new_mnemonic", { params });
   },
 };

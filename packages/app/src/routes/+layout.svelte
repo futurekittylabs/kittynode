@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Github,
   Users,
+  KeyRound,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
@@ -141,6 +142,21 @@ onMount(async () => {
                       </a>
                     {/snippet}
                   </Sidebar.MenuButton>
+                  <Sidebar.MenuSub>
+                    <Sidebar.MenuSubItem>
+                      <Sidebar.MenuSubButton
+                        size="sm"
+                        isActive={currentPath.startsWith(`/node/${pkg.name}/validator`)}
+                      >
+                        {#snippet child({ props })}
+                          <a href={`/node/${pkg.name}/validator`} {...props}>
+                            <KeyRound class="h-4 w-4" />
+                            <span>Validator management</span>
+                          </a>
+                        {/snippet}
+                      </Sidebar.MenuSubButton>
+                    </Sidebar.MenuSubItem>
+                  </Sidebar.MenuSub>
                 </Sidebar.MenuItem>
               {/each}
             </Sidebar.Menu>

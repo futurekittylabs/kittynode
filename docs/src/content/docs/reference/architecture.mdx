@@ -108,6 +108,10 @@ The system checker is a utility within Kittynode that checks the system prerequi
 
 The system checker is important in several areas of Kittynode. For example, when creating a validator key it is important to ensure WiFi is disabled, and file permissions are properly set on the key file.
 
+### Validator tooling sidecar
+
+Kittynode shells out to the EthStaker `deposit` CLI so that the desktop app can generate mnemonics, keystores, withdrawal credential updates, and deposit JSON without re-implementing those flows. Drop the platform-specific binary (for example `deposit-aarch64-apple-darwin` on Apple Silicon) into `packages/app/src-tauri/bin/` and list `bin/deposit` under `bundle.externalBin`. Tauri’s sidecar bundler resolves the appropriate `-<target-triple>` executable automatically for both `tauri dev` and release builds. During development you can point to an alternate build by exporting `KITTYNODE_DEPOSIT_BIN=/absolute/path/to/deposit`. When the UI invokes the tool, all artifacts are written under `~/.kittynode/validator-assets/<run-id>/validator_keys` to keep outputs isolated from the rest of the application data.
+
 ### Remote access
 
 Kittynode supports remote access. This means you can setup and monitor your node from a phone or desktop. This is currently done via a secure connection over Wireguard, which allows users to monitor their node from trusted devices. This also allows users to easily upgrade their nodes from anywhere, which is important for voting. There are plans to support another mechanism for remote management as well, which doesn't even require a direct connection.
