@@ -1,5 +1,5 @@
 name: Setup Deposit CLI
-description: Download and verify the EthStaker deposit CLI binary for the target platform
+description: Download the EthStaker deposit CLI binary for the target platform
 inputs:
   version:
     description: 'Version of the deposit CLI to download'
@@ -19,23 +19,11 @@ runs:
         import pathlib
         import time
         import urllib.request
-        import hashlib
         import platform
         import sys
 
         VERSION = "${{ inputs.version }}"
         API_URL = f"https://api.github.com/repos/ethstaker/ethstaker-deposit-cli/releases/tags/{VERSION}"
-
-        # Checksums for v1.2.2 binaries
-        # These should be updated when changing versions
-        CHECKSUMS = {
-            "v1.2.2": {
-                "linux-amd64": "7e6e8e3a5a5d8c1b8f9d0e4c5a2b3f4e5d6c7b8a9d0e1f2e3d4c5b6a7e8f9d0e1f2e3d4c5b6a",  # TODO: Add real checksum
-                "darwin-amd64": "8f9e0d1c2b3a4e5f6d7c8b9a0e1f2d3c4b5a6e7f8d9e0c1b2a3f4e5d6c7b8a9e0f1d2c3",  # TODO: Add real checksum
-                "darwin-arm64": "9e0f1d2c3b4a5e6f7d8c9b0a1e2f3d4c5b6a7e8f9d0e1c2b3a4f5e6d7c8b9a0e1f2d3c4",  # TODO: Add real checksum
-                "windows-amd64": "0f1e2d3c4b5a6e7f8d9e0c1b2a3f4e5d6c7b8a9e0f1d2c3b4a5e6f7d8c9b0a1e2f3d4c5",  # TODO: Add real checksum
-            }
-        }
 
         # Determine the platform
         system = platform.system().lower()
@@ -101,15 +89,6 @@ runs:
             member = next(m for m in tar.getmembers() if m.name.endswith("/deposit"))
             extracted = tar.extractfile(member)
             data = extracted.read()
-
-        # TODO: Verify checksum when real checksums are available
-        # For now, just print a warning
-        print("WARNING: Binary checksum verification not implemented - using placeholder checksums")
-        # actual_hash = hashlib.sha256(data).hexdigest()
-        # expected_hash = CHECKSUMS.get(VERSION, {}).get(platform_suffix)
-        # if expected_hash and actual_hash != expected_hash:
-        #     raise SystemExit(f"Binary checksum mismatch! Expected: {expected_hash}, Got: {actual_hash}")
-        # print(f"Checksum verified: {actual_hash}")
 
         # Write to target location
         target_dir = pathlib.Path("packages/app/src-tauri/bin")

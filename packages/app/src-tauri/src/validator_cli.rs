@@ -138,7 +138,7 @@ pub async fn generate_new_mnemonic(
     let mut handled_mnemonic_prompt = false;
 
     // Run with timeout to prevent indefinite hanging
-    let exit_status = tokio::time::timeout(
+    let timeout_result = tokio::time::timeout(
         Duration::from_secs(PROCESS_TIMEOUT_SECS),
         read_process_stream(
             &mut rx,
@@ -223,9 +223,27 @@ pub async fn generate_new_mnemonic(
             },
         ),
     )
-    .await
-    .map_err(|_| eyre::eyre!("Process timed out after {} seconds", PROCESS_TIMEOUT_SECS))?
-    .context("Failed to read process stream")?;
+    .await;
+
+    // Handle timeout - kill the process if it's still running
+    let exit_status = match timeout_result {
+        Ok(result) => result.context("Failed to read process stream")?,
+        Err(_) => {
+            // Timeout occurred - kill the child process
+            warn!("Process timed out after {} seconds, terminating", PROCESS_TIMEOUT_SECS);
+            if let Err(e) = child.kill() {
+                warn!("Failed to kill timed-out process: {}", e);
+            }
+            // Try to wait for the process to actually terminate
+            let _ = tokio::time::timeout(Duration::from_secs(2), async {
+                while rx.recv().await.is_some() {
+                    // Drain any remaining output
+                }
+            })
+            .await;
+            return Err(eyre::eyre!("Process timed out after {} seconds", PROCESS_TIMEOUT_SECS));
+        }
+    };
 
     ensure_success(exit_status)?;
 

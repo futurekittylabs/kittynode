@@ -29,7 +29,6 @@ tauri = { version = "2.8.5", features = ["devtools"] }
 tauri-plugin-http = "2.5.2"
 tauri-plugin-os = "2.3.1"
 tauri-plugin-process = "2.3.0"
-tauri-plugin-shell = "2.3.1"
 tokio = "1.47.1"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.20"
@@ -39,3 +38,7 @@ strip-ansi-escapes = "0.1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2.9.0"
+eth2_wallet = { git = "https://github.com/sigp/lighthouse.git", package = "eth2_wallet", rev = "3cb7e59be2ebcf66836dabae2c771b455822f654" }
+eth2_keystore = { git = "https://github.com/sigp/lighthouse.git", package = "eth2_keystore", rev = "3cb7e59be2ebcf66836dabae2c771b455822f654" }
+types = { git = "https://github.com/sigp/lighthouse.git", package = "types", rev = "3cb7e59be2ebcf66836dabae2c771b455822f654" }
+tree_hash = "0.9"

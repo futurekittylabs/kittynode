@@ -1,18 +1,17 @@
 use crate::application::validator::ports::{CryptoProvider, ValidatorFilesystem};
 use crate::domain::validator::{DepositData, ValidatorKey};
-use blst::min_pk::SecretKey;
+use eth2_keystore::keypair_from_secret as lighthouse_keypair_from_secret;
 use eyre::{Context, Result, eyre};
 use sha2::{Digest, Sha256};
+use tree_hash::TreeHash;
+use types::{ChainSpec, DepositData as LHDepositData, EthSpec, MainnetEthSpec, PublicKeyBytes, SignatureBytes};
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
 
-const DOMAIN_DEPOSIT: [u8; 4] = [0x03, 0x00, 0x00, 0x00];
-const BLS_DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-type Root = [u8; 32];
-const ZERO_ROOT: Root = [0u8; 32];
+//
 
 #[derive(Default)]
 pub struct SimpleCryptoProvider;
@@ -20,11 +19,13 @@ pub struct SimpleCryptoProvider;
 impl CryptoProvider for SimpleCryptoProvider {
     fn generate_key(&self, entropy: &str) -> Result<ValidatorKey> {
         let secret = derive_secret_key(entropy)?;
-        let public = secret.sk_to_pk();
-
+        let kp = lighthouse_keypair_from_secret(&secret)
+            .map_err(|e| eyre!(format!("failed to build keypair: {e:?}")))?;
+        let pk_hex = kp.pk.as_hex_string();
+        let pk_noprefix = pk_hex.trim_start_matches("0x").to_lowercase();
         Ok(ValidatorKey {
-            public_key: encode_hex(&public.to_bytes()),
-            secret_key: encode_hex(&secret.to_bytes()),
+            public_key: pk_noprefix,
+            secret_key: encode_hex(&secret),
         })
     }
 
@@ -34,44 +35,47 @@ impl CryptoProvider for SimpleCryptoProvider {
         withdrawal_credentials: &str,
         amount_gwei: u64,
         fork_version: [u8; 4],
-        genesis_validators_root: &str,
+        _genesis_validators_root: &str,
     ) -> Result<DepositData> {
-        let secret_bytes = decode_hex_fixed::<32>(&key.secret_key)?;
-        let secret = SecretKey::from_bytes(&secret_bytes)
-            .map_err(|_| eyre!("invalid validator secret key"))?;
-
-        let public_bytes = secret.sk_to_pk().to_bytes();
-        let public_hex = encode_hex(&public_bytes);
+        let secret = decode_hex_fixed::<32>(&key.secret_key)?;
+        let kp = lighthouse_keypair_from_secret(&secret)
+            .map_err(|e| eyre!(format!("failed to build keypair: {e:?}")))?;
 
         if !key.public_key.is_empty() {
-            let stored_pub = decode_hex(&key.public_key)?;
-            if stored_pub != public_bytes {
+            let pk_hex = kp.pk.as_hex_string().trim_start_matches("0x").to_lowercase();
+            if pk_hex != key.public_key.to_lowercase() {
                 return Err(eyre!("validator public key does not match secret key"));
             }
         }
 
-        let withdrawal_bytes = decode_hex_fixed::<32>(withdrawal_credentials)?;
-        let genesis_root_bytes = decode_hex_fixed::<32>(genesis_validators_root)?;
-        let domain = compute_deposit_domain(fork_version, &genesis_root_bytes);
-        let deposit_message_root =
-            compute_deposit_message_root(&public_bytes, &withdrawal_bytes, amount_gwei);
-        let signing_root = compute_signing_root(&deposit_message_root, &domain);
-        let signature = secret.sign(signing_root.as_ref(), BLS_DST, &[]);
-        let signature_bytes = signature.to_bytes();
-        let deposit_data_root = compute_deposit_data_root(
-            &public_bytes,
-            &withdrawal_bytes,
-            amount_gwei,
-            &signature_bytes,
-        );
+        let mut spec: ChainSpec = MainnetEthSpec::default_spec();
+        spec.genesis_fork_version = fork_version;
+
+        let mut deposit = LHDepositData {
+            pubkey: PublicKeyBytes::from(kp.pk.clone()),
+            withdrawal_credentials: {
+                let wc = decode_hex_fixed::<32>(withdrawal_credentials)?;
+                types::Hash256::from_slice(&wc)
+            },
+            amount: amount_gwei,
+            signature: SignatureBytes::empty(),
+        };
+        deposit.signature = deposit.create_signature(&kp.sk, &spec);
+
+        let msg_root = deposit.as_deposit_message().tree_hash_root();
+        let data_root = deposit.tree_hash_root();
+
+        let sig_json = serde_json::to_string(&deposit.signature)
+            .map_err(|e| eyre!(format!("failed to serialize signature: {e}")))?;
+        let sig_hex = sig_json.trim_matches('"').trim_start_matches("0x").to_lowercase();
 
         Ok(DepositData {
-            pubkey: public_hex,
-            withdrawal_credentials: encode_hex(&withdrawal_bytes),
+            pubkey: kp.pk.as_hex_string().trim_start_matches("0x").to_lowercase(),
+            withdrawal_credentials: hex::encode(decode_hex_fixed::<32>(withdrawal_credentials)?),
             amount: amount_gwei,
-            signature: encode_hex(&signature_bytes),
-            deposit_message_root: encode_hex(&deposit_message_root),
-            deposit_data_root: encode_hex(&deposit_data_root),
+            signature: sig_hex,
+            deposit_message_root: hex::encode(msg_root.as_slice()),
+            deposit_data_root: hex::encode(data_root.as_slice()),
             fork_version: hex::encode(fork_version),
             network_name: None,
         })
@@ -82,11 +86,10 @@ impl CryptoProvider for SimpleCryptoProvider {
 ///
 /// Callers must ensure the entropy is sourced from a high-quality RNG in
 /// production contexts—this helper does not add additional randomness.
-fn derive_secret_key(entropy: &str) -> Result<SecretKey> {
+fn derive_secret_key(entropy: &str) -> Result<[u8; 32]> {
     let mut hasher = Sha256::new();
     hasher.update(entropy.as_bytes());
-    let seed: [u8; 32] = hasher.finalize().into();
-    SecretKey::key_gen(&seed, &[]).map_err(|_| eyre!("failed to derive validator secret key"))
+    Ok(hasher.finalize().into())
 }
 
 fn encode_hex(bytes: &[u8]) -> String {
@@ -115,105 +118,6 @@ fn decode_hex_fixed<const N: usize>(input: &str) -> Result<[u8; N]> {
     Ok(array)
 }
 
-fn compute_deposit_domain(fork_version: [u8; 4], genesis_validators_root: &[u8; 32]) -> Root {
-    let mut current_version_chunk = [0u8; 32];
-    current_version_chunk[..4].copy_from_slice(&fork_version);
-    let fork_data_root = merkleize(&[current_version_chunk, *genesis_validators_root]);
-
-    let mut domain = [0u8; 32];
-    domain[..4].copy_from_slice(&DOMAIN_DEPOSIT);
-    domain[4..].copy_from_slice(&fork_data_root[..28]);
-    domain
-}
-
-fn compute_deposit_message_root(
-    pubkey: &[u8; 48],
-    withdrawal_credentials: &[u8; 32],
-    amount_gwei: u64,
-) -> Root {
-    let pubkey_root = merkleize(&pack_bytes(pubkey));
-    let withdrawal_root = chunk_bytes32(withdrawal_credentials);
-    let amount_root = uint64_chunk(amount_gwei);
-    merkleize(&[pubkey_root, withdrawal_root, amount_root])
-}
-
-fn compute_deposit_data_root(
-    pubkey: &[u8; 48],
-    withdrawal_credentials: &[u8; 32],
-    amount_gwei: u64,
-    signature: &[u8; 96],
-) -> Root {
-    let pubkey_root = merkleize(&pack_bytes(pubkey));
-    let withdrawal_root = chunk_bytes32(withdrawal_credentials);
-    let amount_root = uint64_chunk(amount_gwei);
-    let signature_root = merkleize(&pack_bytes(signature));
-    merkleize(&[pubkey_root, withdrawal_root, amount_root, signature_root])
-}
-
-fn compute_signing_root(object_root: &Root, domain: &Root) -> Root {
-    merkleize(&[*object_root, *domain])
-}
-
-fn merkleize(chunks: &[Root]) -> Root {
-    if chunks.is_empty() {
-        return ZERO_ROOT;
-    }
-
-    let mut layer: Vec<Root> = chunks.to_vec();
-    let target_len = next_power_of_two(layer.len());
-    layer.resize(target_len, ZERO_ROOT);
-
-    while layer.len() > 1 {
-        let mut next_layer = Vec::with_capacity(layer.len() / 2);
-        for pair in layer.chunks(2) {
-            let left = pair[0];
-            let right = pair[1];
-            next_layer.push(hash_pair(&left, &right));
-        }
-        layer = next_layer;
-    }
-
-    layer[0]
-}
-
-fn hash_pair(left: &Root, right: &Root) -> Root {
-    let mut hasher = Sha256::new();
-    hasher.update(left);
-    hasher.update(right);
-    hasher.finalize().into()
-}
-
-fn pack_bytes(bytes: &[u8]) -> Vec<Root> {
-    if bytes.is_empty() {
-        return vec![ZERO_ROOT];
-    }
-
-    let mut chunks = Vec::new();
-    for chunk in bytes.chunks(32) {
-        let mut root = [0u8; 32];
-        root[..chunk.len()].copy_from_slice(chunk);
-        chunks.push(root);
-    }
-    chunks
-}
-
-fn chunk_bytes32(bytes: &[u8; 32]) -> Root {
-    *bytes
-}
-
-fn uint64_chunk(value: u64) -> Root {
-    let mut chunk = [0u8; 32];
-    chunk[..8].copy_from_slice(&value.to_le_bytes());
-    chunk
-}
-
-fn next_power_of_two(value: usize) -> usize {
-    if value == 0 {
-        1
-    } else {
-        value.next_power_of_two()
-    }
-}
 
 #[derive(Default)]
 pub struct StdValidatorFilesystem;

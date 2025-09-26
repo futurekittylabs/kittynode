@@ -25,4 +25,7 @@ rand = "0.9.2"
 sysinfo = "0.37.0"
 sha2 = "0.10.9"
 tempfile = "3.22.0"
-blst = "0.3.16"
+tree_hash = "0.9"
+# Lighthouse crates (pinned)
+eth2_keystore = { git = "https://github.com/sigp/lighthouse.git", package = "eth2_keystore", rev = "3cb7e59be2ebcf66836dabae2c771b455822f654" }
+types = { git = "https://github.com/sigp/lighthouse.git", package = "types", rev = "3cb7e59be2ebcf66836dabae2c771b455822f654" }
