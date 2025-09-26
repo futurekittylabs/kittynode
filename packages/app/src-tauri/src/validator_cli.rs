@@ -6,10 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use strip_ansi_escapes::strip as strip_ansi;
-use tauri::async_runtime::Receiver;
 use tauri::{AppHandle, Emitter};
-use tauri_plugin_shell::ShellExt;
-use tauri_plugin_shell::process::{Command as ShellCommand, CommandChild, CommandEvent};
 use tracing::{debug, info, warn};
 use zeroize::Zeroize;
 
@@ -230,7 +227,10 @@ pub async fn generate_new_mnemonic(
         Ok(result) => result.context("Failed to read process stream")?,
         Err(_) => {
             // Timeout occurred - kill the child process
-            warn!("Process timed out after {} seconds, terminating", PROCESS_TIMEOUT_SECS);
+            warn!(
+                "Process timed out after {} seconds, terminating",
+                PROCESS_TIMEOUT_SECS
+            );
             if let Err(e) = child.kill() {
                 warn!("Failed to kill timed-out process: {}", e);
             }
@@ -241,7 +241,10 @@ pub async fn generate_new_mnemonic(
                 }
             })
             .await;
-            return Err(eyre::eyre!("Process timed out after {} seconds", PROCESS_TIMEOUT_SECS));
+            return Err(eyre::eyre!(
+                "Process timed out after {} seconds",
+                PROCESS_TIMEOUT_SECS
+            ));
         }
     };
 

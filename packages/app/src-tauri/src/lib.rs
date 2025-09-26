@@ -406,8 +406,7 @@ pub fn run() -> Result<()> {
     let builder = tauri::Builder::default()
         .manage(core_client)
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_os::init())
-        ;
+        .plugin(tauri_plugin_os::init());
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
