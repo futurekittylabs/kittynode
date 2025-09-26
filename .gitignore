@@ -31,6 +31,3 @@ vite.config.ts.timestamp-*
 # Temp
 .worktrees
 tmp
-
-# Tauri sidecar binaries
-packages/app/src-tauri/bin
