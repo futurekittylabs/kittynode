@@ -224,7 +224,8 @@ pub async fn generate_new_mnemonic(
         ),
     )
     .await
-    .map_err(|_| eyre::eyre!("Process timed out after {} seconds", PROCESS_TIMEOUT_SECS))??;
+    .map_err(|_| eyre::eyre!("Process timed out after {} seconds", PROCESS_TIMEOUT_SECS))?
+    .context("Failed to read process stream")?;
 
     ensure_success(exit_status)?;
 
