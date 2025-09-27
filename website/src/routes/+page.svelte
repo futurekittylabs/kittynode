@@ -96,8 +96,8 @@ onMount(() => {
       <img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
       <div class="mt-8 flex flex-col items-center gap-4">
         <Button href={downloadHref} size="lg" class="gap-2">
-            <Download class="h-5 w-5" />
-            {downloadButtonText}}
+          <Download class="h-5 w-5" />
+          {downloadButtonText}
         </Button>
         {#if showFallback}
           <p class="text-sm text-muted-foreground">
