@@ -109,7 +109,7 @@ onMount(() => {
             </p>
           {:else}
             <p class="text-sm text-muted-foreground">
-              Need something else? <a href="/download" class="link">See all downloads.</a>
+              Need something else? <a href="/download" class="link">See all downloads</a>.
             </p>
           {/if}
         {/if}
