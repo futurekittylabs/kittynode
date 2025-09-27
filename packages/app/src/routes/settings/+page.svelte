@@ -35,7 +35,9 @@ let remoteServerDialogOpen = $state(false);
 let remoteServerUrlInput = $state("");
 let remoteServerError = $state("");
 let remoteDialogLoading = $state(false);
-let remoteDialogAction = $state<"connect" | "disconnect" | null>(null);
+let remoteDialogAction = $state<"connect" | null>(null);
+let remoteInlineLoading = $state(false);
+let remoteInlineAction = $state<"connect" | "disconnect" | null>(null);
 
 const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
 const configInitialized = $derived(appConfigStore.initialized);
@@ -164,18 +166,36 @@ async function submitRemoteDialog() {
   }
 }
 
-async function disconnectRemoteFromDialog() {
-  remoteServerError = "";
-  remoteDialogAction = "disconnect";
-  remoteDialogLoading = true;
+async function quickConnectToLastServer() {
+  const candidateUrl =
+    serverUrlStore.serverUrl || serverUrlStore.lastServerUrl || "";
+
+  if (!candidateUrl) {
+    openRemoteDialog();
+    return;
+  }
+
+  remoteInlineAction = "connect";
+  remoteInlineLoading = true;
   try {
-    const success = await clearRemoteConnection();
-    if (success) {
-      remoteServerDialogOpen = false;
+    const success = await applyRemoteConnection(candidateUrl);
+    if (!success) {
+      openRemoteDialog();
     }
   } finally {
-    remoteDialogLoading = false;
-    remoteDialogAction = null;
+    remoteInlineLoading = false;
+    remoteInlineAction = null;
+  }
+}
+
+async function disconnectRemote() {
+  remoteInlineAction = "disconnect";
+  remoteInlineLoading = true;
+  try {
+    await clearRemoteConnection();
+  } finally {
+    remoteInlineLoading = false;
+    remoteInlineAction = null;
   }
 }
 
@@ -244,10 +264,48 @@ async function checkForUpdates() {
             {serverUrlStore.serverUrl || "Not connected"}
           </p>
         </div>
-        <Button size="sm" variant="outline" onclick={openRemoteDialog}>
-          <Link2 class="h-4 w-4 mr-1" />
-          {remoteServerConnected ? "Manage" : "Connect"}
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onclick={openRemoteDialog}
+            disabled={remoteInlineLoading}
+            class="gap-2"
+          >
+            <Link2 class="h-4 w-4" />
+            Manage
+          </Button>
+          {#if remoteServerConnected}
+            <Button
+              size="sm"
+              variant="destructive"
+              onclick={disconnectRemote}
+              disabled={remoteInlineLoading}
+              class="gap-2"
+            >
+              {#if remoteInlineLoading && remoteInlineAction === "disconnect"}
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              {:else}
+                <Unlink class="h-4 w-4" />
+              {/if}
+              Disconnect
+            </Button>
+          {:else}
+            <Button
+              size="sm"
+              onclick={quickConnectToLastServer}
+              disabled={remoteInlineLoading}
+              class="gap-2"
+            >
+              {#if remoteInlineLoading && remoteInlineAction === "connect"}
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              {:else}
+                <Link2 class="h-4 w-4" />
+              {/if}
+              Connect
+            </Button>
+          {/if}
+        </div>
       </div>
       <Dialog.Root bind:open={remoteServerDialogOpen}>
         <Dialog.Content>
@@ -286,21 +344,6 @@ async function checkForUpdates() {
             >
               Cancel
             </Button>
-            {#if remoteServerConnected}
-              <Button
-                type="button"
-                variant="destructive"
-                onclick={disconnectRemoteFromDialog}
-                disabled={remoteDialogLoading}
-                class="gap-2"
-              >
-                {#if remoteDialogLoading && remoteDialogAction === "disconnect"}
-                  <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                {/if}
-                <Unlink class="h-4 w-4" />
-                Disconnect
-              </Button>
-            {/if}
             <Button
               type="button"
               onclick={submitRemoteDialog}
