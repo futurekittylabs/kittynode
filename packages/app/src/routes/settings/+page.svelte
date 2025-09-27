@@ -19,7 +19,6 @@ import {
   HardDrive,
   Download,
   ArrowUpRight,
-  MessageSquare,
   Trash2,
   Link2,
   Unlink,
@@ -254,10 +253,10 @@ async function checkForUpdates() {
       <Card.Description>Connect Kittynode to a remote server</Card.Description>
     </Card.Header>
     <Card.Content class="space-y-4">
-      <!-- Remote Server -->
+      <!-- Remote server -->
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium">Remote Server</p>
+          <p class="text-sm font-medium">Remote server</p>
           <p class="text-xs text-muted-foreground">
             {serverUrlStore.serverUrl || "Not connected"}
           </p>
@@ -496,7 +495,7 @@ async function checkForUpdates() {
         <div class="flex items-center">
           <div>
             <p class="text-sm font-medium">
-              {updates.hasUpdate ? "Update Available" : "Check for Updates"}
+              {updates.hasUpdate ? "Update available" : "Check for updates"}
             </p>
             <p class="text-xs text-muted-foreground">
               {#if updates.hasUpdate}
@@ -535,7 +534,7 @@ async function checkForUpdates() {
                   ></div>
                   Checking...
                 {:else}
-                  Open Downloads
+                  Open downloads
                   <ArrowUpRight class="h-4 w-4" />
                 {/if}
               </Button>
@@ -558,7 +557,7 @@ async function checkForUpdates() {
                   Checking...
                 {:else}
                   <Download class="h-4 w-4 mr-1" />
-                  Install Update
+                  Install update
                 {/if}
               </Button>
             {:else}
@@ -574,7 +573,7 @@ async function checkForUpdates() {
                   ></div>
                   Checking...
                 {:else}
-                  Check Now
+                  Check now
                 {/if}
               </Button>
             {/if}
@@ -598,7 +597,7 @@ async function checkForUpdates() {
     <Card.Content>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium">Delete All Data</p>
+          <p class="text-sm font-medium">Delete all data</p>
           <p class="text-xs text-muted-foreground">
             Permanently remove all Kittynode data and settings
           </p>
@@ -610,7 +609,7 @@ async function checkForUpdates() {
           variant="destructive"
         >
           <Trash2 class="h-4 w-4 mr-1" />
-          Delete Data
+          Delete data
         </Button>
       </div>
     </Card.Content>
