@@ -16,6 +16,7 @@ const downloads = {
   windows: `${releaseBaseUrl}/Kittynode_${version}_x64-setup.exe`,
 } as const;
 
+let currentOS: KnownOS | undefined;
 let downloadHref = "/download";
 let downloadButtonText = "Download now";
 let showFallback = true;
@@ -41,6 +42,8 @@ function setButtonState(os: KnownOS) {
     showFallback = false;
     return;
   }
+
+  currentOS = os;
 }
 
 function detectOS(): KnownOS {
@@ -93,23 +96,25 @@ onMount(() => {
       </p>
       <img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
       <div class="mt-8 flex flex-col items-center gap-4">
-        <Button href={downloadHref} size="lg" class="gap-2">
+        {#if currentOS !== undefined}
+          <Button href={downloadHref} size="lg" class="gap-2">
+            {#if showFallback}
+              {downloadButtonText}
+              <ArrowUpRight class="h-5 w-5" />
+            {:else}
+              <Download class="h-5 w-5" />
+              {downloadButtonText}
+            {/if}
+          </Button>
           {#if showFallback}
-            {downloadButtonText}
-            <ArrowUpRight class="h-5 w-5" />
+            <p class="text-sm text-muted-foreground">
+              Available for Linux, macOS, and Windows.
+            </p>
           {:else}
-            <Download class="h-5 w-5" />
-            {downloadButtonText}
+            <p class="text-sm text-muted-foreground">
+              Need something else? <a href="/download" class="link">See all downloads.</a>
+            </p>
           {/if}
-        </Button>
-        {#if showFallback}
-          <p class="text-sm text-muted-foreground">
-            Available for Linux, macOS, and Windows.
-          </p>
-        {:else}
-          <p class="text-sm text-muted-foreground">
-            Need something else? <a href="/download" class="link">See all downloads.</a>
-          </p>
         {/if}
       </div>
     </div>
