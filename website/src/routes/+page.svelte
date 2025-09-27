@@ -28,7 +28,7 @@ function setButtonState(os: KnownOS) {
     return;
   }
 
-  if (os === "mac" || os === "ios") {
+  if (os === "mac") {
     downloadHref = downloads.mac;
     downloadButtonText = "Download for macOS";
     showFallback = false;
@@ -50,18 +50,7 @@ function detectOS(): KnownOS {
 
   const userAgent = navigator.userAgent.toLowerCase();
 
-  if (userAgent.includes("linux") || userAgent.includes("x11")) {
-    return "linux";
-  }
-
-  if (userAgent.includes("mac") || userAgent.includes("macintosh")) {
-    return "mac";
-  }
-
-  if (userAgent.includes("windows")) {
-    return "windows";
-  }
-
+  // Check mobile signatures first; their UAs also contain desktop keywords.
   if (
     userAgent.includes("iphone") ||
     userAgent.includes("ipad") ||
@@ -72,6 +61,19 @@ function detectOS(): KnownOS {
 
   if (userAgent.includes("android")) {
     return "android";
+  }
+
+  // Ordering from most to least specific.
+  if (userAgent.includes("windows")) {
+    return "windows";
+  }
+
+  if (userAgent.includes("mac") || userAgent.includes("macintosh")) {
+    return "mac";
+  }
+
+  if (userAgent.includes("linux") || userAgent.includes("x11")) {
+    return "linux";
   }
 
   return "unknown";
@@ -94,13 +96,8 @@ onMount(() => {
       <img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
       <div class="mt-8 flex flex-col items-center gap-4">
         <Button href={downloadHref} size="lg" class="gap-2">
-          {#if showFallback}
-            {downloadButtonText}
-            <ArrowUpRight class="h-5 w-5" />
-          {:else}
             <Download class="h-5 w-5" />
-            {downloadButtonText}
-          {/if}
+            {downloadButtonText}}
         </Button>
         {#if showFallback}
           <p class="text-sm text-muted-foreground">
