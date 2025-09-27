@@ -21,10 +21,12 @@ import {
   MessageSquare,
   Github,
   Users,
+  Globe,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { page } from "$app/state";
+import { serverUrlStore } from "$stores/serverUrl.svelte";
 
 const { children } = $props();
 
@@ -34,6 +36,8 @@ const installedState = $derived(packagesStore.installedState);
 const installedNodes = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
+const remoteServerUrl = $derived(serverUrlStore.serverUrl);
+const showRemoteBanner = $derived(remoteServerUrl !== "");
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
@@ -189,6 +193,16 @@ onMount(async () => {
     </Sidebar.Root>
 
     <Sidebar.Inset>
+      {#if showRemoteBanner}
+        <div
+          class="flex items-center gap-3 border-b border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground md:rounded-t-xl"
+          role="status"
+          aria-live="polite"
+        >
+          <Globe class="h-5 w-5 text-primary dark:text-primary-foreground" />
+          <span class="leading-tight">Connected to remote Kittynode</span>
+        </div>
+      {/if}
       <!-- Desktop header with always-visible sidebar toggle -->
       <header class="hidden md:flex h-12 items-center gap-4 border-b px-4">
         <Sidebar.Trigger class="cursor-pointer" />
