@@ -26,21 +26,18 @@ function setButtonState(os: KnownOS) {
     downloadHref = downloads.linux;
     downloadButtonText = "Download .deb for Linux";
     showFallback = false;
-    return;
   }
 
   if (os === "mac" || os === "ios") {
     downloadHref = downloads.mac;
     downloadButtonText = "Download for macOS";
     showFallback = false;
-    return;
   }
 
   if (os === "windows") {
     downloadHref = downloads.windows;
     downloadButtonText = "Download for Windows";
     showFallback = false;
-    return;
   }
 
   currentOS = os;
