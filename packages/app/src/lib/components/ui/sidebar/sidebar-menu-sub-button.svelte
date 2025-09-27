@@ -35,9 +35,9 @@ const mergedProps = $derived({
 </script>
 
 {#if child}
-	{@render child({ props: mergedProps })}
+  {@render child({ props: mergedProps })}
 {:else}
-	<a bind:this={ref} {...mergedProps}>
-		{@render children?.()}
-	</a>
+  <a bind:this={ref} {...mergedProps}>
+    {@render children?.()}
+  </a>
 {/if}

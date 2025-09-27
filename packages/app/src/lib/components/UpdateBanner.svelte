@@ -9,7 +9,9 @@ const handleInstall = () => updates.installUpdate();
 const handleDismiss = () => updates.dismiss();
 </script>
 
-<div class="p-4 mb-4 border rounded-lg bg-muted flex items-center justify-between">
+<div
+  class="p-4 mb-4 border rounded-lg bg-muted flex items-center justify-between"
+>
   <span class="text-sm">
     {#if updates.requiresManualInstall}
       A new version of Kittynode is available! Download it from
@@ -38,21 +40,11 @@ const handleDismiss = () => updates.dismiss();
         <ArrowUpRight class="h-4 w-4" />
       </Button>
     {:else}
-      <Button
-        size="sm"
-        onclick={handleInstall}
-        disabled={updates.isProcessing}
-      >
+      <Button size="sm" onclick={handleInstall} disabled={updates.isProcessing}>
         <Download />
         {updates.isProcessing ? "Installing..." : "Install update"}
       </Button>
     {/if}
-    <Button
-      size="sm"
-      variant="outline"
-      onclick={handleDismiss}
-    >
-      Dismiss
-    </Button>
+    <Button size="sm" variant="outline" onclick={handleDismiss}>Dismiss</Button>
   </div>
 </div>

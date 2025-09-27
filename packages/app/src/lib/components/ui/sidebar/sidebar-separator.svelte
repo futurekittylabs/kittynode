@@ -11,9 +11,9 @@ let {
 </script>
 
 <Separator
-	bind:ref
-	data-slot="sidebar-separator"
-	data-sidebar="separator"
-	class={cn("bg-sidebar-border", className)}
-	{...restProps}
+  bind:ref
+  data-slot="sidebar-separator"
+  data-sidebar="separator"
+  class={cn("bg-sidebar-border", className)}
+  {...restProps}
 />

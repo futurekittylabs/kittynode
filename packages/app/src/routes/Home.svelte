@@ -122,13 +122,10 @@ onDestroy(() => {
 });
 </script>
 
-
 <div class="space-y-6">
   <div>
     <h2 class="text-3xl font-bold tracking-tight">Dashboard</h2>
-    <p class="text-muted-foreground">
-      Manage your node infrastructure
-    </p>
+    <p class="text-muted-foreground">Manage your node infrastructure</p>
   </div>
 
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -136,12 +133,14 @@ onDestroy(() => {
 
     <Card.Root>
       <Card.Header class="pb-3">
-        <Card.Title class="text-sm font-medium flex items-center justify-between">
+        <Card.Title
+          class="text-sm font-medium flex items-center justify-between"
+        >
           Active Packages
           <Package2 class="h-4 w-4 text-muted-foreground" />
         </Card.Title>
       </Card.Header>
-        <Card.Content>
+      <Card.Content>
         <div class="text-2xl font-bold">
           {installedPackageCount ?? "--"}
         </div>
@@ -154,7 +153,9 @@ onDestroy(() => {
     {#if systemInfoStore.systemInfo}
       <Card.Root>
         <Card.Header class="pb-3">
-          <Card.Title class="text-sm font-medium flex items-center justify-between">
+          <Card.Title
+            class="text-sm font-medium flex items-center justify-between"
+          >
             Processor
             <Cpu class="h-4 w-4 text-muted-foreground" />
           </Card.Title>
@@ -171,7 +172,9 @@ onDestroy(() => {
 
       <Card.Root>
         <Card.Header class="pb-3">
-          <Card.Title class="text-sm font-medium flex items-center justify-between">
+          <Card.Title
+            class="text-sm font-medium flex items-center justify-between"
+          >
             Memory
             <HardDrive class="h-4 w-4 text-muted-foreground" />
           </Card.Title>
@@ -180,9 +183,7 @@ onDestroy(() => {
           <div class="text-2xl font-bold">
             {systemInfoStore.systemInfo.memory.totalDisplay}
           </div>
-          <p class="text-xs text-muted-foreground">
-            Total System Memory
-          </p>
+          <p class="text-xs text-muted-foreground">Total System Memory</p>
         </Card.Content>
       </Card.Root>
     {/if}
@@ -194,14 +195,17 @@ onDestroy(() => {
     {#if installedState.status === "loading" || installedState.status === "idle"}
       <Card.Root>
         <Card.Content>
-          <p class="text-sm text-muted-foreground">Checking installed packages...</p>
+          <p class="text-sm text-muted-foreground">
+            Checking installed packages...
+          </p>
         </Card.Content>
       </Card.Root>
     {:else if installedState.status === "unavailable"}
       <Card.Root>
         <Card.Content>
           <p class="text-sm text-muted-foreground">
-            Docker needs to be running to manage installed nodes. Start Docker Desktop to continue.
+            Docker needs to be running to manage installed nodes. Start Docker
+            Desktop to continue.
           </p>
         </Card.Content>
       </Card.Root>
@@ -211,7 +215,11 @@ onDestroy(() => {
           <p class="text-sm text-muted-foreground">
             Failed to load installed packages.
           </p>
-          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+          <Button
+            size="sm"
+            variant="outline"
+            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+          >
             Retry
           </Button>
         </Card.Content>
@@ -230,11 +238,17 @@ onDestroy(() => {
                     {#if runtimeStatus === "running"}
                       <Activity class="w-5 h-5 text-green-500 mt-0.5" />
                     {:else if runtimeStatus === "stopped"}
-                      <PauseCircle class="w-5 h-5 text-amber-500 dark:text-amber-200 mt-0.5" />
+                      <PauseCircle
+                        class="w-5 h-5 text-amber-500 dark:text-amber-200 mt-0.5"
+                      />
                     {:else if runtimeStatus === "checking"}
-                      <Loader2 class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin" />
+                      <Loader2
+                        class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin"
+                      />
                     {:else}
-                      <CircleAlert class="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <CircleAlert
+                        class="w-5 h-5 text-muted-foreground mt-0.5"
+                      />
                     {/if}
                   </div>
                   <div class="min-w-0">
@@ -245,24 +259,48 @@ onDestroy(() => {
                   </div>
                 </div>
                 {#if runtimeStatus === "running"}
-                  <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1 shrink-0">
-                    <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-xs font-medium text-green-700 dark:text-green-400">Running</span>
+                  <div
+                    class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1 shrink-0"
+                  >
+                    <div
+                      class="h-2 w-2 rounded-full bg-green-500 animate-pulse"
+                    ></div>
+                    <span
+                      class="text-xs font-medium text-green-700 dark:text-green-400"
+                      >Running</span
+                    >
                   </div>
                 {:else if runtimeStatus === "stopped"}
-                  <div class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-2 py-1 shrink-0">
-                    <div class="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-200"></div>
-                    <span class="text-xs font-medium text-amber-700 dark:text-amber-200">Stopped</span>
+                  <div
+                    class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-2 py-1 shrink-0"
+                  >
+                    <div
+                      class="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-200"
+                    ></div>
+                    <span
+                      class="text-xs font-medium text-amber-700 dark:text-amber-200"
+                      >Stopped</span
+                    >
                   </div>
                 {:else if runtimeStatus === "checking"}
-                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
-                    <Loader2 class="h-3 w-3 animate-spin text-muted-foreground" />
-                    <span class="text-xs font-medium text-muted-foreground">Checking…</span>
+                  <div
+                    class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0"
+                  >
+                    <Loader2
+                      class="h-3 w-3 animate-spin text-muted-foreground"
+                    />
+                    <span class="text-xs font-medium text-muted-foreground"
+                      >Checking…</span
+                    >
                   </div>
                 {:else}
-                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
+                  <div
+                    class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0"
+                  >
                     <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
-                    <span class="text-xs font-medium text-muted-foreground">Status unknown</span>
+                    <span class="text-xs font-medium text-muted-foreground"
+                      >Status unknown</span
+                    >
                   </div>
                 {/if}
               </div>
@@ -293,11 +331,7 @@ onDestroy(() => {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h3 class="text-xl font-semibold">Available Packages</h3>
-      <Button
-        size="sm"
-        variant="outline"
-        onclick={() => goto('/packages')}
-      >
+      <Button size="sm" variant="outline" onclick={() => goto("/packages")}>
         View All
         <ArrowRight class="h-4 w-4 ml-1" />
       </Button>
@@ -306,8 +340,14 @@ onDestroy(() => {
     {#if catalogState.status === "error"}
       <Card.Root>
         <Card.Content class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">Failed to load available packages.</p>
-          <Button size="sm" variant="outline" onclick={() => packagesStore.loadPackages({ force: true })}>
+          <p class="text-sm text-muted-foreground">
+            Failed to load available packages.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onclick={() => packagesStore.loadPackages({ force: true })}
+          >
             Retry
           </Button>
         </Card.Content>
@@ -315,8 +355,14 @@ onDestroy(() => {
     {:else if installedState.status === "error"}
       <Card.Root>
         <Card.Content class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">Failed to confirm installed packages.</p>
-          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+          <p class="text-sm text-muted-foreground">
+            Failed to confirm installed packages.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+          >
             Retry
           </Button>
         </Card.Content>
@@ -331,7 +377,8 @@ onDestroy(() => {
         </Card.Header>
         <Card.Content>
           <p class="text-sm text-muted-foreground">
-            Docker needs to be running to view and manage packages. Please start Docker Desktop and return to this page.
+            Docker needs to be running to view and manage packages. Please start
+            Docker Desktop and return to this page.
           </p>
         </Card.Content>
       </Card.Root>
@@ -347,7 +394,9 @@ onDestroy(() => {
           {@const status = packagesStore.installationStatus(name)}
           {@const isInstallingPackage = isInstalling(name)}
           {@const disabled =
-            !operationalStateStore.canInstall || status !== "available" || isInstallingPackage}
+            !operationalStateStore.canInstall ||
+            status !== "available" ||
+            isInstallingPackage}
 
           <Card.Root>
             <Card.Header>
@@ -374,11 +423,13 @@ onDestroy(() => {
                     managePackage(name);
                   }
                 }}
-                disabled={disabled}
+                {disabled}
                 class="w-full"
               >
                 {#if isInstallingPackage}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Installing...
                 {:else}
                   <Download class="h-4 w-4 mr-1" />
@@ -392,9 +443,11 @@ onDestroy(() => {
     {:else}
       <Card.Root>
         <Card.Content>
-          <p class="text-center text-muted-foreground">All available packages are installed!</p>
+          <p class="text-center text-muted-foreground">
+            All available packages are installed!
+          </p>
         </Card.Content>
       </Card.Root>
     {/if}
-</div>
+  </div>
 </div>

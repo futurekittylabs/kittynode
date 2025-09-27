@@ -169,8 +169,12 @@ async function initKittynode() {
 
 <canvas class="fixed inset-0 -z-10" bind:this={canvasElement}></canvas>
 
-<main class="relative z-10 flex min-h-svh w-full items-center justify-center px-6 py-10 sm:px-10 sm:py-16">
-  <section class="flex w-full max-w-4xl flex-col rounded-[2rem] border border-border/40 bg-background/90 px-6 py-10 shadow-none backdrop-blur-sm sm:px-12 sm:py-14">
+<main
+  class="relative z-10 flex min-h-svh w-full items-center justify-center px-6 py-10 sm:px-10 sm:py-16"
+>
+  <section
+    class="flex w-full max-w-4xl flex-col rounded-[2rem] border border-border/40 bg-background/90 px-6 py-10 shadow-none backdrop-blur-sm sm:px-12 sm:py-14"
+  >
     <header class="space-y-6 kittynode-onboard-font">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-3">
@@ -179,7 +183,10 @@ async function initKittynode() {
             alt="Kittynode Logo"
             class="h-12 w-12"
           />
-          <span class="kittynode-brand text-[1.9rem] leading-none sm:text-[2.1rem]">Kittynode</span>
+          <span
+            class="kittynode-brand text-[1.9rem] leading-none sm:text-[2.1rem]"
+            >Kittynode</span
+          >
         </div>
       </div>
       <Progress value={progressValue} class="h-1" />
@@ -189,22 +196,28 @@ async function initKittynode() {
       {#if currentStep === 0}
         <div class="flex h-full flex-col justify-center gap-6 text-left">
           <div class="space-y-4">
-            <h1 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">
+            <h1
+              class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"
+            >
               Welcome to Kittynode
             </h1>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Operate the world computer. Secure the Ethereum network and earn rewards.
+              Operate the world computer. Secure the Ethereum network and earn
+              rewards.
             </p>
           </div>
         </div>
       {:else if currentStep === 1}
         <div class="flex h-full flex-col justify-center gap-6 text-left">
           <div class="space-y-4">
-            <h2 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">
+            <h2
+              class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"
+            >
               Install Docker Desktop
             </h2>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Kittynode isolates your node stack inside Docker. Install Docker Desktop before you launch.
+              Kittynode isolates your node stack inside Docker. Install Docker
+              Desktop before you launch.
             </p>
           </div>
         </div>
@@ -212,16 +225,23 @@ async function initKittynode() {
         <div class="flex h-full flex-col justify-center gap-6 text-left">
           <div class="space-y-4">
             <div class="flex items-center gap-3">
-              <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 sm:h-9 sm:w-9">
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 sm:h-9 sm:w-9"
+              >
                 <AlertTriangle class="h-5 w-5" aria-hidden="true" />
               </span>
-              <h2 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]">Warning</h2>
+              <h2
+                class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"
+              >
+                Warning
+              </h2>
             </div>
             <div class="space-y-4 text-base text-muted-foreground sm:text-lg">
               <p>
-                Kittynode has <strong>not been audited</strong>, and may not be using audited subcomponents at this time. It is
-                <strong>not recommended for mainnet validators</strong>.
-                For guidance on mainnet validators please visit
+                Kittynode has <strong>not been audited</strong>, and may not be
+                using audited subcomponents at this time. It is
+                <strong>not recommended for mainnet validators</strong>. For
+                guidance on mainnet validators please visit
                 <a
                   class="link inline-flex items-center gap-1 font-medium"
                   href="https://ethereum.org/staking/solo"
@@ -232,19 +252,17 @@ async function initKittynode() {
                   <ArrowUpRight class="h-4 w-4" />
                 </a>.
               </p>
-              <p>
-                Thank you for giving Kittynode a try.
-              </p>
-              <p>
-                &mdash; dionysuz.eth
-              </p>
+              <p>Thank you for giving Kittynode a try.</p>
+              <p>&mdash; dionysuz.eth</p>
             </div>
           </div>
         </div>
       {/if}
     </div>
 
-    <footer class="kittynode-onboard-font mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <footer
+      class="kittynode-onboard-font mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <span class="text-sm text-muted-foreground">
           Step {currentStep + 1} of {totalSteps}
@@ -271,7 +289,11 @@ async function initKittynode() {
           Back
         </Button>
         {#if isLastStep}
-          <Button onclick={initKittynode} disabled={isInitializing} class="min-w-[104px]">
+          <Button
+            onclick={initKittynode}
+            disabled={isInitializing}
+            class="min-w-[104px]"
+          >
             {#if isInitializing}
               Launching...
             {:else}
@@ -279,9 +301,7 @@ async function initKittynode() {
             {/if}
           </Button>
         {:else}
-          <Button onclick={nextStep} class="min-w-[104px]">
-            Next
-          </Button>
+          <Button onclick={nextStep} class="min-w-[104px]">Next</Button>
         {/if}
       </div>
     </footer>

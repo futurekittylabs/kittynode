@@ -111,7 +111,8 @@ onMount(async () => {
             {#each navigationItems as item}
               <Sidebar.MenuItem>
                 <Sidebar.MenuButton
-                  isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
+                  isActive={currentPath === item.href ||
+                    currentPath.startsWith(item.href + "/")}
                 >
                   {#snippet child({ props })}
                     <a href={item.href} {...props}>
@@ -207,5 +208,5 @@ onMount(async () => {
         </div>
       </div>
     </Sidebar.Inset>
-</Sidebar.Provider>
+  </Sidebar.Provider>
 {/if}

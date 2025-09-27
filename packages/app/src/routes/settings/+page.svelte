@@ -251,9 +251,7 @@ async function checkForUpdates() {
         <Globe class="h-5 w-5" />
         Network
       </Card.Title>
-      <Card.Description>
-        Connect Kittynode to a remote server
-      </Card.Description>
+      <Card.Description>Connect Kittynode to a remote server</Card.Description>
     </Card.Header>
     <Card.Content class="space-y-4">
       <!-- Remote Server -->
@@ -284,7 +282,9 @@ async function checkForUpdates() {
               class="gap-2"
             >
               {#if remoteInlineLoading && remoteInlineAction === "disconnect"}
-                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <div
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                ></div>
               {:else}
                 <Unlink class="h-4 w-4" />
               {/if}
@@ -298,7 +298,9 @@ async function checkForUpdates() {
               class="gap-2"
             >
               {#if remoteInlineLoading && remoteInlineAction === "connect"}
-                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <div
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                ></div>
               {:else}
                 <Link2 class="h-4 w-4" />
               {/if}
@@ -311,10 +313,13 @@ async function checkForUpdates() {
         <Dialog.Content>
           <Dialog.Header>
             <Dialog.Title>
-              {remoteServerConnected ? "Manage remote connection" : "Connect to remote server"}
+              {remoteServerConnected
+                ? "Manage remote connection"
+                : "Connect to remote server"}
             </Dialog.Title>
             <Dialog.Description>
-              Enter the server URL you want Kittynode to use when operating remotely.
+              Enter the server URL you want Kittynode to use when operating
+              remotely.
             </Dialog.Description>
           </Dialog.Header>
           <div class="space-y-4">
@@ -351,7 +356,9 @@ async function checkForUpdates() {
               class="gap-2"
             >
               {#if remoteDialogLoading && remoteDialogAction === "connect"}
-                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <div
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                ></div>
               {:else}
                 <Link2 class="h-4 w-4" />
               {/if}
@@ -395,7 +402,9 @@ async function checkForUpdates() {
             onCheckedChange={handleAutoStartDockerChange}
             disabled={!configInitialized || updatingAutoStartDocker}
             aria-labelledby="auto-start-docker-label"
-            aria-describedby={platform() === "linux" ? "auto-start-docker-helper" : undefined}
+            aria-describedby={platform() === "linux"
+              ? "auto-start-docker-helper"
+              : undefined}
           />
         {/if}
       </div>
@@ -404,7 +413,8 @@ async function checkForUpdates() {
           id="auto-start-docker-helper"
           class="mt-3 text-xs text-muted-foreground"
         >
-          Enabling this may prompt for your system password the next time Kittynode starts.
+          Enabling this may prompt for your system password the next time
+          Kittynode starts.
         </p>
       {/if}
     </Card.Content>
@@ -417,9 +427,7 @@ async function checkForUpdates() {
         <Sun class="h-5 w-5" />
         Appearance
       </Card.Title>
-      <Card.Description>
-        Customize how Kittynode looks
-      </Card.Description>
+      <Card.Description>Customize how Kittynode looks</Card.Description>
     </Card.Header>
     <Card.Content>
       <div class="flex items-center justify-between">
@@ -432,7 +440,8 @@ async function checkForUpdates() {
         <Select.Root
           type="single"
           bind:value={currentTheme}
-          onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
+          onValueChange={(value) =>
+            setMode(value as "light" | "dark" | "system")}
         >
           <Select.Trigger class="w-[140px]">
             <div class="flex items-center gap-2">
@@ -521,7 +530,9 @@ async function checkForUpdates() {
                 class="gap-2"
               >
                 {#if updates.isChecking}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Checking...
                 {:else}
                   Open Downloads
@@ -536,10 +547,14 @@ async function checkForUpdates() {
                 disabled={updates.isProcessing || updates.isChecking}
               >
                 {#if updates.isProcessing}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Updating...
                 {:else if updates.isChecking}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Checking...
                 {:else}
                   <Download class="h-4 w-4 mr-1" />
@@ -554,7 +569,9 @@ async function checkForUpdates() {
                 disabled={updates.isChecking}
               >
                 {#if updates.isChecking}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Checking...
                 {:else}
                   Check Now
@@ -566,8 +583,6 @@ async function checkForUpdates() {
       </Card.Content>
     </Card.Root>
   {/if}
-
-
 
   <!-- Danger Zone -->
   <Card.Root class="border-destructive/50">

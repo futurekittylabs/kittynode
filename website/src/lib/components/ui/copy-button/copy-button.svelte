@@ -35,39 +35,39 @@ const clipboard = new UseClipboard();
 </script>
 
 <Button
-	{...rest}
-	bind:ref
-	{variant}
-	{size}
-	{tabindex}
-	class={cn('flex items-center gap-2', className)}
-	type="button"
-	name="copy"
-	onclick={async () => {
-		const status = await clipboard.copy(text);
+  {...rest}
+  bind:ref
+  {variant}
+  {size}
+  {tabindex}
+  class={cn("flex items-center gap-2", className)}
+  type="button"
+  name="copy"
+  onclick={async () => {
+    const status = await clipboard.copy(text);
 
-		onCopy?.(status);
-	}}
+    onCopy?.(status);
+  }}
 >
-	{#if clipboard.status === 'success'}
-		<div in:scale={{ duration: animationDuration, start: 0.85 }}>
-			<CheckIcon tabindex={-1} />
-			<span class="sr-only">Copied</span>
-		</div>
-	{:else if clipboard.status === 'failure'}
-		<div in:scale={{ duration: animationDuration, start: 0.85 }}>
-			<XIcon tabindex={-1} />
-			<span class="sr-only">Failed to copy</span>
-		</div>
-	{:else}
-		<div in:scale={{ duration: animationDuration, start: 0.85 }}>
-			{#if icon}
-				{@render icon()}
-			{:else}
-				<CopyIcon tabindex={-1} />
-			{/if}
-			<span class="sr-only">Copy</span>
-		</div>
-	{/if}
-	{@render children?.()}
+  {#if clipboard.status === "success"}
+    <div in:scale={{ duration: animationDuration, start: 0.85 }}>
+      <CheckIcon tabindex={-1} />
+      <span class="sr-only">Copied</span>
+    </div>
+  {:else if clipboard.status === "failure"}
+    <div in:scale={{ duration: animationDuration, start: 0.85 }}>
+      <XIcon tabindex={-1} />
+      <span class="sr-only">Failed to copy</span>
+    </div>
+  {:else}
+    <div in:scale={{ duration: animationDuration, start: 0.85 }}>
+      {#if icon}
+        {@render icon()}
+      {:else}
+        <CopyIcon tabindex={-1} />
+      {/if}
+      <span class="sr-only">Copy</span>
+    </div>
+  {/if}
+  {@render children?.()}
 </Button>
