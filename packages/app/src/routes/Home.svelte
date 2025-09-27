@@ -240,7 +240,7 @@ onDestroy(() => {
                   <div class="min-w-0">
                     <Card.Title class="text-base">{pkg.name}</Card.Title>
                     <Card.Description class="mt-1">
-                      {pkg.description}
+                      Manage your {pkg.name} node.
                     </Card.Description>
                   </div>
                 </div>
