@@ -17,11 +17,10 @@ import {
   Play,
   Square,
   Activity,
+  Globe,
   Settings,
   FileText,
   CircleAlert,
-  Wifi,
-  WifiOff,
   PauseCircle,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
@@ -245,9 +244,9 @@ onDestroy(() => {
               <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
             </div>
           {:else if statusKind === "stopped"}
-            <div class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5">
-              <PauseCircle class="h-4 w-4 text-muted-foreground" />
-              <span class="text-sm font-medium text-muted-foreground">Stopped</span>
+            <div class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-3 py-1.5">
+              <PauseCircle class="h-4 w-4 text-amber-500 dark:text-amber-200" />
+              <span class="text-sm font-medium text-amber-700 dark:text-amber-200">Stopped</span>
             </div>
           {:else}
             <div class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5">
@@ -308,53 +307,14 @@ onDestroy(() => {
       </Card.Root>
     {:else}
       <!-- Quick Actions -->
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Card.Root>
-        <Card.Header class="pb-3">
-          <Card.Title class="text-sm font-medium">Node Status</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          {#if statusKind === "stopping"}
-            <div class="flex items-center space-x-2 text-amber-700 dark:text-amber-200">
-              <div class="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
-              <span class="text-sm font-medium">Stopping…</span>
-            </div>
-          {:else if statusKind === "starting"}
-            <div class="flex items-center space-x-2 text-emerald-700 dark:text-emerald-200">
-              <div class="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
-              <span class="text-sm font-medium">Starting…</span>
-            </div>
-          {:else if statusKind === "checking"}
-            <div class="flex items-center space-x-2 text-muted-foreground">
-              <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              <span class="text-sm font-medium">Checking status...</span>
-            </div>
-          {:else if statusKind === "running"}
-            <div class="flex items-center space-x-2">
-              <Wifi class="h-4 w-4 text-green-500" />
-              <span class="text-sm font-medium">Running</span>
-            </div>
-          {:else if statusKind === "stopped"}
-            <div class="flex items-center space-x-2">
-              <WifiOff class="h-4 w-4 text-muted-foreground" />
-              <span class="text-sm font-medium">Stopped</span>
-            </div>
-          {:else}
-            <div class="flex items-center space-x-2 text-muted-foreground">
-              <CircleAlert class="h-4 w-4" />
-              <span class="text-sm font-medium">Status unavailable</span>
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-
+      <div class="grid gap-4 sm:grid-cols-2">
         <Card.Root>
           <Card.Header class="pb-3">
             <Card.Title class="text-sm font-medium">Network</Card.Title>
           </Card.Header>
           <Card.Content>
             <div class="flex items-center space-x-2">
-              <Activity class="h-4 w-4 text-muted-foreground" />
+              <Globe class="h-4 w-4 text-muted-foreground" />
               <span class="text-sm font-medium">{currentNetworkDisplay}</span>
             </div>
           </Card.Content>
@@ -364,66 +324,66 @@ onDestroy(() => {
           <Card.Header class="pb-3">
             <Card.Title class="text-sm font-medium">Actions</Card.Title>
           </Card.Header>
-        <Card.Content class="space-y-2">
-          {#if statusKind === "checking"}
-            <Button size="sm" variant="outline" disabled class="w-full">
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              Checking status...
-            </Button>
-          {:else if statusKind === "stopping"}
-            <Button size="sm" variant="outline" disabled class="w-full border-amber-200 text-amber-700 dark:border-amber-400/40 dark:text-amber-200">
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
-              Stopping…
-            </Button>
-          {:else if statusKind === "starting"}
-            <Button size="sm" variant="outline" disabled class="w-full border-emerald-200 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-200">
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
-              Starting…
-            </Button>
-          {:else if runtime.status === "running"}
-            <Button
-              size="sm"
-              variant="outline"
-              class="w-full border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-400/40 dark:text-amber-200 dark:hover:bg-amber-400/10"
-              onclick={stopNode}
-              disabled={!canStopNode}
-            >
-              <Square class="h-4 w-4 mr-1" />
-              Stop Node
-            </Button>
-          {:else if runtime.status === "stopped"}
-            <Button
-              size="sm"
-              variant="outline"
-              class="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/40 dark:text-emerald-200 dark:hover:bg-emerald-400/10"
-              onclick={resumeNode}
-              disabled={!canResumeNode}
-            >
-              <Play class="h-4 w-4 mr-1" />
-              Resume Node
-            </Button>
-          {:else}
-            <Button size="sm" variant="outline" disabled class="w-full">
-              Status unavailable
-            </Button>
-          {/if}
-          <Button
-            size="sm"
-            variant="destructive"
-            onclick={() => handleDeletePackage(pkg.name)}
-            disabled={isDeletingPackage}
-            class="w-full"
-          >
-            {#if isDeletingPackage}
-              <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              Deleting...
+          <Card.Content class="space-y-2">
+            {#if statusKind === "checking"}
+              <Button size="sm" variant="outline" disabled class="w-full">
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Checking status...
+              </Button>
+            {:else if statusKind === "stopping"}
+              <Button size="sm" variant="outline" disabled class="w-full border-amber-200 text-amber-700 dark:border-amber-400/40 dark:text-amber-200">
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+                Stopping…
+              </Button>
+            {:else if statusKind === "starting"}
+              <Button size="sm" variant="outline" disabled class="w-full border-emerald-200 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-200">
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+                Starting…
+              </Button>
+            {:else if runtime.status === "running"}
+              <Button
+                size="sm"
+                variant="outline"
+                class="w-full border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-400/40 dark:text-amber-200 dark:hover:bg-amber-400/10"
+                onclick={stopNode}
+                disabled={!canStopNode}
+              >
+                <Square class="h-4 w-4 mr-1" />
+                Stop Node
+              </Button>
+            {:else if runtime.status === "stopped"}
+              <Button
+                size="sm"
+                variant="outline"
+                class="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/40 dark:text-emerald-200 dark:hover:bg-emerald-400/10"
+                onclick={resumeNode}
+                disabled={!canResumeNode}
+              >
+                <Play class="h-4 w-4 mr-1" />
+                Resume Node
+              </Button>
             {:else}
-              <Trash2 class="h-4 w-4 mr-1" />
-              Delete Node
+              <Button size="sm" variant="outline" disabled class="w-full">
+                Status unavailable
+              </Button>
             {/if}
-          </Button>
-        </Card.Content>
-      </Card.Root>
+            <Button
+              size="sm"
+              variant="destructive"
+              onclick={() => handleDeletePackage(pkg.name)}
+              disabled={isDeletingPackage}
+              class="w-full"
+            >
+              {#if isDeletingPackage}
+                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Deleting...
+              {:else}
+                <Trash2 class="h-4 w-4 mr-1" />
+                Delete Node
+              {/if}
+            </Button>
+          </Card.Content>
+        </Card.Root>
       </div>
 
       <!-- Configuration -->
