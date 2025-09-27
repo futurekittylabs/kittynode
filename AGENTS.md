@@ -21,6 +21,8 @@ git clone git@github.com:futurekittylabs/kittynode.git && cd kittynode
 just setup
 ```
 
+- When working in a freshly created worktree, run `bun install` in each workspace before executing commands like `just lint-js`.
+
 ## Command Reference
 
 - For the most up-to-date list of commands, run `just -l` or check the justfile directly.
