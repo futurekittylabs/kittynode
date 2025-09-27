@@ -6,6 +6,10 @@ build:
 build-app:
   cargo tauri build
 
+# clear tmp
+clean:
+  rm -rf tmp && mkdir tmp
+
 # start the docs dev server
 docs:
   bun --cwd docs dev --open
