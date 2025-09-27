@@ -212,7 +212,6 @@ onDestroy(() => {
 });
 </script>
 
-
 {#if pkg}
   <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
     <!-- Header -->
@@ -224,34 +223,68 @@ onDestroy(() => {
       {#if isInstalled}
         <div class="flex items-center space-x-2">
           {#if statusKind === "stopping"}
-            <div class="flex items-center space-x-2 rounded-full bg-amber-500/10 px-3 py-1.5">
-              <div class="h-3 w-3 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
-              <span class="text-sm font-medium text-amber-700 dark:text-amber-200">Stopping…</span>
+            <div
+              class="flex items-center space-x-2 rounded-full bg-amber-500/10 px-3 py-1.5"
+            >
+              <div
+                class="h-3 w-3 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"
+              ></div>
+              <span
+                class="text-sm font-medium text-amber-700 dark:text-amber-200"
+                >Stopping…</span
+              >
             </div>
           {:else if statusKind === "starting"}
-            <div class="flex items-center space-x-2 rounded-full bg-emerald-500/10 px-3 py-1.5">
-              <div class="h-3 w-3 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
-              <span class="text-sm font-medium text-emerald-700 dark:text-emerald-200">Starting…</span>
+            <div
+              class="flex items-center space-x-2 rounded-full bg-emerald-500/10 px-3 py-1.5"
+            >
+              <div
+                class="h-3 w-3 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+              ></div>
+              <span
+                class="text-sm font-medium text-emerald-700 dark:text-emerald-200"
+                >Starting…</span
+              >
             </div>
           {:else if statusKind === "checking"}
-            <div class="flex items-center space-x-2 rounded-full bg-muted px-3 py-1.5">
-              <div class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              <span class="text-sm font-medium text-muted-foreground">Checking status</span>
+            <div
+              class="flex items-center space-x-2 rounded-full bg-muted px-3 py-1.5"
+            >
+              <div
+                class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              ></div>
+              <span class="text-sm font-medium text-muted-foreground"
+                >Checking status</span
+              >
             </div>
           {:else if statusKind === "running"}
-            <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5">
+            <div
+              class="flex items-center space-x-1 rounded-full bg-green-500/10 px-3 py-1.5"
+            >
               <Activity class="h-4 w-4 text-green-500 animate-pulse" />
-              <span class="text-sm font-medium text-green-700 dark:text-green-400">Running</span>
+              <span
+                class="text-sm font-medium text-green-700 dark:text-green-400"
+                >Running</span
+              >
             </div>
           {:else if statusKind === "stopped"}
-            <div class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-3 py-1.5">
+            <div
+              class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-3 py-1.5"
+            >
               <PauseCircle class="h-4 w-4 text-amber-500 dark:text-amber-200" />
-              <span class="text-sm font-medium text-amber-700 dark:text-amber-200">Stopped</span>
+              <span
+                class="text-sm font-medium text-amber-700 dark:text-amber-200"
+                >Stopped</span
+              >
             </div>
           {:else}
-            <div class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5">
+            <div
+              class="flex items-center space-x-1 rounded-full bg-muted px-3 py-1.5"
+            >
               <CircleAlert class="h-4 w-4 text-muted-foreground" />
-              <span class="text-sm font-medium text-muted-foreground">Status unknown</span>
+              <span class="text-sm font-medium text-muted-foreground"
+                >Status unknown</span
+              >
             </div>
           {/if}
         </div>
@@ -272,7 +305,11 @@ onDestroy(() => {
           <p class="text-sm text-muted-foreground">
             Failed to load node status.
           </p>
-          <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+          <Button
+            size="sm"
+            variant="outline"
+            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+          >
             Retry
           </Button>
         </Card.Content>
@@ -296,7 +333,8 @@ onDestroy(() => {
         <Card.Header>
           <Card.Title>Node Not Installed</Card.Title>
           <Card.Description>
-            This node package is not currently installed. Visit the Package Store to install it.
+            This node package is not currently installed. Visit the Package
+            Store to install it.
           </Card.Description>
         </Card.Header>
         <Card.Footer>
@@ -327,17 +365,33 @@ onDestroy(() => {
           <Card.Content class="space-y-2">
             {#if statusKind === "checking"}
               <Button size="sm" variant="outline" disabled class="w-full">
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <div
+                  class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                ></div>
                 Checking status...
               </Button>
             {:else if statusKind === "stopping"}
-              <Button size="sm" variant="outline" disabled class="w-full border-amber-200 text-amber-700 dark:border-amber-400/40 dark:text-amber-200">
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled
+                class="w-full border-amber-200 text-amber-700 dark:border-amber-400/40 dark:text-amber-200"
+              >
+                <div
+                  class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"
+                ></div>
                 Stopping…
               </Button>
             {:else if statusKind === "starting"}
-              <Button size="sm" variant="outline" disabled class="w-full border-emerald-200 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-200">
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled
+                class="w-full border-emerald-200 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-200"
+              >
+                <div
+                  class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+                ></div>
                 Starting…
               </Button>
             {:else if runtime.status === "running"}
@@ -375,7 +429,9 @@ onDestroy(() => {
               class="w-full"
             >
               {#if isDeletingPackage}
-                <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <div
+                  class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                ></div>
                 Deleting...
               {:else}
                 <Trash2 class="h-4 w-4 mr-1" />
@@ -398,10 +454,20 @@ onDestroy(() => {
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          <form class="space-y-4" onsubmit={(e) => { e.preventDefault(); updateConfig(); }}>
+          <form
+            class="space-y-4"
+            onsubmit={(e) => {
+              e.preventDefault();
+              updateConfig();
+            }}
+          >
             <div class="space-y-2">
               <label for="network" class="text-sm font-medium">Network</label>
-              <Select.Root type="single" name="network" bind:value={selectedNetwork}>
+              <Select.Root
+                type="single"
+                name="network"
+                bind:value={selectedNetwork}
+              >
                 <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
                   {networkTriggerContent}
                 </Select.Trigger>
@@ -442,17 +508,17 @@ onDestroy(() => {
           <div class="flex flex-wrap gap-2">
             <Button
               size="sm"
-              variant={activeLogType === 'execution' ? 'default' : 'outline'}
-              onclick={() => toggleLogs('execution')}
+              variant={activeLogType === "execution" ? "default" : "outline"}
+              onclick={() => toggleLogs("execution")}
             >
-              {activeLogType === 'execution' ? 'Hide' : 'Show'} Execution Logs
+              {activeLogType === "execution" ? "Hide" : "Show"} Execution Logs
             </Button>
             <Button
               size="sm"
-              variant={activeLogType === 'consensus' ? 'default' : 'outline'}
-              onclick={() => toggleLogs('consensus')}
+              variant={activeLogType === "consensus" ? "default" : "outline"}
+              onclick={() => toggleLogs("consensus")}
             >
-              {activeLogType === 'consensus' ? 'Hide' : 'Show'} Consensus Logs
+              {activeLogType === "consensus" ? "Hide" : "Show"} Consensus Logs
             </Button>
           </div>
 
@@ -461,10 +527,15 @@ onDestroy(() => {
               <div class="text-sm text-muted-foreground">
                 {activeLogSource.description}:
               </div>
-              <DockerLogs containerName={activeLogSource.containerName} tailLines={1000} />
+              <DockerLogs
+                containerName={activeLogSource.containerName}
+                tailLines={1000}
+              />
             </div>
           {:else}
-            <div class="rounded-lg border border-dashed bg-muted/30 py-10 text-center text-muted-foreground">
+            <div
+              class="rounded-lg border border-dashed bg-muted/30 py-10 text-center text-muted-foreground"
+            >
               Select a log type to view real-time logs
             </div>
           {/if}

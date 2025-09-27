@@ -62,7 +62,9 @@ onMount(() => {
   </div>
 
   <div class="relative">
-    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <Search
+      class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+    />
     <input
       type="text"
       placeholder="Search packages..."
@@ -75,7 +77,11 @@ onMount(() => {
     <Card.Root>
       <Card.Content class="flex items-center justify-between">
         <p class="text-sm text-muted-foreground">Failed to load packages.</p>
-        <Button size="sm" variant="outline" onclick={() => packagesStore.loadPackages({ force: true })}>
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={() => packagesStore.loadPackages({ force: true })}
+        >
           Retry
         </Button>
       </Card.Content>
@@ -83,8 +89,14 @@ onMount(() => {
   {:else if installedState.status === "error"}
     <Card.Root>
       <Card.Content class="flex items-center justify-between">
-        <p class="text-sm text-muted-foreground">Failed to confirm installed packages.</p>
-        <Button size="sm" variant="outline" onclick={() => packagesStore.loadInstalledPackages({ force: true })}>
+        <p class="text-sm text-muted-foreground">
+          Failed to confirm installed packages.
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+        >
           Retry
         </Button>
       </Card.Content>
@@ -99,7 +111,8 @@ onMount(() => {
       </Card.Header>
       <Card.Content>
         <p class="text-sm">
-          Docker needs to be running to install packages. Please start Docker Desktop.
+          Docker needs to be running to install packages. Please start Docker
+          Desktop.
         </p>
       </Card.Content>
     </Card.Root>
@@ -128,9 +141,14 @@ onMount(() => {
                 </div>
               </div>
               {#if status === "installed"}
-                <div class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1">
+                <div
+                  class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1"
+                >
                   <CircleCheck class="h-3 w-3 text-green-500" />
-                  <span class="text-xs font-medium text-green-700 dark:text-green-400">Installed</span>
+                  <span
+                    class="text-xs font-medium text-green-700 dark:text-green-400"
+                    >Installed</span
+                  >
                 </div>
               {/if}
             </div>
@@ -157,11 +175,14 @@ onMount(() => {
                     managePackage(name);
                   }
                 }}
-                disabled={!operationalStateStore.canInstall || isInstallingPackage}
+                disabled={!operationalStateStore.canInstall ||
+                  isInstallingPackage}
                 class="w-full"
               >
                 {#if isInstallingPackage}
-                  <div class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  <div
+                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  ></div>
                   Installing...
                 {:else}
                   <Download class="h-4 w-4 mr-1" />
@@ -181,7 +202,9 @@ onMount(() => {
     <Card.Root>
       <Card.Content>
         <p class="text-center text-muted-foreground">
-          {searchQuery ? "No packages found matching your search." : "No packages available."}
+          {searchQuery
+            ? "No packages found matching your search."
+            : "No packages available."}
         </p>
       </Card.Content>
     </Card.Root>

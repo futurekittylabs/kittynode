@@ -7,6 +7,8 @@
     "website"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.2.4"
+    "@biomejs/biome": "^2.2.4",
+    "prettier": "^3.6.2",
+    "prettier-plugin-svelte": "^3.4.0"
   }
 }

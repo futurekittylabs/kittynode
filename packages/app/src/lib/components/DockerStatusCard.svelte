@@ -33,7 +33,9 @@ const loading = $derived(operationalStateStore.loading && !state);
       {:else}
         <CircleAlert class="h-4 w-4 text-yellow-500" />
         <span class="text-sm font-medium">
-          {state?.mode === "remote" ? "Remote Docker unavailable" : "Not running"}
+          {state?.mode === "remote"
+            ? "Remote Docker unavailable"
+            : "Not running"}
         </span>
       {/if}
     </div>

@@ -48,11 +48,7 @@ onMount(() => {
         Monitor your system resources and capabilities
       </p>
     </div>
-    <Button 
-      size="sm" 
-      variant="outline"
-      onclick={fetchSystemInfo}
-    >
+    <Button size="sm" variant="outline" onclick={fetchSystemInfo}>
       <RefreshCw class="h-4 w-4 mr-1" />
       Refresh
     </Button>
@@ -113,21 +109,29 @@ onMount(() => {
         </Card.Header>
         <Card.Content class="space-y-2">
           <div>
-            <p class="text-sm font-medium">{systemInfoStore.systemInfo.processor.name}</p>
+            <p class="text-sm font-medium">
+              {systemInfoStore.systemInfo.processor.name}
+            </p>
           </div>
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-muted-foreground">Cores</p>
-              <p class="font-medium">{systemInfoStore.systemInfo.processor.cores}</p>
+              <p class="font-medium">
+                {systemInfoStore.systemInfo.processor.cores}
+              </p>
             </div>
             <div>
               <p class="text-muted-foreground">Frequency</p>
-              <p class="font-medium">{systemInfoStore.systemInfo.processor.frequencyGhz.toFixed(2)} GHz</p>
+              <p class="font-medium">
+                {systemInfoStore.systemInfo.processor.frequencyGhz.toFixed(2)} GHz
+              </p>
             </div>
           </div>
           <div>
             <p class="text-sm text-muted-foreground">Architecture</p>
-            <p class="text-sm font-medium">{systemInfoStore.systemInfo.processor.architecture}</p>
+            <p class="text-sm font-medium">
+              {systemInfoStore.systemInfo.processor.architecture}
+            </p>
           </div>
         </Card.Content>
       </Card.Root>
@@ -142,7 +146,9 @@ onMount(() => {
         <Card.Content class="space-y-2">
           <div>
             <p class="text-sm text-muted-foreground">Total System Memory</p>
-            <p class="text-2xl font-bold">{systemInfoStore.systemInfo.memory.totalDisplay}</p>
+            <p class="text-2xl font-bold">
+              {systemInfoStore.systemInfo.memory.totalDisplay}
+            </p>
           </div>
           <div class="pt-2">
             <p class="text-xs text-muted-foreground">
@@ -168,7 +174,7 @@ onMount(() => {
         {#each systemInfoStore.systemInfo.storage.disks as disk}
           {@const usagePercent = calculateUsagePercentage(
             disk.totalBytes - disk.availableBytes,
-            disk.totalBytes
+            disk.totalBytes,
           )}
           <div class="space-y-2">
             <div class="flex items-center justify-between">

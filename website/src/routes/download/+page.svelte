@@ -77,112 +77,145 @@ const cliInstallCommand = "cargo install kittynode-cli";
 </script>
 
 <div class="container max-w-6xl mx-auto px-6 py-16">
-	<!-- Header -->
-	<div class="mb-8 text-center">
-		<h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>
-		<p class="text-sm text-muted-foreground mb-4">Version {version} • {releaseDate}</p>
-		<a href="{baseUrl}/releases" class="link text-sm">
-			View changelog
-		</a>
-	</div>
-	<!-- Download cards -->
-	<div class="grid gap-4 min-[900px]:grid-cols-3">
-		{#each downloads as info}
-			<div class="rounded-lg border bg-card p-5">
-				<div class="flex items-center gap-3 mb-4">
-					<div class="p-1.5 rounded-md bg-muted">
-						<svelte:component this={info.icon} class="h-5 w-5" />
-					</div>
-					<div>
-						<h2 class="text-base font-medium">{info.name}</h2>
-						<p class="text-xs text-muted-foreground">{info.requirements}</p>
-					</div>
-				</div>
+  <!-- Header -->
+  <div class="mb-8 text-center">
+    <h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>
+    <p class="text-sm text-muted-foreground mb-4">
+      Version {version} • {releaseDate}
+    </p>
+    <a href="{baseUrl}/releases" class="link text-sm"> View changelog </a>
+  </div>
+  <!-- Download cards -->
+  <div class="grid gap-4 min-[900px]:grid-cols-3">
+    {#each downloads as info}
+      <div class="rounded-lg border bg-card p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="p-1.5 rounded-md bg-muted">
+            <svelte:component this={info.icon} class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-medium">{info.name}</h2>
+            <p class="text-xs text-muted-foreground">{info.requirements}</p>
+          </div>
+        </div>
 
-				<div class="space-y-2">
-					{#if info.primary}
-						<Button href={info.primary.url} size="sm" class="w-full gap-2" variant="default">
-							<Download class="h-3.5 w-3.5" />
-							{info.primary.label}
-						</Button>
-					{/if}
+        <div class="space-y-2">
+          {#if info.primary}
+            <Button
+              href={info.primary.url}
+              size="sm"
+              class="w-full gap-2"
+              variant="default"
+            >
+              <Download class="h-3.5 w-3.5" />
+              {info.primary.label}
+            </Button>
+          {/if}
 
-					{#if info.options && info.options.length > 0}
-						{#if info.layout === "stacked"}
-							{#each info.options as option}
-								<Button href={option.url} size="sm" class="w-full gap-2" variant="outline">
-									<Download class="h-3.5 w-3.5" />
-									{option.label}
-								</Button>
-							{/each}
-						{:else}
-							<div class="flex gap-2">
-								{#each info.options as option}
-									<Button href={option.url} size="sm" variant="outline" class="flex-1 gap-2">
-										<Download class="h-3.5 w-3.5" />
-										{option.label}
-									</Button>
-								{/each}
-							</div>
-						{/if}
-					{/if}
-				</div>
-			</div>
-		{/each}
-	</div>
+          {#if info.options && info.options.length > 0}
+            {#if info.layout === "stacked"}
+              {#each info.options as option}
+                <Button
+                  href={option.url}
+                  size="sm"
+                  class="w-full gap-2"
+                  variant="outline"
+                >
+                  <Download class="h-3.5 w-3.5" />
+                  {option.label}
+                </Button>
+              {/each}
+            {:else}
+              <div class="flex gap-2">
+                {#each info.options as option}
+                  <Button
+                    href={option.url}
+                    size="sm"
+                    variant="outline"
+                    class="flex-1 gap-2"
+                  >
+                    <Download class="h-3.5 w-3.5" />
+                    {option.label}
+                  </Button>
+                {/each}
+              </div>
+            {/if}
+          {/if}
+        </div>
+      </div>
+    {/each}
+  </div>
 
+  <div class="mt-10 overflow-hidden rounded-lg border bg-card">
+    <div class="grid min-[900px]:grid-cols-[1.4fr_1fr]">
+      <div class="flex flex-col gap-4 px-6 py-6">
+        <div class="flex items-center gap-3">
+          <div class="rounded-md bg-muted p-2">
+            <Terminal class="h-5 w-5" />
+          </div>
+          <h2 class="text-lg font-semibold">Kittynode CLI</h2>
+        </div>
+        <p class="text-sm text-muted-foreground">
+          Manage your node infrastructure directly from the terminal.
+        </p>
+      </div>
+      <div
+        class="border-t border-t-border bg-muted/30 px-6 py-6 min-[900px]:border-t-0 min-[900px]:border-l min-[900px]:border-l-border"
+      >
+        <p
+          class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+        >
+          Install with Cargo
+        </p>
+        <div
+          class="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-background/80 px-3 py-2 font-mono text-sm"
+        >
+          <span class="truncate pl-1">{cliInstallCommand}</span>
+          <CopyButton
+            aria-label="Copy install command"
+            text={cliInstallCommand}
+          />
+        </div>
+        <p class="mt-4 text-xs text-muted-foreground">
+          Prerequisite: Install Rust from <a
+            href="https://rustup.rs"
+            class="link">rustup.rs</a
+          >.
+        </p>
+      </div>
+    </div>
+  </div>
 
-	<div class="mt-10 overflow-hidden rounded-lg border bg-card">
-		<div class="grid min-[900px]:grid-cols-[1.4fr_1fr]">
-			<div class="flex flex-col gap-4 px-6 py-6">
-				<div class="flex items-center gap-3">
-					<div class="rounded-md bg-muted p-2">
-						<Terminal class="h-5 w-5" />
-					</div>
-					<h2 class="text-lg font-semibold">Kittynode CLI</h2>
-				</div>
-				<p class="text-sm text-muted-foreground">
-					Manage your node infrastructure directly from the terminal.
-				</p>
-			</div>
-			<div class="border-t border-t-border bg-muted/30 px-6 py-6 min-[900px]:border-t-0 min-[900px]:border-l min-[900px]:border-l-border">
-				<p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-					Install with Cargo
-				</p>
-				<div class="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-background/80 px-3 py-2 font-mono text-sm">
-					<span class="truncate pl-1">{cliInstallCommand}</span>
-					<CopyButton
-						aria-label="Copy install command"
-						text={cliInstallCommand}
-					/>
-				</div>
-				<p class="mt-4 text-xs text-muted-foreground">
-					Prerequisite: Install Rust from <a href="https://rustup.rs" class="link">rustup.rs</a>.
-				</p>
-			</div>
-		</div>
-	</div>
-
-	<Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
-		<div class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
-			<div class="overflow-hidden rounded-lg border">
-				<CollapsibleTrigger class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none">
-					<span class="flex items-center gap-2">
-						<CircleQuestionMark class="h-4 w-4 text-link" />
-						Looking for another Linux package format?
-					</span>
-					<ChevronDown class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`} />
-				</CollapsibleTrigger>
-				<CollapsibleContent class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground">
-					<p>
-						We're expanding our Linux packaging support beyond the options listed above.
-					</p>
-					<p>
-						Please reach out on <a href={discordUrl} class="link">Discord</a> or <a href={baseUrl} class="link">GitHub</a> if your distro is not supported — we want to support your system and will prioritize it!
-					</p>
-				</CollapsibleContent>
-			</div>
-		</div>
-	</Collapsible>
-
+  <Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
+    <div
+      class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
+    >
+      <div class="overflow-hidden rounded-lg border">
+        <CollapsibleTrigger
+          class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none"
+        >
+          <span class="flex items-center gap-2">
+            <CircleQuestionMark class="h-4 w-4 text-link" />
+            Looking for another Linux package format?
+          </span>
+          <ChevronDown
+            class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent
+          class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground"
+        >
+          <p>
+            We're expanding our Linux packaging support beyond the options
+            listed above.
+          </p>
+          <p>
+            Please reach out on <a href={discordUrl} class="link">Discord</a> or
+            <a href={baseUrl} class="link">GitHub</a> if your distro is not supported
+            — we want to support your system and will prioritize it!
+          </p>
+        </CollapsibleContent>
+      </div>
+    </div>
+  </Collapsible>
 </div>
