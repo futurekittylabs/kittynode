@@ -230,7 +230,7 @@ onDestroy(() => {
                     {#if runtimeStatus === "running"}
                       <Activity class="w-5 h-5 text-green-500 mt-0.5" />
                     {:else if runtimeStatus === "stopped"}
-                      <PauseCircle class="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <PauseCircle class="w-5 h-5 text-amber-500 dark:text-amber-200 mt-0.5" />
                     {:else if runtimeStatus === "checking"}
                       <Loader2 class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin" />
                     {:else}
@@ -250,9 +250,9 @@ onDestroy(() => {
                     <span class="text-xs font-medium text-green-700 dark:text-green-400">Running</span>
                   </div>
                 {:else if runtimeStatus === "stopped"}
-                  <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
-                    <div class="h-2 w-2 rounded-full bg-muted-foreground"></div>
-                    <span class="text-xs font-medium text-muted-foreground">Stopped</span>
+                  <div class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-2 py-1 shrink-0">
+                    <div class="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-200"></div>
+                    <span class="text-xs font-medium text-amber-700 dark:text-amber-200">Stopped</span>
                   </div>
                 {:else if runtimeStatus === "checking"}
                   <div class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0">
