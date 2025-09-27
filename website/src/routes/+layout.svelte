@@ -72,7 +72,7 @@ let { children } = $props();
             Discord
           </Button>
           <Button
-            href="https://farcaster.xyz/kittynode.eth"
+            href="https://farcaster.xyz/kittynode"
             variant="ghost"
             size="sm"
           >

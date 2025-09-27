@@ -68,7 +68,7 @@ export default defineConfig({
         {
           icon: "farcaster",
           label: "Farcaster",
-          href: "https://farcaster.xyz/kittynode.eth",
+          href: "https://farcaster.xyz/kittynode",
         },
         {
           icon: "x.com",
