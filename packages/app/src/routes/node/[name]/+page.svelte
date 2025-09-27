@@ -219,7 +219,7 @@ onDestroy(() => {
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight">{pkg.name}</h2>
-        <p class="text-muted-foreground">Manage your {pkg.name} node.</p>
+        <p class="text-muted-foreground">Manage your {pkg.name} node</p>
       </div>
       {#if isInstalled}
         <div class="flex items-center space-x-2">

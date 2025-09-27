@@ -27,10 +27,7 @@ const loading = $derived(operationalStateStore.loading && !state);
       {:else if loading}
         <Loader2 class="h-4 w-4 text-muted-foreground animate-spin" />
         <span class="text-sm font-medium">Checking status...</span>
-      {:else if state?.mode === "remote" && state?.canManage}
-        <CircleCheck class="h-4 w-4 text-green-500" />
-        <span class="text-sm font-medium">Managed remotely</span>
-      {:else if state?.dockerRunning}
+      {:else if (state?.mode === "remote" && state?.canManage) || state?.dockerRunning}
         <CircleCheck class="h-4 w-4 text-green-500" />
         <span class="text-sm font-medium">Running</span>
       {:else}
