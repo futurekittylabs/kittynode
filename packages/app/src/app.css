@@ -121,13 +121,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground select-none; /* Disable text selection */
+    @apply bg-background text-foreground;
   }
-  input,
-  textarea,
-  code {
-    @apply select-text; /* Enable text selection */
+
+  ::selection {
+    background-color: oklch(from var(--primary) l c h / 0.5);
+    color: var(--foreground);
   }
 }
 
@@ -140,7 +141,6 @@
     @apply text-link underline hover:text-zinc-900 dark:hover:text-zinc-100;
   }
 
-  /* Brand wordmark: Literata */
   .kittynode-brand {
     font-family: "Literata Variable", serif;
     font-weight: 500;
