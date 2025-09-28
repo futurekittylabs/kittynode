@@ -1,7 +1,6 @@
 <script lang="ts">
 import "../app.css";
 import { ModeWatcher } from "mode-watcher";
-import { Button } from "$lib/components/ui/button/index.js";
 
 let { children } = $props();
 </script>
@@ -43,9 +42,9 @@ let { children } = $props();
       </a>
 
       <nav class="flex items-center gap-2">
-        <Button href="https://docs.kittynode.com" variant="ghost" size="sm">
+        <a href="https://docs.kittynode.com" class="nav-link text-lg">
           Docs
-        </Button>
+        </a>
       </nav>
     </header>
 
@@ -55,31 +54,19 @@ let { children } = $props();
 
     <footer class="border-t py-6">
       <div class="flex flex-col items-center gap-4">
-        <div class="flex items-center gap-2">
-          <Button
-            href="https://discord.kittynode.com"
-            variant="ghost"
-            size="sm"
-          >
+        <div class="flex items-center gap-8 text-sm">
+          <a href="https://discord.kittynode.com" class="nav-link">
             Discord
-          </Button>
-          <Button
-            href="https://farcaster.xyz/kittynode"
-            variant="ghost"
-            size="sm"
-          >
+          </a>
+          <a href="https://farcaster.xyz/kittynode" class="nav-link">
             Farcaster
-          </Button>
-          <Button
-            href="https://github.com/futurekittylabs/kittynode"
-            variant="ghost"
-            size="sm"
-          >
+          </a>
+          <a href="https://github.com/futurekittylabs/kittynode" class="nav-link">
             GitHub
-          </Button>
-          <Button href="https://x.com/kittynode" variant="ghost" size="sm">
+          </a>
+          <a href="https://x.com/kittynode" class="nav-link">
             X
-          </Button>
+          </a>
         </div>
         <div class="text-center text-sm text-muted-foreground">
           Kittynode is <a
