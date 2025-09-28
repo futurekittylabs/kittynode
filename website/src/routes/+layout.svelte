@@ -22,10 +22,8 @@ let { children } = $props();
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-  <header class="border-b">
-    <div
-      class="container max-w-6xl mx-auto flex h-16 items-center justify-between px-6"
-    >
+  <div class="mx-auto flex min-h-screen w-full max-w-[100ch] flex-col px-6">
+    <header class="flex h-16 items-center justify-between border-b">
       <a href="/" class="wordmark">
         <picture>
           <source type="image/webp" srcset="/kittynode-logo-app-160.webp" />
@@ -46,15 +44,13 @@ let { children } = $props();
           Docs
         </Button>
       </nav>
-    </div>
-  </header>
+    </header>
 
-  <main class="flex-1">
-    {@render children?.()}
-  </main>
+    <main class="flex-1">
+      {@render children?.()}
+    </main>
 
-  <footer class="border-t py-6">
-    <div class="container max-w-6xl mx-auto px-6">
+    <footer class="border-t py-6">
       <div class="flex flex-col items-center gap-4">
         <div class="flex items-center gap-2">
           <Button
@@ -89,8 +85,8 @@ let { children } = $props();
           > released under the MIT License.
         </div>
       </div>
-    </div>
-  </footer>
+    </footer>
+  </div>
 </div>
 
 <style>

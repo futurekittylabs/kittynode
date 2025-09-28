@@ -77,7 +77,7 @@ let linuxHelpOpen = false;
 const cliInstallCommand = "cargo install kittynode-cli";
 </script>
 
-<div class="container max-w-6xl mx-auto px-6 py-16">
+<div class="py-16">
   <!-- Header -->
   <div class="mb-8 text-center">
     <h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>

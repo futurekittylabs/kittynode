@@ -84,8 +84,8 @@ onMount(() => {
 });
 </script>
 
-<div class="flex flex-1 items-center justify-center">
-  <div class="container max-w-6xl mx-auto px-6 py-16">
+<div class="flex flex-1 items-center justify-center py-16">
+  <div class="w-full">
     <div class="mx-auto max-w-3xl text-center">
       <h1 class="hero-heading">
         Operate the world<br />computer
