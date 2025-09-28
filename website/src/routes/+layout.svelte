@@ -42,7 +42,7 @@ let { children } = $props();
       </a>
 
       <nav class="flex items-center gap-2">
-        <a href="https://docs.kittynode.com" class="nav-link text-lg">
+        <a href="https://docs.kittynode.com" class="nav-link">
           Docs
         </a>
       </nav>
