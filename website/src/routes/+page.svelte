@@ -87,9 +87,7 @@ onMount(() => {
 <div class="flex flex-1 items-center justify-center py-16">
   <div class="w-full">
     <div class="mx-auto max-w-3xl text-center">
-      <h1 class="hero-heading">
-        Operate the world<br />computer
-      </h1>
+      <h1 class="hero-heading">Operate the world computer</h1>
       <p class="hero-subtitle mt-6 text-muted-foreground">
         Kittynode is a control center for world computer operators.
       </p>
@@ -125,12 +123,12 @@ onMount(() => {
 
   @media (min-width: 640px) {
     .hero-heading {
-      font-size: 3.5rem;
+      font-size: 3rem;
       font-weight: 500;
     }
 
     .hero-subtitle {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
     }
   }
 
