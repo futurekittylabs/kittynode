@@ -26,9 +26,12 @@ let { children } = $props();
     <header class="flex h-16 items-center justify-between border-b">
       <a href="/" class="wordmark">
         <picture>
-          <source type="image/webp" srcset="/kittynode-logo-app-160.webp" />
+          <source
+            type="image/webp"
+            srcset="/kittynode-logo-app-no-padding-160.webp"
+          />
           <img
-            src="/kittynode-logo-app-160.png"
+            src="/kittynode-logo-app-no-padding-160.png"
             alt="Kittynode logo"
             class="app-logo"
             width="40"
@@ -93,7 +96,7 @@ let { children } = $props();
   .wordmark {
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.75rem;
     text-decoration: none;
     flex-shrink: 0;
   }
