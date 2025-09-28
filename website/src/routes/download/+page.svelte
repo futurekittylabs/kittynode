@@ -20,6 +20,7 @@ import releaseInfo from "$lib/release.json";
 const { version, date: releaseDate } = releaseInfo;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
+const changelogUrl = `${baseUrl}/releases`;
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
 const discordUrl = "https://discord.kittynode.com";
 
@@ -83,7 +84,7 @@ const cliInstallCommand = "cargo install kittynode-cli";
     <p class="text-sm text-muted-foreground mb-4">
       Version {version} • {releaseDate}
     </p>
-    <a href="{baseUrl}/releases" class="link text-sm"> View changelog </a>
+    <a href={changelogUrl} class="link text-sm"> View changelog</a>
   </div>
   <!-- Download cards -->
   <div class="grid gap-4 min-[900px]:grid-cols-3">

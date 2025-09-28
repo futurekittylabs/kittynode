@@ -42,13 +42,6 @@ let { children } = $props();
       </a>
 
       <nav class="flex items-center gap-2">
-        <Button
-          href="https://github.com/futurekittylabs/kittynode"
-          variant="ghost"
-          size="sm"
-        >
-          GitHub
-        </Button>
         <Button href="https://docs.kittynode.com" variant="ghost" size="sm">
           Docs
         </Button>
@@ -77,6 +70,13 @@ let { children } = $props();
             size="sm"
           >
             Farcaster
+          </Button>
+          <Button
+            href="https://github.com/futurekittylabs/kittynode"
+            variant="ghost"
+            size="sm"
+          >
+            GitHub
           </Button>
           <Button href="https://x.com/kittynode" variant="ghost" size="sm">
             X
