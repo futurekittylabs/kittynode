@@ -153,4 +153,14 @@
   .link {
     @apply text-link underline hover:text-zinc-900 dark:hover:text-zinc-100;
   }
+
+  .nav-link {
+    font-family: "Space Grotesk Variable", sans-serif;
+    font-weight: 500;
+  }
+
+  .nav-link:hover {
+    cursor: pointer;
+    @apply text-link;
+  }
 }
