@@ -11,7 +11,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tauri_plugin_http::reqwest::{Client, StatusCode};
+use tauri_plugin_http::reqwest::{Client, Response, StatusCode};
 
 fn normalize_base_url(server_url: &str) -> Option<String> {
     let trimmed = server_url.trim();
@@ -218,51 +218,20 @@ impl HttpCoreClient {
             .send()
             .await
             .wrap_err_with(|| format!("Failed to GET {}", path))?;
-
-        if response.status().is_success() {
-            Ok(response
-                .json::<T>()
-                .await
-                .wrap_err_with(|| format!("Failed to deserialize response from {}", path))?)
-        } else {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            Err(eyre::eyre!(
-                "HTTP {} when requesting {}: {}",
-                status,
-                path,
-                body
-            ))
-        }
+        let response = Self::ensure_success(response, path, "requesting").await?;
+        response
+            .json::<T>()
+            .await
+            .wrap_err_with(|| format!("Failed to deserialize response from {}", path))
     }
 
     async fn post_unit<B>(&self, path: &str, body: Option<&B>) -> Result<()>
     where
         B: Serialize + Sync,
     {
-        let request = self.client.post(self.url(path));
-        let request = if let Some(body) = body {
-            request.json(body)
-        } else {
-            request
-        };
-        let response = request
-            .send()
-            .await
-            .wrap_err_with(|| format!("Failed to POST {}", path))?;
-
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            Err(eyre::eyre!(
-                "HTTP {} when posting {}: {}",
-                status,
-                path,
-                body
-            ))
-        }
+        let response = self.post_request(path, body).await?;
+        Self::ensure_success(response, path, "posting").await?;
+        Ok(())
     }
 
     async fn post_json<T, B>(&self, path: &str, body: Option<&B>) -> Result<T>
@@ -270,28 +239,40 @@ impl HttpCoreClient {
         T: DeserializeOwned,
         B: Serialize + Sync,
     {
+        let response = self.post_request(path, body).await?;
+        let response = Self::ensure_success(response, path, "posting").await?;
+        response
+            .json::<T>()
+            .await
+            .wrap_err_with(|| format!("Failed to deserialize response from {}", path))
+    }
+
+    async fn post_request<B>(&self, path: &str, body: Option<&B>) -> Result<Response>
+    where
+        B: Serialize + Sync,
+    {
         let request = self.client.post(self.url(path));
         let request = if let Some(body) = body {
             request.json(body)
         } else {
             request
         };
-        let response = request
+        request
             .send()
             .await
-            .wrap_err_with(|| format!("Failed to POST {}", path))?;
+            .wrap_err_with(|| format!("Failed to POST {}", path))
+    }
 
+    async fn ensure_success(response: Response, path: &str, action: &str) -> Result<Response> {
         if response.status().is_success() {
-            Ok(response
-                .json::<T>()
-                .await
-                .wrap_err_with(|| format!("Failed to deserialize response from {}", path))?)
+            Ok(response)
         } else {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             Err(eyre::eyre!(
-                "HTTP {} when posting {}: {}",
+                "HTTP {} when {} {}: {}",
                 status,
+                action,
                 path,
                 body
             ))
