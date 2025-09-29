@@ -18,6 +18,14 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
     Ok(packages)
 }
 
+/// Retrieves a single package or returns a not-found error.
+pub fn get_package_by_name(name: &str) -> Result<Package> {
+    let mut catalog = get_packages()?;
+    catalog
+        .remove(name)
+        .ok_or_else(|| eyre::eyre!("Package '{}' not found", name))
+}
+
 /// Gets a list of installed packages by checking their container states
 pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Result<Vec<Package>> {
     let docker = get_docker_instance().await?;
