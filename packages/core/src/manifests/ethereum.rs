@@ -158,3 +158,93 @@ impl Ethereum {
         ])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infra::file::kittynode_path;
+
+    #[test]
+    fn package_uses_default_network_bindings() {
+        let package = Ethereum::get_package().expect("package");
+
+        assert_eq!(package.name(), "Ethereum");
+
+        let default_network = package
+            .default_config
+            .values
+            .get("network")
+            .expect("default network");
+        assert_eq!(default_network, "hoodi");
+
+        let kittynode_dir = kittynode_path().expect("kittynode path");
+        let jwt_source = kittynode_dir.join("jwt.hex").to_string_lossy().to_string();
+
+        let reth = package
+            .containers
+            .iter()
+            .find(|c| c.name == "reth-node")
+            .expect("reth container");
+
+        assert_eq!(
+            reth.volume_bindings[0].destination,
+            format!("/root/.local/share/reth/{default_network}")
+        );
+        assert_eq!(reth.file_bindings[0].source, jwt_source);
+        assert_eq!(
+            reth.file_bindings[0].destination,
+            format!("/root/.local/share/reth/{default_network}/jwt.hex")
+        );
+
+        let lighthouse = package
+            .containers
+            .iter()
+            .find(|c| c.name == "lighthouse-node")
+            .expect("lighthouse container");
+
+        assert_eq!(
+            lighthouse.file_bindings[0].source,
+            kittynode_dir
+                .join(".lighthouse")
+                .to_string_lossy()
+                .to_string()
+        );
+        assert_eq!(lighthouse.file_bindings[0].destination, "/root/.lighthouse");
+        assert_eq!(lighthouse.file_bindings[1].source, jwt_source);
+        assert_eq!(
+            lighthouse.file_bindings[1].destination,
+            format!("/root/.lighthouse/{default_network}/jwt.hex")
+        );
+
+        let checkpoint_index = lighthouse
+            .cmd
+            .iter()
+            .position(|arg| arg == "--checkpoint-sync-url")
+            .expect("checkpoint flag present");
+        assert_eq!(
+            lighthouse.cmd[checkpoint_index + 1],
+            "https://checkpoint-sync.hoodi.ethpandaops.io"
+        );
+    }
+
+    #[test]
+    fn mainnet_containers_use_mainnet_checkpoint() {
+        let containers = Ethereum::get_containers("mainnet").expect("containers");
+
+        let lighthouse = containers
+            .iter()
+            .find(|c| c.name == "lighthouse-node")
+            .expect("lighthouse container");
+
+        let checkpoint_index = lighthouse
+            .cmd
+            .iter()
+            .position(|arg| arg == "--checkpoint-sync-url")
+            .expect("checkpoint flag present");
+
+        assert_eq!(
+            lighthouse.cmd[checkpoint_index + 1],
+            "https://mainnet.checkpoint.sigp.io/"
+        );
+    }
+}
