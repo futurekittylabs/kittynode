@@ -84,7 +84,7 @@ onMount(() => {
 });
 </script>
 
-<div class="hero flex flex-1 items-center justify-center">
+<div class="hero">
   <div class="w-full">
     <div class="mx-auto text-center">
       <h1
@@ -135,26 +135,20 @@ onMount(() => {
   }
 
   .hero {
+    /* Prefer safe viewport height when supported (set below) */
     --vh: 1vh;
-    --hero-pt: clamp(3.75rem, calc(12 * var(--vh)), 8.5rem);
-    --hero-pb: clamp(2rem, calc(6 * var(--vh)), 5rem);
+
+    display: grid;
+    place-content: center;
     margin-block-end: 0;
-    padding-block-start: var(--hero-pt);
-    padding-block-end: var(--hero-pb);
+
+    /* Responsive frame for breathing room around centered content */
+    min-block-size: calc(70 * var(--vh));
+    padding-block: clamp(1rem, calc(4 * var(--vh)), 2.5rem);
   }
   @supports (height: 100svh) {
     .hero {
       --vh: 1svh;
-    }
-  }
-  @media (max-width: 480px) {
-    .hero {
-      --hero-pt: clamp(1.25rem, calc(7.5 * var(--vh)), 3.25rem);
-    }
-  }
-  @media (max-height: 680px) {
-    .hero {
-      --hero-pt: clamp(1.25rem, calc(5 * var(--vh)), 3rem);
     }
   }
 </style>
