@@ -158,3 +158,84 @@ impl Ethereum {
         ])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_cmd_value(cmd: &[String], flag: &str, expected: &str) {
+        let mut iter = cmd.iter();
+        while let Some(item) = iter.next() {
+            if item == flag {
+                let value = iter
+                    .next()
+                    .unwrap_or_else(|| panic!("missing value for flag '{flag}'"));
+                assert_eq!(value, expected, "unexpected value for {flag}");
+                return;
+            }
+        }
+        panic!("flag '{flag}' not found in command: {cmd:?}");
+    }
+
+    #[test]
+    fn get_containers_mainnet_sets_checkpoint_sync_url() {
+        let containers = Ethereum::get_containers("mainnet").expect("failed to get containers");
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("lighthouse container missing");
+        assert_cmd_value(
+            &lighthouse.cmd,
+            "--checkpoint-sync-url",
+            "https://mainnet.checkpoint.sigp.io/",
+        );
+
+        let jwt_binding = lighthouse
+            .file_bindings
+            .iter()
+            .find(|binding| binding.destination.ends_with("jwt.hex"))
+            .expect("jwt binding missing");
+        let expected_jwt_path = kittynode_path()
+            .expect("failed to resolve kittynode path")
+            .join("jwt.hex")
+            .display()
+            .to_string();
+        assert_eq!(jwt_binding.source, expected_jwt_path);
+
+        let reth = containers
+            .iter()
+            .find(|container| container.name == "reth-node")
+            .expect("reth container missing");
+        assert_cmd_value(&reth.cmd, "--chain", "mainnet");
+    }
+
+    #[test]
+    fn get_containers_non_mainnet_uses_default_checkpoint_url() {
+        let containers = Ethereum::get_containers("hoodi").expect("failed to get containers");
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("lighthouse container missing");
+        assert_cmd_value(
+            &lighthouse.cmd,
+            "--checkpoint-sync-url",
+            "https://checkpoint-sync.hoodi.ethpandaops.io",
+        );
+
+        let reth = containers
+            .iter()
+            .find(|container| container.name == "reth-node")
+            .expect("reth container missing");
+        let jwt_destination = reth
+            .file_bindings
+            .iter()
+            .find(|binding| binding.destination.ends_with("jwt.hex"))
+            .expect("jwt binding missing")
+            .destination
+            .clone();
+        assert!(
+            jwt_destination.contains("/hoodi/"),
+            "expected jwt destination to include network segment, got {jwt_destination}"
+        );
+    }
+}
