@@ -88,7 +88,7 @@ onMount(() => {
   <div class="w-full">
     <div class="mx-auto text-center">
       <h1
-        class="text-balance font-medium leading-tight tracking-tight text-[clamp(2.25rem,3vw+0.75rem,3.25rem)]"
+        class="text-balance font-medium leading-snug tracking-tight text-[clamp(2.25rem,3vw+0.75rem,3.25rem)]"
       >
         Run the world computer
       </h1>
@@ -146,9 +146,11 @@ onMount(() => {
   }
   @media (max-height: 680px) {
     .hero {
-      /* Fallback first, override when svh is supported */
-      margin-block-end: clamp(1rem, 4vh, 2rem);
-      margin-block-end: clamp(1rem, 4svh, 2rem);
+      /* Reduce top padding instead of adding space above footer */
+      padding-block-start: clamp(1.25rem, 5vh, 3rem);
+      padding-block-start: clamp(1.25rem, 5svh, 3rem);
     }
   }
+
+  /* Balanced headings for nicer line breaks */
 </style>
