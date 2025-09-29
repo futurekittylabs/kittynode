@@ -2165,6 +2165,7 @@ dependencies = [
  "eyre",
  "kittynode-core",
  "serde",
+ "serde_json",
  "tokio",
  "tower",
  "tracing-subscriber",

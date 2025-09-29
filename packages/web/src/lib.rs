@@ -1,3 +1,5 @@
+mod test_harness;
+
 use axum::{
     Router,
     extract::{Path, Query},
@@ -6,15 +8,18 @@ use axum::{
     routing::{get, post},
 };
 use eyre::Result;
-use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
 };
-use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
+use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
+use test_harness::{self as harness, api, validate_web_port};
 use tokio::net::TcpListener;
+
+#[doc(hidden)]
+pub use test_harness::{Harness, HarnessGuard, ResponseQueue, read_state, with_harness};
 
 pub async fn hello_world() -> &'static str {
     "Hello World!"
@@ -220,6 +225,9 @@ pub async fn run() -> Result<()> {
 
 pub async fn run_with_port(port: u16) -> Result<()> {
     validate_web_port(port)?;
+    if harness::should_skip_server_start() {
+        return Ok(());
+    }
     let app = app();
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
     let listener = TcpListener::bind(address).await?;
