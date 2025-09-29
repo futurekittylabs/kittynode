@@ -333,6 +333,11 @@ pub fn stop_web_service() -> Result<()> {
     Ok(())
 }
 
+pub fn restart_web_service(port: Option<u16>) -> Result<()> {
+    stop_web_service()?;
+    start_web_service(port)
+}
+
 pub fn web_status() -> Result<()> {
     match api::get_web_service_status()? {
         WebServiceStatus::Started { pid, port }
