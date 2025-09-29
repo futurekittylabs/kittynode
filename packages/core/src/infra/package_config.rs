@@ -27,11 +27,10 @@ impl PackageConfigStore {
     }
 
     fn config_file_path(package_name: &str) -> Result<PathBuf> {
-        let path = format!(
-            "{}/packages/{}/config.toml",
-            kittynode_path()?.display(),
-            package_name
-        );
-        Ok(PathBuf::from(path))
+        let mut path = kittynode_path()?;
+        path.push("packages");
+        path.push(package_name);
+        path.push("config.toml");
+        Ok(path)
     }
 }
