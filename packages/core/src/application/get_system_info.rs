@@ -31,7 +31,7 @@ fn format_memory_gb(bytes: u64) -> String {
 
     if bytes >= GIB {
         let actual_gb = bytes as f64 / GIB as f64;
-        let fallback_gb = bytes.div_ceil(GIB);
+        let fallback_gb = actual_gb.round().max(1.0) as u64;
 
         let snapped_gb = MARKETING_LEVELS
             .iter()
@@ -223,6 +223,14 @@ mod tests {
     fn memory_falls_back_when_far_from_marketing_tier() {
         const GIB: u64 = 1024 * 1024 * 1024;
         let bytes = 20 * GIB;
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "20 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_rounds_nearest_when_not_marketing_tier() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        let bytes = (20 * GIB) + (200 * 1024 * 1024); // ~20.2 GiB
         let s = format_memory_gb(bytes);
         assert_eq!(s, "20 GB", "got {s}");
     }
