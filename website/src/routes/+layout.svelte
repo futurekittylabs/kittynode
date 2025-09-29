@@ -3,7 +3,6 @@ import "../app.css";
 import { ModeWatcher } from "mode-watcher";
 
 let { children } = $props();
-const showStoreLink = true;
 </script>
 
 <ModeWatcher />
@@ -46,9 +45,7 @@ const showStoreLink = true;
         <a href="https://docs.kittynode.com" class="nav-link">
           Docs
         </a>
-        {#if showStoreLink}
-          <a href="/store" class="nav-link">Store</a>
-        {/if}
+        <a href="/store" class="nav-link">Store</a>
       </nav>
     </header>
 

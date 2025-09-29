@@ -135,7 +135,7 @@ onMount(() => {
     text-wrap: balance;
   }
 
-  /* Ensure tasteful breathing room above footer on short viewports only */
+  /* Ensure tasteful breathing room above footer on shorter viewports */
   .hero {
     margin-block-end: 0;
   }
