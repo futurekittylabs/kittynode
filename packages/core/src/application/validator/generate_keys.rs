@@ -1,8 +1,9 @@
+use super::filesystem::ensure_parent_secure;
 use super::ports::{CryptoProvider, ValidatorFilesystem};
 use crate::domain::validator::ValidatorKey;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
 use eyre::{Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 const DEFAULT_KEY_FILENAME: &str = "validator_key.json";
 
@@ -60,7 +61,7 @@ where
     F: ValidatorFilesystem,
 {
     let key_file = params.key_path();
-    ensure_parent_secure(&key_file, filesystem)?;
+    ensure_parent_secure(&key_file, filesystem, "invalid validator output directory")?;
 
     let key = crypto
         .generate_key(&params.entropy)
@@ -73,15 +74,6 @@ where
     Ok(key)
 }
 
-fn ensure_parent_secure<F: ValidatorFilesystem>(path: &Path, filesystem: &F) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        filesystem
-            .ensure_secure_directory(parent)
-            .with_context(|| format!("invalid validator output directory: {}", parent.display()))?
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,7 +83,7 @@ mod tests {
     use serde::{Serialize, de::DeserializeOwned};
     use std::collections::HashMap;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::sync::Mutex;
     use tempfile::tempdir;
 
