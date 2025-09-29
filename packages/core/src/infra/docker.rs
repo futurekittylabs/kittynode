@@ -373,3 +373,96 @@ fn convert_port_bindings(bindings: &[PortBinding]) -> Vec<DockerPortBinding> {
         })
         .collect()
 }
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    use super::linux_socket_candidates;
+    use std::ffi::OsString;
+    use std::{env, path::PathBuf};
+    use tempfile::tempdir;
+
+    fn set_env(
+        home: &std::path::Path,
+        runtime: Option<&std::path::Path>,
+    ) -> (Option<OsString>, Option<OsString>) {
+        let previous_home = env::var_os("HOME");
+        // Newer toolchains mark environment mutation unsafe; scope it with a guard.
+        unsafe {
+            env::set_var("HOME", home);
+        }
+        let previous_runtime = env::var_os("XDG_RUNTIME_DIR");
+        match runtime {
+            Some(path) => unsafe {
+                env::set_var("XDG_RUNTIME_DIR", path);
+            },
+            None => unsafe {
+                env::remove_var("XDG_RUNTIME_DIR");
+            },
+        }
+        (previous_home, previous_runtime)
+    }
+
+    fn restore_env(home: Option<OsString>, runtime: Option<OsString>) {
+        match home {
+            Some(value) => unsafe {
+                env::set_var("HOME", value);
+            },
+            None => unsafe {
+                env::remove_var("HOME");
+            },
+        }
+        match runtime {
+            Some(value) => unsafe {
+                env::set_var("XDG_RUNTIME_DIR", value);
+            },
+            None => unsafe {
+                env::remove_var("XDG_RUNTIME_DIR");
+            },
+        }
+    }
+
+    #[test]
+    fn prioritizes_user_and_runtime_sockets_before_system_defaults() {
+        let _lock = crate::ENV_GUARD.lock().expect("lock poisoned");
+        let home_dir = tempdir().expect("tempdir failed");
+        let runtime_dir = tempdir().expect("tempdir failed");
+
+        let (old_home, old_runtime) = set_env(home_dir.path(), Some(runtime_dir.path()));
+
+        let sockets = linux_socket_candidates();
+
+        restore_env(old_home, old_runtime);
+
+        let expected = vec![
+            home_dir.path().join(".docker/desktop/docker.sock"),
+            home_dir.path().join(".docker/run/docker.sock"),
+            home_dir.path().join(".docker/docker.sock"),
+            runtime_dir.path().join("docker.sock"),
+            runtime_dir.path().join("docker-desktop.sock"),
+            PathBuf::from("/var/run/docker.sock"),
+            PathBuf::from("/run/docker.sock"),
+        ];
+        assert_eq!(sockets, expected);
+    }
+
+    #[test]
+    fn removes_duplicate_paths_when_sources_overlap() {
+        let _lock = crate::ENV_GUARD.lock().expect("lock poisoned");
+        let home_dir = tempdir().expect("tempdir failed");
+        let runtime_dir = home_dir.path().join(".docker");
+        std::fs::create_dir_all(&runtime_dir).expect("runtime dir");
+
+        let (old_home, old_runtime) = set_env(home_dir.path(), Some(&runtime_dir));
+
+        let sockets = linux_socket_candidates();
+
+        restore_env(old_home, old_runtime);
+
+        let docker_sock_path = home_dir.path().join(".docker/docker.sock");
+        let occurrences = sockets
+            .iter()
+            .filter(|path| *path == &docker_sock_path)
+            .count();
+        assert_eq!(occurrences, 1, "expected unique docker.sock path");
+    }
+}

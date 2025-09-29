@@ -185,3 +185,59 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::manifests::ethereum::Ethereum;
+    use std::env;
+    use tempfile::tempdir;
+
+    fn with_temp_home<F, R>(f: F) -> R
+    where
+        F: FnOnce(&std::path::Path) -> R,
+    {
+        let _lock = crate::ENV_GUARD.lock().expect("lock poisoned");
+        let original_home = env::var_os("HOME");
+        let temp = tempdir().expect("tempdir failed");
+        // Newer toolchains mark environment mutation unsafe; scope it with a guard.
+        unsafe {
+            env::set_var("HOME", temp.path());
+        }
+        let result = f(temp.path());
+        match original_home {
+            Some(value) => unsafe {
+                env::set_var("HOME", value);
+            },
+            None => unsafe {
+                env::remove_var("HOME");
+            },
+        }
+        result
+    }
+
+    #[test]
+    fn get_packages_exposes_ethereum_definition() {
+        with_temp_home(|_| {
+            let packages = get_packages().expect("packages should load");
+            assert_eq!(packages.len(), 1);
+            let ethereum = packages.get(Ethereum::NAME).expect("ethereum missing");
+            assert_eq!(ethereum.name, Ethereum::NAME);
+        });
+    }
+
+    #[test]
+    fn get_package_by_name_returns_requested_package() {
+        with_temp_home(|_| {
+            let package = get_package_by_name(Ethereum::NAME).expect("should find package");
+            assert_eq!(package.name, Ethereum::NAME);
+        });
+    }
+
+    #[test]
+    fn get_package_by_name_returns_error_for_unknown_package() {
+        with_temp_home(|_| {
+            assert!(get_package_by_name("unknown").is_err());
+        });
+    }
+}
