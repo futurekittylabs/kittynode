@@ -84,7 +84,7 @@ onMount(() => {
 });
 </script>
 
-<div class="hero flex flex-1 items-center justify-center pb-[clamp(2rem,6svh,5rem)] pt-[clamp(3.75rem,12svh,8.5rem)]">
+<div class="hero flex flex-1 items-center justify-center">
   <div class="w-full">
     <div class="mx-auto text-center">
       <h1
@@ -138,9 +138,16 @@ onMount(() => {
   /* Ensure tasteful breathing room above footer on shorter viewports */
   .hero {
     margin-block-end: 0;
+    /* Fallback first, override when svh is supported */
+    padding-block-start: clamp(3.75rem, 12vh, 8.5rem);
+    padding-block-start: clamp(3.75rem, 12svh, 8.5rem);
+    padding-block-end: clamp(2rem, 6vh, 5rem);
+    padding-block-end: clamp(2rem, 6svh, 5rem);
   }
   @media (max-height: 680px) {
     .hero {
+      /* Fallback first, override when svh is supported */
+      margin-block-end: clamp(1rem, 4vh, 2rem);
       margin-block-end: clamp(1rem, 4svh, 2rem);
     }
   }
