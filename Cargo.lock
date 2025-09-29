@@ -2107,6 +2107,7 @@ dependencies = [
  "kittynode-core",
  "kittynode-web",
  "predicates",
+ "serde_json",
  "tempfile",
  "tokio",
  "tracing",
