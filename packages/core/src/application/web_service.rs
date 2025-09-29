@@ -297,6 +297,13 @@ mod tests {
     }
 
     #[test]
+    fn generate_service_token_produces_unique_tokens() {
+        let token1 = generate_service_token();
+        let token2 = generate_service_token();
+        assert_ne!(token1, token2);
+    }
+
+    #[test]
     fn args_contain_token_detects_split_arguments() {
         let args = vec![
             OsString::from("--flag"),
