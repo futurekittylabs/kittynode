@@ -84,69 +84,70 @@ onMount(() => {
 });
 </script>
 
-<div class="flex flex-1 items-center justify-center py-16">
+<div class="hero flex flex-1 items-center justify-center">
   <div class="w-full">
-    <div class="mx-auto max-w-3xl text-center">
-      <h1 class="hero-heading">Operate the world computer</h1>
-      <p class="hero-subtitle mt-6 text-muted-foreground">
-        Kittynode is a control center for world computer operators.
-      </p>
-      <img src="/black-kitty.gif" alt="Black Kitty" class="nyan-cat mt-12" />
-      <div class="mt-8 flex flex-col items-center gap-4">
-        <Button href={downloadHref} size="lg" class="gap-2">
-          <Download class="h-5 w-5" />
-          {downloadButtonText}
-        </Button>
-        {#if showFallback}
-          <p class="text-sm text-muted-foreground">
-            Available for Linux, macOS, and Windows.
+    <div class="mx-auto text-center">
+      <h1
+        class="text-balance font-medium leading-snug tracking-tight text-[clamp(2.25rem,3vw+0.75rem,3.25rem)]"
+      >
+        Run the world computer
+      </h1>
+      <div class="mx-auto max-w-[68ch] mt-[clamp(1.25rem,3vh,2rem)]">
+        <div class="flex flex-col items-center space-y-[clamp(1.25rem,3.5vh,2.25rem)]">
+          <p
+          class="text-[clamp(1.15rem,1.1vw+0.35rem,1.3rem)] text-muted-foreground"
+        >
+            Kittynode is a control center for world computer operators.
           </p>
-        {:else}
-          <p class="text-sm text-muted-foreground">
-            Need something else? <a href="/download" class="link">See all downloads</a>.
-          </p>
-        {/if}
+          <img
+            src="/black-kitty.gif"
+            alt="Black Kitty"
+            class="nyan-cat mx-auto w-[clamp(160px,20vw,210px)]"
+          />
+          <div class="flex flex-col items-center gap-[clamp(0.9rem,2.2vh,1.5rem)]">
+            <Button href={downloadHref} size="lg" class="gap-2">
+              <Download class="h-5 w-5" />
+              {downloadButtonText}
+            </Button>
+            {#if showFallback}
+              <p class="text-sm text-muted-foreground">
+                Available for Linux, macOS, and Windows.
+              </p>
+            {:else}
+              <p class="text-sm text-muted-foreground">
+                Need something else? <a href="/download" class="link">See all downloads</a>.
+              </p>
+            {/if}
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <style>
-  .hero-heading {
-    font-size: 2.25rem;
-    font-weight: 500;
-  }
-
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .hero-heading {
-      font-size: 3rem;
-      font-weight: 500;
-    }
-
-    .hero-subtitle {
-      font-size: 1.25rem;
-    }
-  }
-
   .nyan-cat {
-    width: 180px;
-    height: auto;
-    min-width: 180px;
-    max-width: none;
     image-rendering: pixelated;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
   }
 
-  @media (min-width: 640px) {
-    .nyan-cat {
-      width: 220px;
-      min-width: 220px;
+  /* Balanced headings for nicer line breaks */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Shorten space above header on shorter viewports */
+  .hero {
+    margin-block-end: 0;
+    /* Fallback first, override when svh is supported */
+    padding-block-start: clamp(3.75rem, 12vh, 8.5rem);
+    padding-block-start: clamp(3.75rem, 12svh, 8.5rem);
+    padding-block-end: clamp(2rem, 6vh, 5rem);
+    padding-block-end: clamp(2rem, 6svh, 5rem);
+  }
+  @media (max-height: 680px) {
+    .hero {
+      padding-block-start: clamp(1.25rem, 5vh, 3rem);
+      padding-block-start: clamp(1.25rem, 5svh, 3rem);
     }
   }
 </style>

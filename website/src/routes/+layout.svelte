@@ -22,7 +22,7 @@ let { children } = $props();
 
 <div class="flex min-h-screen flex-col">
   <div class="mx-auto flex min-h-screen w-full max-w-[100ch] flex-col px-6">
-    <header class="flex h-16 items-center justify-between border-b">
+    <header class="flex h-16 items-center justify-between border-b px-0.5">
       <a href="/" class="wordmark">
         <picture>
           <source
@@ -41,10 +41,11 @@ let { children } = $props();
         <span class="wordmark-text">Kittynode</span>
       </a>
 
-      <nav class="flex items-center gap-2">
+      <nav class="flex items-center gap-6">
         <a href="https://docs.kittynode.com" class="nav-link">
           Docs
         </a>
+        <a href="/store" class="nav-link">Store</a>
       </nav>
     </header>
 
