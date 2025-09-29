@@ -84,18 +84,18 @@ onMount(() => {
 });
 </script>
 
-<div class="flex flex-1 items-center justify-center pb-[clamp(2rem,6vh,5rem)] pt-[clamp(3.75rem,12vh,8.5rem)]">
+<div class="hero flex flex-1 items-center justify-center pb-[clamp(2rem,6svh,5rem)] pt-[clamp(3.75rem,12svh,8.5rem)]">
   <div class="w-full">
     <div class="mx-auto text-center">
       <h1
-        class="text-balance font-medium leading-tight tracking-tight text-[clamp(2.125rem,3vw+0.75rem,3.25rem)]"
+        class="text-balance font-medium leading-tight tracking-tight text-[clamp(2.25rem,3vw+0.75rem,3.25rem)]"
       >
-        Operate the world computer
+        Run the world computer
       </h1>
       <div class="mx-auto max-w-[68ch] mt-[clamp(1.25rem,3vh,2rem)]">
         <div class="flex flex-col items-center space-y-[clamp(1.25rem,3.5vh,2.25rem)]">
           <p
-          class="text-[clamp(1.1rem,1.1vw+0.35rem,1.3rem)] text-muted-foreground"
+          class="text-[clamp(1.15rem,1.1vw+0.35rem,1.3rem)] text-muted-foreground"
         >
             Kittynode is a control center for world computer operators.
           </p>
@@ -133,5 +133,15 @@ onMount(() => {
   /* Balanced headings for nicer line breaks */
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Ensure tasteful breathing room above footer on short viewports only */
+  .hero {
+    margin-block-end: 0;
+  }
+  @media (max-height: 680px) {
+    .hero {
+      margin-block-end: clamp(1rem, 4svh, 2rem);
+    }
   }
 </style>
