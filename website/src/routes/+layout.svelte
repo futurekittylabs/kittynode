@@ -54,7 +54,7 @@ let { children } = $props();
     </main>
 
     <footer class="border-t py-6">
-      <div class="flex flex-col items-center gap-4">
+      <div class="flex flex-col items-center gap-5">
         <div class="flex items-center gap-8 text-sm">
           <a href="https://discord.kittynode.com" class="nav-link">
             Discord

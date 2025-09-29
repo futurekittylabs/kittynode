@@ -159,8 +159,16 @@
     font-weight: 500;
   }
 
-  .nav-link:hover {
-    cursor: pointer;
+  /* Show active highlight during touch press */
+  .nav-link:active {
     @apply text-link;
+  }
+
+  /* Only apply hover color on devices that support hover */
+  @media (hover: hover) {
+    .nav-link:hover {
+      cursor: pointer;
+      @apply text-link;
+    }
   }
 }
