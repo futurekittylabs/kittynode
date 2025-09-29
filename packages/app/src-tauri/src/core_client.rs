@@ -24,9 +24,7 @@ fn normalize_base_url(server_url: &str) -> Option<String> {
 }
 
 #[async_trait]
-pub trait CoreClient: Send + Sync {
-    #[cfg(test)]
-    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync);
+pub trait CoreClient: Send + Sync + std::any::Any {
     /// Retrieve the current package catalog from the core. Implementations may call the
     /// core directly (local) or proxy the HTTP API (remote) but must return the same data shape.
     async fn get_packages(&self) -> Result<HashMap<String, Package>>;
@@ -84,15 +82,29 @@ pub trait CoreClient: Send + Sync {
     ) -> Result<DepositData>;
 }
 
+#[cfg(test)]
+pub(crate) trait CoreClientTestExt {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync);
+}
+
+#[cfg(test)]
+impl CoreClientTestExt for dyn CoreClient {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
+        self
+    }
+}
+
+#[cfg(test)]
+impl CoreClientTestExt for Arc<dyn CoreClient> {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
+        (**self).as_any()
+    }
+}
+
 pub struct LocalCoreClient;
 
 #[async_trait]
 impl CoreClient for LocalCoreClient {
-    #[cfg(test)]
-    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
-        self
-    }
-
     async fn get_packages(&self) -> Result<HashMap<String, Package>> {
         api::get_packages()
     }
@@ -289,11 +301,6 @@ impl HttpCoreClient {
 
 #[async_trait]
 impl CoreClient for HttpCoreClient {
-    #[cfg(test)]
-    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
-        self
-    }
-
     async fn get_packages(&self) -> Result<HashMap<String, Package>> {
         self.get_json("/get_packages").await
     }
