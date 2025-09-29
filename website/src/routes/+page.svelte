@@ -135,7 +135,7 @@ onMount(() => {
     text-wrap: balance;
   }
 
-  /* Ensure tasteful breathing room above footer on shorter viewports */
+  /* Shorten space above header on shorter viewports */
   .hero {
     margin-block-end: 0;
     /* Fallback first, override when svh is supported */
@@ -146,11 +146,8 @@ onMount(() => {
   }
   @media (max-height: 680px) {
     .hero {
-      /* Reduce top padding instead of adding space above footer */
       padding-block-start: clamp(1.25rem, 5vh, 3rem);
       padding-block-start: clamp(1.25rem, 5svh, 3rem);
     }
   }
-
-  /* Balanced headings for nicer line breaks */
 </style>
