@@ -341,6 +341,16 @@ pub fn web_logs(follow: bool, tail: Option<usize>) -> Result<()> {
 }
 
 fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()> {
+    let mut stdout = std::io::stdout();
+    stream_log_file_into(path, tail, follow, &mut stdout)
+}
+
+fn stream_log_file_into(
+    path: &Path,
+    tail: Option<usize>,
+    follow: bool,
+    output: &mut impl Write,
+) -> Result<()> {
     let mut file = OpenOptions::new()
         .read(true)
         .open(path)
@@ -372,20 +382,24 @@ fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()>
                 buffer.push_back(line.clone());
             }
             for entry in buffer {
-                print!("{entry}");
+                output
+                    .write_all(entry.as_bytes())
+                    .map_err(|err| eyre!("Failed to write logs to output: {err}"))?;
             }
         } else {
             let mut content = String::new();
             reader
                 .read_to_string(&mut content)
                 .map_err(|err| eyre!("Failed to read kittynode web log file: {err}"))?;
-            print!("{content}");
+            output
+                .write_all(content.as_bytes())
+                .map_err(|err| eyre!("Failed to write logs to output: {err}"))?;
         }
     }
 
-    std::io::stdout()
+    output
         .flush()
-        .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
+        .map_err(|err| eyre!("Failed to flush output: {err}"))?;
 
     if !follow {
         return Ok(());
@@ -402,10 +416,12 @@ fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()>
                 std::thread::sleep(std::time::Duration::from_millis(250));
             }
             Ok(_) => {
-                print!("{line}");
-                std::io::stdout()
+                output
+                    .write_all(line.as_bytes())
+                    .map_err(|err| eyre!("Failed to write logs to output: {err}"))?;
+                output
                     .flush()
-                    .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
+                    .map_err(|err| eyre!("Failed to flush output: {err}"))?;
                 line.clear();
             }
             Err(err) if err.kind() == ErrorKind::Interrupted => continue,
@@ -424,3 +440,41 @@ pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -
 }
 
 pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
+
+#[cfg(test)]
+mod tests {
+    use super::stream_log_file_into;
+    use std::io::Write as _;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn stream_log_file_reads_entire_file_when_not_tailing() {
+        let mut log_file = NamedTempFile::new().expect("create temp log file");
+        writeln!(log_file, "first line").expect("write first line");
+        writeln!(log_file, "second line").expect("write second line");
+        log_file.flush().expect("flush log file");
+
+        let mut output = Vec::new();
+        stream_log_file_into(log_file.path(), None, false, &mut output)
+            .expect("stream logs without tail");
+
+        let printed = String::from_utf8(output).expect("valid utf-8 output");
+        assert_eq!(printed, "first line\nsecond line\n");
+    }
+
+    #[test]
+    fn stream_log_file_respects_tail_limit() {
+        let mut log_file = NamedTempFile::new().expect("create temp log file");
+        for entry in ["line 1", "line 2", "line 3", "line 4"] {
+            writeln!(log_file, "{entry}").expect("write log entry");
+        }
+        log_file.flush().expect("flush log file");
+
+        let mut output = Vec::new();
+        stream_log_file_into(log_file.path(), Some(2), false, &mut output)
+            .expect("stream logs with tail");
+
+        let printed = String::from_utf8(output).expect("valid utf-8 output");
+        assert_eq!(printed, "line 3\nline 4\n");
+    }
+}
