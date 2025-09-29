@@ -286,6 +286,15 @@ enum WebCommands {
         )]
         port: Option<u16>,
     },
+    #[command(name = "restart", about = "Restart the Kittynode web service")]
+    Restart {
+        #[arg(
+            long = "port",
+            value_name = "PORT",
+            help = "Port to bind the Kittynode web service"
+        )]
+        port: Option<u16>,
+    },
     #[command(name = "stop", about = "Stop the Kittynode web service")]
     Stop,
     #[command(name = "status", about = "Show Kittynode web service status")]
@@ -450,6 +459,7 @@ impl WebCommands {
     async fn execute(self) -> Result<()> {
         match self {
             WebCommands::Start { port } => commands::start_web_service(port),
+            WebCommands::Restart { port } => commands::restart_web_service(port),
             WebCommands::Stop => commands::stop_web_service(),
             WebCommands::Status => commands::web_status(),
             WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail),
