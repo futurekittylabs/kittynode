@@ -202,7 +202,7 @@ async function initKittynode() {
               Welcome to Kittynode
             </h1>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Operate the world computer. Secure the Ethereum network and earn
+              Run the world computer. Secure the Ethereum network and earn
               rewards.
             </p>
           </div>

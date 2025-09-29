@@ -85,8 +85,8 @@ export default defineConfig({
               slug: "guides/build-from-source",
             },
             {
-              label: "Operate Ethereum",
-              slug: "guides/operate-ethereum",
+              label: "Run Ethereum",
+              slug: "guides/run-ethereum",
               badge: "New",
             },
           ],
