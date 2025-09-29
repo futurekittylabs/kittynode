@@ -3,7 +3,9 @@ import {
   fetchRuntimeStatuses,
 } from "$lib/runtime/packageRuntime.svelte";
 
-let statuses = $state<Record<string, RuntimeStatus>>({});
+type RuntimeStatusMap = Record<string, RuntimeStatus>;
+
+let statuses = $state<RuntimeStatusMap>({});
 let loading = $state(false);
 let pollHandle: number | null = null;
 let pollIntervalMs = 5000;
@@ -31,18 +33,10 @@ async function refresh(names: string[], { force = false } = {}) {
   loading = true;
   try {
     const result = await fetchRuntimeStatuses(names);
-    const next: Record<string, RuntimeStatus> = {};
-    for (const name of names) {
-      next[name] = result[name] ?? "unknown";
-    }
-    statuses = next;
+    statuses = buildStatusMap(names, result);
   } catch (error) {
     console.error("Failed to refresh runtime statuses", error);
-    const fallback: Record<string, RuntimeStatus> = {};
-    for (const name of names) {
-      fallback[name] = "unknown";
-    }
-    statuses = fallback;
+    statuses = buildStatusMap(names);
   } finally {
     loading = false;
   }
@@ -64,6 +58,17 @@ function stop() {
   activeNames = [];
   lastKey = "";
   loading = false;
+}
+
+function buildStatusMap(
+  names: string[],
+  source?: Partial<RuntimeStatusMap>,
+): RuntimeStatusMap {
+  const result: RuntimeStatusMap = {};
+  for (const name of names) {
+    result[name] = source?.[name] ?? "unknown";
+  }
+  return result;
 }
 
 function sync(
