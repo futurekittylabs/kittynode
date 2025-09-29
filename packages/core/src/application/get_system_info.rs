@@ -1,5 +1,6 @@
 use crate::domain::system_info::{DiskInfo, MemoryInfo, ProcessorInfo, StorageInfo, SystemInfo};
 use eyre::Result;
+use std::collections::HashSet;
 use sysinfo::{Disks, System};
 
 // Formats bytes using decimal multiples (B, KB, MB, GB, TB)
@@ -65,12 +66,9 @@ fn get_memory_info(system: &System) -> MemoryInfo {
 }
 
 fn get_storage_info() -> Result<StorageInfo> {
-    const MIN_DISK_SIZE: u64 = 10 * 1024 * 1024 * 1024; // 10 GiB
-
     let disks = Disks::new_with_refreshed_list();
 
-    let mut seen_signatures = std::collections::HashSet::new();
-    let disk_infos: Vec<DiskInfo> = disks
+    let snapshots: Vec<DiskSnapshot> = disks
         .list()
         .iter()
         .filter_map(|disk| {
@@ -90,25 +88,58 @@ fn get_storage_info() -> Result<StorageInfo> {
                 }
             }
 
-            if disk.total_space() < MIN_DISK_SIZE || disk.total_space() == 0 {
+            let mount_point = disk.mount_point().to_str()?.to_string();
+            let name = disk.name().to_str()?.to_string();
+            let file_system = disk.file_system().to_str()?.to_string();
+
+            Some(DiskSnapshot {
+                name,
+                mount_point,
+                total_bytes: disk.total_space(),
+                available_bytes: disk.available_space(),
+                file_system,
+            })
+        })
+        .collect();
+
+    build_storage_info(snapshots)
+}
+
+#[derive(Debug, Clone)]
+struct DiskSnapshot {
+    name: String,
+    mount_point: String,
+    total_bytes: u64,
+    available_bytes: u64,
+    file_system: String,
+}
+
+fn build_storage_info(disks: Vec<DiskSnapshot>) -> Result<StorageInfo> {
+    const MIN_DISK_SIZE: u64 = 10 * 1024 * 1024 * 1024; // 10 GiB
+
+    let mut seen_signatures = HashSet::new();
+    let disk_infos: Vec<DiskInfo> = disks
+        .into_iter()
+        .filter_map(|disk| {
+            if disk.total_bytes < MIN_DISK_SIZE || disk.total_bytes == 0 {
                 return None;
             }
 
-            let storage_signature = (disk.total_space(), disk.available_space());
+            let storage_signature = (disk.total_bytes, disk.available_bytes);
             if !seen_signatures.insert(storage_signature) {
                 return None;
             }
 
             Some(DiskInfo {
-                name: disk.name().to_str()?.to_string(),
-                mount_point: disk.mount_point().to_str()?.to_string(),
-                total_bytes: disk.total_space(),
-                available_bytes: disk.available_space(),
+                name: disk.name,
+                mount_point: disk.mount_point,
+                total_bytes: disk.total_bytes,
+                available_bytes: disk.available_bytes,
                 // For disks, users expect decimal-based sizes like Finder/Windows
-                total_display: format_bytes_decimal(disk.total_space()),
-                used_display: format_bytes_decimal(disk.total_space() - disk.available_space()),
-                available_display: format_bytes_decimal(disk.available_space()),
-                disk_type: disk.file_system().to_str()?.to_string(),
+                total_display: format_bytes_decimal(disk.total_bytes),
+                used_display: format_bytes_decimal(disk.total_bytes - disk.available_bytes),
+                available_display: format_bytes_decimal(disk.available_bytes),
+                disk_type: disk.file_system,
             })
         })
         .collect();
@@ -138,5 +169,76 @@ mod tests {
         let bytes_32_gib = 32u64 * 1024 * 1024 * 1024;
         let s = format_bytes_decimal(bytes_32_gib);
         assert!(s.starts_with("34.36 GB"), "got {s}");
+    }
+
+    #[test]
+    fn build_storage_info_filters_small_and_duplicate_disks() {
+        let disks = vec![
+            DiskSnapshot {
+                name: "primary".into(),
+                mount_point: "/".into(),
+                total_bytes: 512u64 * 1024 * 1024 * 1024, // 512 GiB
+                available_bytes: 200u64 * 1024 * 1024 * 1024,
+                file_system: "apfs".into(),
+            },
+            DiskSnapshot {
+                // Duplicate signature should be ignored
+                name: "duplicate".into(),
+                mount_point: "/System/Volumes/Data".into(),
+                total_bytes: 512u64 * 1024 * 1024 * 1024,
+                available_bytes: 200u64 * 1024 * 1024 * 1024,
+                file_system: "apfs".into(),
+            },
+            DiskSnapshot {
+                // Too small, should be ignored
+                name: "tiny".into(),
+                mount_point: "/tiny".into(),
+                total_bytes: 2u64 * 1024 * 1024 * 1024,
+                available_bytes: 1024u64 * 1024 * 1024,
+                file_system: "ext4".into(),
+            },
+        ];
+
+        let storage = build_storage_info(disks).expect("expected valid storage info");
+        assert_eq!(storage.disks.len(), 1);
+        assert_eq!(storage.disks[0].name, "primary");
+        assert_eq!(
+            storage.disks[0].available_bytes,
+            200u64 * 1024 * 1024 * 1024
+        );
+    }
+
+    #[test]
+    fn build_storage_info_errors_when_no_valid_disks() {
+        let disks = vec![DiskSnapshot {
+            name: "tiny".into(),
+            mount_point: "/tiny".into(),
+            total_bytes: 0,
+            available_bytes: 0,
+            file_system: "ext4".into(),
+        }];
+
+        let err = build_storage_info(disks).expect_err("expected validation failure");
+        assert!(err.to_string().contains("No valid disks"));
+    }
+
+    #[test]
+    fn build_storage_info_formats_display_strings() {
+        let total = 512u64 * 1024 * 1024 * 1024; // 512 GiB
+        let available = 200u64 * 1024 * 1024 * 1024; // 200 GiB
+
+        let storage = build_storage_info(vec![DiskSnapshot {
+            name: "primary".into(),
+            mount_point: "/".into(),
+            total_bytes: total,
+            available_bytes: available,
+            file_system: "apfs".into(),
+        }])
+        .expect("expected valid storage info");
+
+        let disk = &storage.disks[0];
+        assert_eq!(disk.total_display, format_bytes_decimal(total));
+        assert_eq!(disk.available_display, format_bytes_decimal(available));
+        assert_eq!(disk.used_display, format_bytes_decimal(total - available));
     }
 }
