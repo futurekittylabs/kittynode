@@ -29,6 +29,20 @@ impl DockerStartStatus {
 
 static DOCKER_AUTO_STARTED: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
 
+#[derive(Debug, PartialEq, Eq)]
+struct AutoStartDecision {
+    status: DockerStartStatus,
+    attempt_change: AttemptChange,
+    should_start: bool,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum AttemptChange {
+    Reset,
+    Record,
+    None,
+}
+
 /// Attempts to start Docker if the configuration allows auto start and Docker is not already running.
 pub async fn start_docker_if_needed() -> Result<DockerStartStatus> {
     let config = ConfigStore::load()?;
@@ -42,30 +56,32 @@ pub async fn start_docker_if_needed() -> Result<DockerStartStatus> {
         return Ok(DockerStartStatus::Running);
     }
 
-    if is_docker_running().await {
-        let mut attempted = DOCKER_AUTO_STARTED
-            .lock()
-            .expect("docker auto-start mutex poisoned");
-        *attempted = false;
-        return Ok(DockerStartStatus::Running);
-    }
-    if !config.auto_start_docker {
-        return Ok(DockerStartStatus::Disabled);
-    }
+    let docker_running = is_docker_running().await;
 
-    {
+    let (status, should_start) = {
         let mut attempted = DOCKER_AUTO_STARTED
             .lock()
             .expect("docker auto-start mutex poisoned");
-        if *attempted {
-            return Ok(DockerStartStatus::AlreadyStarted);
+
+        let decision =
+            decide_local_auto_start(config.auto_start_docker, docker_running, *attempted);
+
+        match decision.attempt_change {
+            AttemptChange::Reset => *attempted = false,
+            AttemptChange::Record => *attempted = true,
+            AttemptChange::None => {}
         }
-        *attempted = true;
+
+        (decision.status, decision.should_start)
+    };
+
+    if !should_start {
+        return Ok(status);
     }
 
     info!("Starting Docker Desktop via auto-start preference");
     match start_docker().await {
-        Ok(()) => Ok(DockerStartStatus::Starting),
+        Ok(()) => Ok(status),
         Err(err) => {
             let mut attempted = DOCKER_AUTO_STARTED
                 .lock()
@@ -73,5 +89,78 @@ pub async fn start_docker_if_needed() -> Result<DockerStartStatus> {
             *attempted = false;
             Err(err)
         }
+    }
+}
+
+fn decide_local_auto_start(
+    auto_start_enabled: bool,
+    docker_running: bool,
+    already_attempted: bool,
+) -> AutoStartDecision {
+    if docker_running {
+        return AutoStartDecision {
+            status: DockerStartStatus::Running,
+            attempt_change: AttemptChange::Reset,
+            should_start: false,
+        };
+    }
+
+    if !auto_start_enabled {
+        return AutoStartDecision {
+            status: DockerStartStatus::Disabled,
+            attempt_change: AttemptChange::None,
+            should_start: false,
+        };
+    }
+
+    if already_attempted {
+        return AutoStartDecision {
+            status: DockerStartStatus::AlreadyStarted,
+            attempt_change: AttemptChange::None,
+            should_start: false,
+        };
+    }
+
+    AutoStartDecision {
+        status: DockerStartStatus::Starting,
+        attempt_change: AttemptChange::Record,
+        should_start: true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AttemptChange, DockerStartStatus, decide_local_auto_start};
+
+    #[test]
+    fn running_resets_attempt_without_starting() {
+        let decision = decide_local_auto_start(true, true, true);
+        assert_eq!(decision.status, DockerStartStatus::Running);
+        assert_eq!(decision.attempt_change, AttemptChange::Reset);
+        assert!(!decision.should_start);
+    }
+
+    #[test]
+    fn disabled_auto_start_skips_starting() {
+        let decision = decide_local_auto_start(false, false, false);
+        assert_eq!(decision.status, DockerStartStatus::Disabled);
+        assert_eq!(decision.attempt_change, AttemptChange::None);
+        assert!(!decision.should_start);
+    }
+
+    #[test]
+    fn repeated_attempt_reports_already_started() {
+        let decision = decide_local_auto_start(true, false, true);
+        assert_eq!(decision.status, DockerStartStatus::AlreadyStarted);
+        assert_eq!(decision.attempt_change, AttemptChange::None);
+        assert!(!decision.should_start);
+    }
+
+    #[test]
+    fn first_attempt_requests_start_and_records_it() {
+        let decision = decide_local_auto_start(true, false, false);
+        assert_eq!(decision.status, DockerStartStatus::Starting);
+        assert_eq!(decision.attempt_change, AttemptChange::Record);
+        assert!(decision.should_start);
     }
 }
