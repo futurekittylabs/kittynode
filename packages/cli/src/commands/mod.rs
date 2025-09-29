@@ -334,7 +334,18 @@ pub fn stop_web_service() -> Result<()> {
 }
 
 pub fn restart_web_service(port: Option<u16>) -> Result<()> {
-    stop_web_service()?;
+    let port = match port {
+        Some(port) => Some(port),
+        None => match api::get_web_service_status()? {
+            WebServiceStatus::Started { port, .. }
+            | WebServiceStatus::AlreadyRunning { port, .. } => Some(port),
+            _ => None,
+        },
+    };
+
+    let status = api::stop_web_service()?;
+    println!("{}", status);
+
     start_web_service(port)
 }
 
