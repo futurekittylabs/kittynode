@@ -130,15 +130,14 @@ onMount(() => {
     image-rendering: pixelated;
   }
 
-  /* Balanced headings for nicer line breaks */
   .text-balance {
     text-wrap: balance;
   }
 
   /* Shorten space above header on shorter viewports */
+  /* Fallback first, override when svh is supported */
   .hero {
     margin-block-end: 0;
-    /* Fallback first, override when svh is supported */
     padding-block-start: clamp(3.75rem, 12vh, 8.5rem);
     padding-block-start: clamp(3.75rem, 12svh, 8.5rem);
     padding-block-end: clamp(2rem, 6vh, 5rem);
