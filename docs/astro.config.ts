@@ -65,16 +65,6 @@ export default defineConfig({
           label: "Discord",
           href: "https://discord.kittynode.com",
         },
-        {
-          icon: "farcaster",
-          label: "Farcaster",
-          href: "https://farcaster.xyz/kittynode",
-        },
-        {
-          icon: "x.com",
-          label: "X",
-          href: "https://x.com/kittynode",
-        },
       ],
       sidebar: [
         {
