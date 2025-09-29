@@ -205,13 +205,16 @@ fn paths_match(left: &Path, right: &Path) -> bool {
 }
 
 fn cmd_contains_token(process: &Process, token: Option<&str>) -> bool {
+    args_contain_token(process.cmd(), token)
+}
+
+fn args_contain_token(cmd: &[OsString], token: Option<&str>) -> bool {
     let Some(token) = token else {
         return false;
     };
     let service_flag = OsStr::new("--service-token");
     let token_os = OsStr::new(token);
     let token_flag = OsString::from(format!("--service-token={token}"));
-    let cmd = process.cmd();
     for window in cmd.windows(2) {
         if window[0] == service_flag && window[1] == token_os {
             return true;
@@ -271,4 +274,73 @@ fn wait_for_service_ready(child: &mut Child, port: u16) -> Result<()> {
         "Timed out waiting for kittynode-web to bind on port {}",
         port
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsString;
+    use std::fs::{self, File};
+    use tempfile::tempdir;
+
+    #[test]
+    fn validate_web_port_rejects_zero() {
+        assert!(validate_web_port(0).is_err());
+        assert_eq!(validate_web_port(8080).unwrap(), 8080);
+    }
+
+    #[test]
+    fn generate_service_token_emits_hex_string() {
+        let token = generate_service_token();
+        assert_eq!(token.len(), 32);
+        assert!(token.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn args_contain_token_detects_split_arguments() {
+        let args = vec![
+            OsString::from("--flag"),
+            OsString::from("--service-token"),
+            OsString::from("abc123"),
+        ];
+        assert!(args_contain_token(&args, Some("abc123")));
+    }
+
+    #[test]
+    fn args_contain_token_detects_inline_argument() {
+        let args = vec![OsString::from("--service-token=abc123")];
+        assert!(args_contain_token(&args, Some("abc123")));
+    }
+
+    #[test]
+    fn args_contain_token_is_false_when_missing() {
+        let args = vec![OsString::from("--service-token=abc123")];
+        assert!(!args_contain_token(&args, Some("zzz")));
+        assert!(!args_contain_token(&args, None));
+    }
+
+    #[test]
+    fn paths_match_handles_equivalent_paths() {
+        let temp = tempdir().expect("failed to create temp dir");
+        let bin_dir = temp.path().join("bin");
+        fs::create_dir_all(&bin_dir).expect("failed to create bin dir");
+        let target = bin_dir.join("kittynode-web");
+        File::create(&target).expect("failed to create dummy binary");
+
+        let alternate = bin_dir.join(".").join("kittynode-web");
+        assert!(paths_match(&target, &alternate));
+    }
+
+    #[test]
+    fn paths_match_rejects_different_targets() {
+        let temp = tempdir().expect("failed to create temp dir");
+        let bin_dir = temp.path().join("bin");
+        fs::create_dir_all(&bin_dir).expect("failed to create bin dir");
+        let a = bin_dir.join("kittynode-web");
+        let b = bin_dir.join("other-binary");
+        File::create(&a).expect("failed to create binary a");
+        File::create(&b).expect("failed to create binary b");
+
+        assert!(!paths_match(&a, &b));
+    }
 }
