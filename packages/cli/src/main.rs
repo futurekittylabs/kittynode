@@ -323,6 +323,144 @@ enum WebCommands {
     },
 }
 
+impl Commands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            Commands::Package { command } => command.execute().await,
+            Commands::Config { command } => command.execute(),
+            Commands::Capability { command } => command.execute(),
+            Commands::System { command } => command.execute().await,
+            Commands::Docker { command } => command.execute().await,
+            Commands::Container { command } => command.execute().await,
+            Commands::Validator { command } => command.execute(),
+            Commands::Web { command } => command.execute().await,
+        }
+    }
+}
+
+impl PackageCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            PackageCommands::List => commands::get_packages().await,
+            PackageCommands::Installed => commands::get_installed_packages().await,
+            PackageCommands::Install { name } => commands::install_package(name).await,
+            PackageCommands::Uninstall {
+                name,
+                include_images,
+            } => commands::delete_package(name, include_images).await,
+            PackageCommands::Stop { name } => commands::stop_package(name).await,
+            PackageCommands::Resume { name } => commands::resume_package(name).await,
+            PackageCommands::Config { command } => command.execute().await,
+        }
+    }
+}
+
+impl PackageConfigCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            PackageConfigCommands::Show { name } => commands::get_package_config(name).await,
+            PackageConfigCommands::Set { name, values } => {
+                commands::update_package_config(name, values).await
+            }
+        }
+    }
+}
+
+impl ConfigCommands {
+    fn execute(self) -> Result<()> {
+        match self {
+            ConfigCommands::Show => commands::get_config(),
+            ConfigCommands::Init => commands::init_kittynode(),
+            ConfigCommands::Delete => commands::delete_kittynode(),
+        }
+    }
+}
+
+impl CapabilityCommands {
+    fn execute(self) -> Result<()> {
+        match self {
+            CapabilityCommands::List => commands::get_capabilities(),
+            CapabilityCommands::Add { name } => commands::add_capability(name),
+            CapabilityCommands::Remove { name } => commands::remove_capability(name),
+        }
+    }
+}
+
+impl SystemCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            SystemCommands::Info => commands::system_info().await,
+            SystemCommands::State => commands::get_operational_state().await,
+        }
+    }
+}
+
+impl DockerCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            DockerCommands::Status => commands::is_docker_running().await,
+            DockerCommands::Start => commands::start_docker_if_needed().await,
+        }
+    }
+}
+
+impl ContainerCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            ContainerCommands::Logs { container, tail } => {
+                commands::get_container_logs(container, tail).await
+            }
+        }
+    }
+}
+
+impl ValidatorCommands {
+    fn execute(self) -> Result<()> {
+        match self {
+            ValidatorCommands::GenerateKeys {
+                output_dir,
+                entropy,
+                file_name,
+                overwrite,
+            } => commands::validator_generate_keys(output_dir, file_name, entropy, overwrite),
+            ValidatorCommands::CreateDepositData {
+                key_path,
+                output_path,
+                withdrawal_address,
+                amount_gwei,
+                network,
+                overwrite,
+            } => {
+                let params = CreateDepositDataParams::for_network(
+                    key_path,
+                    output_path,
+                    &withdrawal_address,
+                    amount_gwei,
+                    &network,
+                    overwrite,
+                )?;
+
+                commands::validator_create_deposit_data(params)
+            }
+        }
+    }
+}
+
+impl WebCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            WebCommands::Start { port } => commands::start_web_service(port),
+            WebCommands::Stop => commands::stop_web_service(),
+            WebCommands::Status => commands::web_status(),
+            WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail),
+            WebCommands::RunInternal {
+                port,
+                service_token,
+            } => commands::run_web_service(port, service_token).await,
+        }
+    }
+}
+
 fn parse_key_val(s: &str) -> Result<(String, String), String> {
     let position = s
         .find('=')
@@ -341,86 +479,5 @@ async fn main() -> Result<()> {
         .with_writer(std::io::stderr)
         .init();
     let cli = Cli::parse();
-
-    match cli.command {
-        Commands::Package { command } => match command {
-            PackageCommands::List => commands::get_packages().await?,
-            PackageCommands::Installed => commands::get_installed_packages().await?,
-            PackageCommands::Install { name } => commands::install_package(name).await?,
-            PackageCommands::Uninstall {
-                name,
-                include_images,
-            } => commands::delete_package(name, include_images).await?,
-            PackageCommands::Stop { name } => commands::stop_package(name).await?,
-            PackageCommands::Resume { name } => commands::resume_package(name).await?,
-            PackageCommands::Config { command } => match command {
-                PackageConfigCommands::Show { name } => commands::get_package_config(name).await?,
-                PackageConfigCommands::Set { name, values } => {
-                    commands::update_package_config(name, values).await?
-                }
-            },
-        },
-        Commands::Config { command } => match command {
-            ConfigCommands::Show => commands::get_config()?,
-            ConfigCommands::Init => commands::init_kittynode()?,
-            ConfigCommands::Delete => commands::delete_kittynode()?,
-        },
-        Commands::Capability { command } => match command {
-            CapabilityCommands::List => commands::get_capabilities()?,
-            CapabilityCommands::Add { name } => commands::add_capability(name)?,
-            CapabilityCommands::Remove { name } => commands::remove_capability(name)?,
-        },
-        Commands::System { command } => match command {
-            SystemCommands::Info => commands::system_info().await?,
-            SystemCommands::State => commands::get_operational_state().await?,
-        },
-        Commands::Docker { command } => match command {
-            DockerCommands::Status => commands::is_docker_running().await?,
-            DockerCommands::Start => commands::start_docker_if_needed().await?,
-        },
-        Commands::Container { command } => match command {
-            ContainerCommands::Logs { container, tail } => {
-                commands::get_container_logs(container, tail).await?
-            }
-        },
-        Commands::Validator { command } => match command {
-            ValidatorCommands::GenerateKeys {
-                output_dir,
-                entropy,
-                file_name,
-                overwrite,
-            } => commands::validator_generate_keys(output_dir, file_name, entropy, overwrite)?,
-            ValidatorCommands::CreateDepositData {
-                key_path,
-                output_path,
-                withdrawal_address,
-                amount_gwei,
-                network,
-                overwrite,
-            } => {
-                let params = CreateDepositDataParams::for_network(
-                    key_path,
-                    output_path,
-                    &withdrawal_address,
-                    amount_gwei,
-                    &network,
-                    overwrite,
-                )?;
-
-                commands::validator_create_deposit_data(params)?
-            }
-        },
-        Commands::Web { command } => match command {
-            WebCommands::Start { port } => commands::start_web_service(port)?,
-            WebCommands::Stop => commands::stop_web_service()?,
-            WebCommands::Status => commands::web_status()?,
-            WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail)?,
-            WebCommands::RunInternal {
-                port,
-                service_token,
-            } => commands::run_web_service(port, service_token).await?,
-        },
-    }
-
-    Ok(())
+    cli.command.execute().await
 }
