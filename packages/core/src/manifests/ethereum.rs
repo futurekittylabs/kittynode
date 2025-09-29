@@ -158,3 +158,87 @@ impl Ethereum {
         ])
     }
 }
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod tests {
+    use super::*;
+
+    fn find_checkpoint_url(container: &Container) -> Option<&str> {
+        container
+            .cmd
+            .windows(2)
+            .find(|window| window[0] == "--checkpoint-sync-url")
+            .map(|window| window[1].as_str())
+    }
+
+    fn find_jwt_binding(bindings: &[Binding]) -> Option<&Binding> {
+        bindings
+            .iter()
+            .find(|binding| binding.destination.ends_with("/jwt.hex"))
+    }
+
+    #[test]
+    fn mainnet_containers_use_mainnet_checkpoint() {
+        let kittynode_root = kittynode_path().expect("expected kittynode path");
+        let containers = Ethereum::get_containers("mainnet").expect("expected mainnet containers");
+
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("lighthouse container missing");
+        assert_eq!(
+            find_checkpoint_url(lighthouse),
+            Some("https://mainnet.checkpoint.sigp.io/")
+        );
+
+        let jwt_binding = find_jwt_binding(&lighthouse.file_bindings).expect("jwt binding missing");
+        let expected_source = kittynode_root.join("jwt.hex").to_string_lossy().to_string();
+        assert_eq!(jwt_binding.source, expected_source);
+
+        let reth = containers
+            .iter()
+            .find(|container| container.name == "reth-node")
+            .expect("reth container missing");
+        assert!(
+            reth.volume_bindings
+                .iter()
+                .any(|binding| binding.destination == "/root/.local/share/reth/mainnet"),
+            "reth data directory should be namespaced to mainnet",
+        );
+    }
+
+    #[test]
+    fn non_mainnet_containers_use_testnet_checkpoint() {
+        let kittynode_root = kittynode_path().expect("expected kittynode path");
+        let network = "holesky";
+        let containers =
+            Ethereum::get_containers(network).expect("expected non-mainnet containers");
+
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("lighthouse container missing");
+        assert_eq!(
+            find_checkpoint_url(lighthouse),
+            Some("https://checkpoint-sync.hoodi.ethpandaops.io")
+        );
+
+        let jwt_binding = find_jwt_binding(&lighthouse.file_bindings).expect("jwt binding missing");
+        assert_eq!(
+            jwt_binding.destination,
+            format!("/root/.lighthouse/{network}/jwt.hex")
+        );
+
+        let reth = containers
+            .iter()
+            .find(|container| container.name == "reth-node")
+            .expect("reth container missing");
+        let reth_binding = find_jwt_binding(&reth.file_bindings).expect("reth jwt binding missing");
+        assert_eq!(
+            reth_binding.destination,
+            format!("/root/.local/share/reth/{network}/jwt.hex")
+        );
+        let expected_source = kittynode_root.join("jwt.hex").to_string_lossy().to_string();
+        assert_eq!(reth_binding.source, expected_source);
+    }
+}
