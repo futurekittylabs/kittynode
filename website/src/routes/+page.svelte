@@ -134,19 +134,27 @@ onMount(() => {
     text-wrap: balance;
   }
 
-  /* Shorten space above header on shorter viewports */
-  /* Fallback first, override when svh is supported */
   .hero {
+    --vh: 1vh;
+    --hero-pt: clamp(3.75rem, calc(12 * var(--vh)), 8.5rem);
+    --hero-pb: clamp(2rem, calc(6 * var(--vh)), 5rem);
     margin-block-end: 0;
-    padding-block-start: clamp(3.75rem, 12vh, 8.5rem);
-    padding-block-start: clamp(3.75rem, 12svh, 8.5rem);
-    padding-block-end: clamp(2rem, 6vh, 5rem);
-    padding-block-end: clamp(2rem, 6svh, 5rem);
+    padding-block-start: var(--hero-pt);
+    padding-block-end: var(--hero-pb);
+  }
+  @supports (height: 100svh) {
+    .hero {
+      --vh: 1svh;
+    }
+  }
+  @media (max-width: 480px) {
+    .hero {
+      --hero-pt: clamp(1.25rem, calc(7.5 * var(--vh)), 3.25rem);
+    }
   }
   @media (max-height: 680px) {
     .hero {
-      padding-block-start: clamp(1.25rem, 5vh, 3rem);
-      padding-block-start: clamp(1.25rem, 5svh, 3rem);
+      --hero-pt: clamp(1.25rem, calc(5 * var(--vh)), 3rem);
     }
   }
 </style>
