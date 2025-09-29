@@ -158,3 +158,90 @@ impl Ethereum {
         ])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infra::file::kittynode_path;
+
+    fn container<'a>(containers: &'a [Container], name: &str) -> &'a Container {
+        containers
+            .iter()
+            .find(|container| container.name == name)
+            .unwrap_or_else(|| panic!("missing container {}", name))
+    }
+
+    fn flag_value<'a>(cmd: &'a [String], flag: &str) -> Option<&'a str> {
+        cmd.iter()
+            .position(|value| value == flag)
+            .and_then(|idx| cmd.get(idx + 1))
+            .map(String::as_str)
+    }
+
+    #[test]
+    fn get_package_sets_expected_defaults() {
+        let package = Ethereum::get_package().expect("package should be constructed");
+
+        assert_eq!(package.name(), "Ethereum");
+        assert_eq!(package.network_name(), "ethereum-network");
+        assert_eq!(
+            package.description(),
+            "This package installs an Ethereum node."
+        );
+
+        let default_config = &package.default_config;
+        let network = default_config
+            .values
+            .get("network")
+            .expect("network should be present");
+        assert_eq!(network, "hoodi");
+
+        assert_eq!(package.containers.len(), 2);
+        let reth = container(&package.containers, "reth-node");
+
+        assert_eq!(flag_value(&reth.cmd, "--chain"), Some("hoodi"));
+        assert!(reth.port_bindings.contains_key("30303/tcp"));
+        assert!(reth.port_bindings.contains_key("30303/udp"));
+
+        assert_eq!(reth.volume_bindings.len(), 1);
+        assert_eq!(
+            reth.volume_bindings[0].destination,
+            "/root/.local/share/reth/hoodi"
+        );
+    }
+
+    #[test]
+    fn get_containers_apply_network_specific_configuration() {
+        let containers =
+            Ethereum::get_containers("mainnet").expect("mainnet containers should load");
+        let reth = container(&containers, "reth-node");
+        let lighthouse = container(&containers, "lighthouse-node");
+
+        let expected_jwt_source = kittynode_path()
+            .expect("home dir should resolve")
+            .join("jwt.hex")
+            .to_string_lossy()
+            .to_string();
+
+        let reth_jwt_binding = reth
+            .file_bindings
+            .iter()
+            .find(|binding| binding.destination.ends_with("/mainnet/jwt.hex"))
+            .expect("reth jwt binding");
+        assert_eq!(reth_jwt_binding.source, expected_jwt_source);
+        assert_eq!(reth_jwt_binding.options.as_deref(), Some("ro"));
+
+        assert_eq!(
+            flag_value(&lighthouse.cmd, "--checkpoint-sync-url"),
+            Some("https://mainnet.checkpoint.sigp.io/")
+        );
+
+        let lighthouse_jwt_binding = lighthouse
+            .file_bindings
+            .iter()
+            .find(|binding| binding.destination.ends_with("/mainnet/jwt.hex"))
+            .expect("lighthouse jwt binding");
+        assert_eq!(lighthouse_jwt_binding.source, expected_jwt_source);
+        assert_eq!(lighthouse_jwt_binding.options.as_deref(), Some("ro"));
+    }
+}
