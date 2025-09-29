@@ -1,5 +1,6 @@
 use eyre::Result;
 use std::collections::HashMap;
+use std::path::Path;
 
 use crate::{
     domain::container::{Binding, Container, PortBinding},
@@ -33,15 +34,21 @@ impl PackageDefinition for Ethereum {
 impl Ethereum {
     pub(crate) fn get_containers(network: &str) -> Result<Vec<Container>> {
         let kittynode_path = kittynode_path()?;
-        let jwt_path = kittynode_path.join("jwt.hex");
+        Ok(Self::containers_for(network, kittynode_path.as_path()))
+    }
 
-        let checkpoint_sync_url = if network == "mainnet" {
-            "https://mainnet.checkpoint.sigp.io/"
-        } else {
-            "https://checkpoint-sync.hoodi.ethpandaops.io"
-        };
+    fn containers_for(network: &str, kittynode_path: &Path) -> Vec<Container> {
+        let jwt_source = kittynode_path
+            .join("jwt.hex")
+            .to_string_lossy()
+            .into_owned();
+        let lighthouse_source = kittynode_path
+            .join(".lighthouse")
+            .to_string_lossy()
+            .into_owned();
+        let checkpoint_sync_url = Self::checkpoint_sync_url(network);
 
-        Ok(vec![
+        vec![
             Container {
                 name: "reth-node".to_string(),
                 image: "ghcr.io/paradigmxyz/reth".to_string(),
@@ -85,7 +92,7 @@ impl Ethereum {
                     options: None,
                 }],
                 file_bindings: vec![Binding {
-                    source: jwt_path.display().to_string(),
+                    source: jwt_source.clone(),
                     destination: format!("/root/.local/share/reth/{network}/jwt.hex"),
                     options: Some("ro".to_string()),
                 }],
@@ -104,7 +111,7 @@ impl Ethereum {
                     "--checkpoint-sync-url".to_string(),
                     checkpoint_sync_url.to_string(),
                     "--execution-jwt".to_string(),
-                    format!("/root/.lighthouse/{network}/jwt.hex").to_string(),
+                    format!("/root/.lighthouse/{network}/jwt.hex"),
                     "--execution-endpoint".to_string(),
                     "http://reth-node:8551".to_string(),
                 ],
@@ -141,20 +148,110 @@ impl Ethereum {
                 volume_bindings: vec![],
                 file_bindings: vec![
                     Binding {
-                        source: kittynode_path
-                            .join(".lighthouse")
-                            .to_string_lossy()
-                            .to_string(),
+                        source: lighthouse_source,
                         destination: "/root/.lighthouse".to_string(),
                         options: None,
                     },
                     Binding {
-                        source: jwt_path.to_string_lossy().to_string(),
+                        source: jwt_source,
                         destination: format!("/root/.lighthouse/{network}/jwt.hex"),
                         options: Some("ro".to_string()),
                     },
                 ],
             },
-        ])
+        ]
+    }
+
+    fn checkpoint_sync_url(network: &str) -> &'static str {
+        if network == "mainnet" {
+            "https://mainnet.checkpoint.sigp.io/"
+        } else {
+            "https://checkpoint-sync.hoodi.ethpandaops.io"
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn containers_for_uses_expected_checkpoint_urls() {
+        let temp = tempdir().unwrap();
+        let containers = Ethereum::containers_for("mainnet", temp.path());
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("missing lighthouse container");
+
+        let checkpoint_flag_index = lighthouse
+            .cmd
+            .iter()
+            .position(|arg| arg == "--checkpoint-sync-url")
+            .expect("checkpoint flag missing");
+        assert_eq!(
+            lighthouse.cmd[checkpoint_flag_index + 1],
+            "https://mainnet.checkpoint.sigp.io/"
+        );
+
+        let alt_containers = Ethereum::containers_for("hoodi", temp.path());
+        let alt_lighthouse = alt_containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("missing lighthouse container");
+        let alt_checkpoint_flag_index = alt_lighthouse
+            .cmd
+            .iter()
+            .position(|arg| arg == "--checkpoint-sync-url")
+            .expect("checkpoint flag missing");
+        assert_eq!(
+            alt_lighthouse.cmd[alt_checkpoint_flag_index + 1],
+            "https://checkpoint-sync.hoodi.ethpandaops.io"
+        );
+    }
+
+    #[test]
+    fn containers_for_mounts_files_from_provided_kittynode_path() {
+        let temp = tempdir().unwrap();
+        let containers = Ethereum::containers_for("hoodi", temp.path());
+
+        let reth = containers
+            .iter()
+            .find(|container| container.name == "reth-node")
+            .expect("missing reth container");
+        let lighthouse = containers
+            .iter()
+            .find(|container| container.name == "lighthouse-node")
+            .expect("missing lighthouse container");
+
+        let expected_jwt_source = temp
+            .path()
+            .join("jwt.hex")
+            .to_string_lossy()
+            .into_owned();
+        let expected_lighthouse_source = temp
+            .path()
+            .join(".lighthouse")
+            .to_string_lossy()
+            .into_owned();
+
+        assert!(reth.file_bindings.iter().any(|binding| {
+            binding.source.as_str() == expected_jwt_source.as_str()
+                && binding.destination.as_str() == "/root/.local/share/reth/hoodi/jwt.hex"
+                && binding.options.as_deref() == Some("ro")
+        }));
+
+        assert!(lighthouse.file_bindings.iter().any(|binding| {
+            binding.source.as_str() == expected_lighthouse_source.as_str()
+                && binding.destination.as_str() == "/root/.lighthouse"
+                && binding.options.is_none()
+        }));
+
+        assert!(lighthouse.file_bindings.iter().any(|binding| {
+            binding.source.as_str() == expected_jwt_source.as_str()
+                && binding.destination.as_str() == "/root/.lighthouse/hoodi/jwt.hex"
+                && binding.options.as_deref() == Some("ro")
+        }));
     }
 }
