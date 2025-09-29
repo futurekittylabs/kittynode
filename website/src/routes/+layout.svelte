@@ -22,7 +22,7 @@ let { children } = $props();
 
 <div class="flex min-h-screen flex-col">
   <div class="mx-auto flex min-h-screen w-full max-w-[100ch] flex-col px-6">
-    <header class="flex h-16 items-center justify-between border-b px-1">
+    <header class="flex h-16 items-center justify-between border-b px-0.5">
       <a href="/" class="wordmark">
         <picture>
           <source
