@@ -432,4 +432,36 @@ mod tests {
         result.unwrap();
         assert!(dir.path().join("artifact.json").exists());
     }
+
+    #[test]
+    fn decode_hex_normalizes_prefix_and_whitespace() {
+        let parsed = decode_hex("  0x0a0B0c  ").expect("expected successful decode");
+        assert_eq!(parsed, vec![0x0a, 0x0b, 0x0c]);
+    }
+
+    #[test]
+    fn decode_hex_reports_odd_length_inputs() {
+        let err = decode_hex("0xabc").expect_err("expected validation failure");
+        assert!(err.to_string().contains("even length"));
+    }
+
+    #[test]
+    fn decode_hex_reports_non_hex_characters() {
+        let err = decode_hex("0xz0").expect_err("expected validation failure");
+        assert!(err.to_string().contains("invalid hex"));
+    }
+
+    #[test]
+    fn decode_hex_fixed_enforces_exact_length() {
+        let err =
+            decode_hex_fixed::<4>("0x0011").expect_err("expected size mismatch to fail decoding");
+        assert!(err.to_string().contains("expected 4 bytes"));
+    }
+
+    #[test]
+    fn next_power_of_two_handles_zero_and_partial_powers() {
+        assert_eq!(next_power_of_two(0), 1);
+        assert_eq!(next_power_of_two(3), 4);
+        assert_eq!(next_power_of_two(8), 8);
+    }
 }
