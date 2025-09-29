@@ -9,7 +9,7 @@ version = "0.17.0"
 
 [dependencies]
 url = "2.5.7"
-bollard = "0.19.2"
+bollard = "0.19.3"
 eyre = { version = "0.6.12", default-features = false, features = [
   "auto-install",
   "track-caller",
