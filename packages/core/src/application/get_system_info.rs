@@ -17,10 +17,38 @@ fn format_bytes_decimal(bytes: u64) -> String {
     format!("{:.2} {}", value, units[unit_index])
 }
 
-// Formats memory as whole-number GB (binary-based), e.g., "32 GB"
+// Formats memory preferring whole-number GB. We snap to common marketed
+// capacities (8, 16, 32, 64, ... GB) when the reported bytes are closely below
+// those tiers to avoid showing "31 GB" on a 32 GB machine. When memory is below
+// 1 GiB we fall back to MB granularity for accuracy on smaller systems.
 fn format_memory_gb(bytes: u64) -> String {
-    let gb = (bytes as f64 / 1024f64.powi(3)).round() as u64;
-    format!("{} GB", gb)
+    const MIB: u64 = 1024 * 1024;
+    const GIB: u64 = 1024 * 1024 * 1024;
+    const MARKETING_LEVELS: &[u64] = &[
+        4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048,
+    ];
+    const MARKETING_TOLERANCE: f64 = 0.07; // 7% below a tier still rounds up.
+
+    if bytes >= GIB {
+        let actual_gb = bytes as f64 / GIB as f64;
+        let fallback_gb = actual_gb.round().max(1.0) as u64;
+
+        let snapped_gb = MARKETING_LEVELS
+            .iter()
+            .copied()
+            .find(|&tier| {
+                let tier_f = tier as f64;
+                tier_f >= actual_gb && (tier_f - actual_gb) / tier_f <= MARKETING_TOLERANCE
+            })
+            .unwrap_or(fallback_gb);
+
+        format!("{} GB", snapped_gb)
+    } else if bytes >= MIB {
+        let mb = bytes.div_ceil(MIB);
+        format!("{} MB", mb)
+    } else {
+        format!("{} B", bytes)
+    }
 }
 
 pub fn get_system_info() -> Result<SystemInfo> {
@@ -161,6 +189,50 @@ mod tests {
         let bytes_32_gib = 32u64 * 1024 * 1024 * 1024;
         let s = format_memory_gb(bytes_32_gib);
         assert_eq!(s, "32 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_ceil_prevents_under_reporting() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        const MIB: u64 = 1024 * 1024;
+
+        // 32 GiB minus 512 MiB should still display as 32 GB for user expectations
+        let bytes = (32 * GIB) - (512 * MIB);
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "32 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_snaps_to_marketing_tier_when_exactly_under() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        // Exactly 31 GiB should report 32 GB marketed size
+        let bytes = 31 * GIB;
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "32 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_uses_mb_for_sub_gib_values() {
+        const MIB: u64 = 1024 * 1024;
+        let bytes = 512 * MIB;
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "512 MB", "got {s}");
+    }
+
+    #[test]
+    fn memory_falls_back_when_far_from_marketing_tier() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        let bytes = 20 * GIB;
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "20 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_rounds_nearest_when_not_marketing_tier() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        let bytes = (20 * GIB) + (200 * 1024 * 1024); // ~20.2 GiB
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "20 GB", "got {s}");
     }
 
     #[test]
