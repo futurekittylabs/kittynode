@@ -1,3 +1,4 @@
+use super::filesystem::ensure_parent_secure;
 use super::ports::{CryptoProvider, ValidatorFilesystem};
 use crate::domain::validator::DepositData;
 use crate::infra::validator::{SimpleCryptoProvider, StdValidatorFilesystem};
@@ -134,13 +135,11 @@ where
             )
         })?;
 
-    if let Some(parent) = params.output_path.parent() {
-        filesystem
-            .ensure_secure_directory(parent)
-            .with_context(|| {
-                format!("invalid validator artifact directory: {}", parent.display())
-            })?;
-    }
+    ensure_parent_secure(
+        &params.output_path,
+        filesystem,
+        "invalid validator artifact directory",
+    )?;
 
     let mut deposit = crypto
         .create_deposit_data(
