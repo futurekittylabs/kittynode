@@ -17,10 +17,22 @@ fn format_bytes_decimal(bytes: u64) -> String {
     format!("{:.2} {}", value, units[unit_index])
 }
 
-// Formats memory as whole-number GB (binary-based), e.g., "32 GB"
+// Formats memory preferring whole-number GB. We ceil to avoid under-reporting
+// marketing capacities (e.g., 31.3 GiB should display as "32 GB").
+// For small values (< 1 GiB) we fall back to MB granularity.
 fn format_memory_gb(bytes: u64) -> String {
-    let gb = (bytes as f64 / 1024f64.powi(3)).round() as u64;
-    format!("{} GB", gb)
+    const MIB: u64 = 1024 * 1024;
+    const GIB: u64 = 1024 * 1024 * 1024;
+
+    if bytes >= GIB {
+        let gb = bytes.div_ceil(GIB);
+        format!("{} GB", gb)
+    } else if bytes >= MIB {
+        let mb = bytes.div_ceil(MIB);
+        format!("{} MB", mb)
+    } else {
+        format!("{} B", bytes)
+    }
 }
 
 pub fn get_system_info() -> Result<SystemInfo> {
@@ -161,6 +173,25 @@ mod tests {
         let bytes_32_gib = 32u64 * 1024 * 1024 * 1024;
         let s = format_memory_gb(bytes_32_gib);
         assert_eq!(s, "32 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_ceil_prevents_under_reporting() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        const MIB: u64 = 1024 * 1024;
+
+        // 32 GiB minus 512 MiB should still display as 32 GB for user expectations
+        let bytes = (32 * GIB) - (512 * MIB);
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "32 GB", "got {s}");
+    }
+
+    #[test]
+    fn memory_uses_mb_for_sub_gib_values() {
+        const MIB: u64 = 1024 * 1024;
+        let bytes = 512 * MIB;
+        let s = format_memory_gb(bytes);
+        assert_eq!(s, "512 MB", "got {s}");
     }
 
     #[test]
