@@ -37,8 +37,8 @@ fn resolve_requested_packages<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::package::{Package, PackageConfig};
     use crate::domain::container::Container;
+    use crate::domain::package::{Package, PackageConfig};
     use std::collections::HashMap;
 
     fn make_package(name: &str) -> Package {
