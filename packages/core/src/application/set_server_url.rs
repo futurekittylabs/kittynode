@@ -59,8 +59,10 @@ pub fn set_server_url(endpoint: String) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_server_url, validate_server_url};
+    use super::{apply_server_url, set_server_url, validate_server_url};
+    use crate::application::test_support::ConfigSandbox;
     use crate::domain::config::Config;
+    use crate::infra::config::ConfigStore;
 
     #[test]
     fn validate_allows_empty_endpoint() {
@@ -114,5 +116,30 @@ mod tests {
         assert_eq!(config.server_url, "");
         assert_eq!(config.last_server_url, "");
         assert!(!config.has_remote_server);
+    }
+
+    #[test]
+    fn set_server_url_updates_persistent_config() {
+        let _sandbox = ConfigSandbox::new();
+
+        set_server_url("https://example.invalid".into())
+            .expect("setting server url should succeed");
+
+        let config = ConfigStore::load().expect("config should load after save");
+        assert_eq!(config.server_url, "https://example.invalid");
+        assert_eq!(config.last_server_url, "https://example.invalid");
+        assert!(
+            config.has_remote_server,
+            "has_remote_server should be true after setting url"
+        );
+
+        set_server_url(String::new()).expect("clearing server url should succeed");
+        let config = ConfigStore::load().expect("config should load after clearing");
+        assert_eq!(config.server_url, "");
+        assert_eq!(config.last_server_url, "https://example.invalid");
+        assert!(
+            !config.has_remote_server,
+            "has_remote_server should be false after clearing url"
+        );
     }
 }
