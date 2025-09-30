@@ -39,3 +39,50 @@ impl fmt::Display for WebServiceStatus {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_started_formats_message_with_port_and_pid() {
+        let status = WebServiceStatus::Started {
+            pid: 12345,
+            port: 3000,
+        };
+        assert_eq!(
+            status.to_string(),
+            "Kittynode web service started on port 3000 (pid 12345)"
+        );
+    }
+
+    #[test]
+    fn display_already_running_formats_message_with_port_and_pid() {
+        let status = WebServiceStatus::AlreadyRunning {
+            pid: 67890,
+            port: 8080,
+        };
+        assert_eq!(
+            status.to_string(),
+            "Kittynode web service already running on port 8080 (pid 67890)"
+        );
+    }
+
+    #[test]
+    fn display_stopped_formats_message_with_port_and_pid() {
+        let status = WebServiceStatus::Stopped {
+            pid: 99999,
+            port: 4000,
+        };
+        assert_eq!(
+            status.to_string(),
+            "Kittynode web service stopped on port 4000 (pid 99999)"
+        );
+    }
+
+    #[test]
+    fn display_not_running_formats_simple_message() {
+        let status = WebServiceStatus::NotRunning;
+        assert_eq!(status.to_string(), "Kittynode web service is not running");
+    }
+}
