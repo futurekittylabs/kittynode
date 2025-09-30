@@ -24,7 +24,7 @@ fn normalize_base_url(server_url: &str) -> Option<String> {
 }
 
 #[async_trait]
-pub trait CoreClient: Send + Sync {
+pub trait CoreClient: Send + Sync + std::any::Any {
     /// Retrieve the current package catalog from the core. Implementations may call the
     /// core directly (local) or proxy the HTTP API (remote) but must return the same data shape.
     async fn get_packages(&self) -> Result<HashMap<String, Package>>;
@@ -80,6 +80,25 @@ pub trait CoreClient: Send + Sync {
         &self,
         params: CreateDepositDataParams,
     ) -> Result<DepositData>;
+}
+
+#[cfg(test)]
+pub(crate) trait CoreClientTestExt {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync);
+}
+
+#[cfg(test)]
+impl CoreClientTestExt for dyn CoreClient {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
+        self
+    }
+}
+
+#[cfg(test)]
+impl CoreClientTestExt for Arc<dyn CoreClient> {
+    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
+        (**self).as_any()
+    }
 }
 
 pub struct LocalCoreClient;
@@ -466,5 +485,173 @@ fn create_client(config: &Config) -> Result<Arc<dyn CoreClient>> {
         Ok(Arc::new(HttpCoreClient::new(&base_url)?) as Arc<dyn CoreClient>)
     } else {
         Ok(Arc::new(LocalCoreClient) as Arc<dyn CoreClient>)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        Json, Router,
+        extract::{Path, State},
+        http::StatusCode,
+        response::{IntoResponse, Response},
+        routing::{get, post},
+    };
+    use eyre::Result as EyreResult;
+    use serde::Deserialize;
+    use std::collections::HashMap as StdHashMap;
+    use std::future::IntoFuture;
+    use std::sync::Arc;
+    use tokio::net::TcpListener;
+    use tokio::sync::Mutex as AsyncMutex;
+    use tokio::task::JoinHandle;
+
+    #[test]
+    fn normalize_base_url_handles_common_cases() {
+        assert_eq!(
+            super::normalize_base_url(" https://example.com/ "),
+            Some("https://example.com".to_string())
+        );
+        assert_eq!(
+            super::normalize_base_url("http://example.com"),
+            Some("http://example.com".to_string())
+        );
+        assert_eq!(super::normalize_base_url(""), None);
+        assert_eq!(super::normalize_base_url("example.com"), None);
+        assert_eq!(super::normalize_base_url("ftp://example.com"), None);
+    }
+
+    #[tokio::test]
+    async fn core_client_manager_reloads_between_local_and_remote() -> EyreResult<()> {
+        let (base_url, server_handle) = spawn_test_server().await?;
+
+        let mut config = Config::default();
+        config.server_url.clear();
+        let manager = CoreClientManager::new(&config)?;
+        assert!(manager.client().as_any().is::<LocalCoreClient>());
+
+        config.server_url = format!(" {}/ ", base_url);
+        manager.reload(&config)?;
+        let client = manager.client();
+        assert!(client.as_any().is::<HttpCoreClient>());
+
+        let capabilities = client.get_capabilities().await?;
+        assert_eq!(capabilities, vec!["remote-capability".to_string()]);
+
+        server_handle.abort();
+        let _ = server_handle.await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn http_core_client_handles_success_and_error_paths() -> EyreResult<()> {
+        let (base_url, server_handle) = spawn_test_server().await?;
+        let client = HttpCoreClient::new(&base_url)?;
+
+        assert_eq!(
+            client.get_capabilities().await?,
+            vec!["remote-capability".to_string()]
+        );
+        client.add_capability("beta").await?;
+        client.install_package("ok").await?;
+        let states = client
+            .get_package_runtime_states(&["alpha".to_string()])
+            .await?;
+        assert!(states.get("alpha").is_some_and(|state| state.running));
+        assert_eq!(
+            client.start_docker_if_needed().await?,
+            DockerStartStatus::Running
+        );
+
+        let install_err = client
+            .install_package("fail")
+            .await
+            .expect_err("expected failure");
+        assert!(install_err.to_string().contains("HTTP 500"));
+
+        assert!(client.is_docker_running().await?);
+        assert!(!client.is_docker_running().await?);
+        let docker_err = client
+            .is_docker_running()
+            .await
+            .expect_err("expected docker error");
+        assert!(docker_err.to_string().contains("418"));
+
+        server_handle.abort();
+        let _ = server_handle.await;
+        Ok(())
+    }
+
+    #[derive(Clone, Default)]
+    struct TestState {
+        docker_calls: Arc<AsyncMutex<usize>>,
+    }
+
+    #[derive(Deserialize)]
+    struct RuntimeStatesRequest {
+        names: Vec<String>,
+    }
+
+    async fn spawn_test_server() -> EyreResult<(String, JoinHandle<()>)> {
+        let state = TestState::default();
+        let router = Router::new()
+            .route("/get_capabilities", get(get_capabilities))
+            .route("/add_capability/:name", post(add_capability))
+            .route("/install_package/:name", post(install_package))
+            .route("/package_runtime", post(package_runtime_states))
+            .route("/start_docker_if_needed", post(start_docker_if_needed))
+            .route("/is_docker_running", get(is_docker_running))
+            .with_state(state);
+
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+        let server = axum::serve(listener, router);
+        let handle = tokio::spawn(async move {
+            let _ = server.into_future().await;
+        });
+        Ok((format!("http://{}", addr), handle))
+    }
+
+    async fn get_capabilities() -> Json<Vec<String>> {
+        Json(vec!["remote-capability".to_string()])
+    }
+
+    async fn add_capability(Path(name): Path<String>) -> StatusCode {
+        assert_eq!(name, "beta");
+        StatusCode::NO_CONTENT
+    }
+
+    async fn install_package(Path(name): Path<String>) -> Response {
+        if name == "fail" {
+            (StatusCode::INTERNAL_SERVER_ERROR, "install failed").into_response()
+        } else {
+            StatusCode::NO_CONTENT.into_response()
+        }
+    }
+
+    async fn package_runtime_states(
+        Json(payload): Json<RuntimeStatesRequest>,
+    ) -> Json<StdHashMap<String, PackageRuntimeState>> {
+        let states = payload
+            .names
+            .into_iter()
+            .map(|name| (name, PackageRuntimeState { running: true }))
+            .collect();
+        Json(states)
+    }
+
+    async fn start_docker_if_needed() -> Json<DockerStartStatus> {
+        Json(DockerStartStatus::Running)
+    }
+
+    async fn is_docker_running(State(state): State<TestState>) -> Response {
+        let mut calls = state.docker_calls.lock().await;
+        *calls += 1;
+        match *calls {
+            1 => StatusCode::OK.into_response(),
+            2 => StatusCode::SERVICE_UNAVAILABLE.into_response(),
+            _ => (StatusCode::IM_A_TEAPOT, "teapot").into_response(),
+        }
     }
 }
