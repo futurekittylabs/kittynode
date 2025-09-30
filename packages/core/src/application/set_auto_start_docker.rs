@@ -15,10 +15,7 @@ pub fn set_auto_start_docker(enabled: bool) -> Result<()> {
 mod tests {
     use super::set_auto_start_docker;
     use crate::domain::config::Config;
-    use crate::infra::{
-        config::ConfigStore,
-        file::with_kittynode_path_override,
-    };
+    use crate::infra::{config::ConfigStore, file::with_kittynode_path_override};
     use tempfile::tempdir;
 
     #[test]

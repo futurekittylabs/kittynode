@@ -14,10 +14,7 @@ pub fn set_onboarding_completed(completed: bool) -> Result<()> {
 mod tests {
     use super::set_onboarding_completed;
     use crate::domain::config::Config;
-    use crate::infra::{
-        config::ConfigStore,
-        file::with_kittynode_path_override,
-    };
+    use crate::infra::{config::ConfigStore, file::with_kittynode_path_override};
     use tempfile::tempdir;
 
     #[test]

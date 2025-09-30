@@ -61,10 +61,7 @@ pub fn set_server_url(endpoint: String) -> Result<()> {
 mod tests {
     use super::{apply_server_url, set_server_url, validate_server_url};
     use crate::domain::config::Config;
-    use crate::infra::{
-        config::ConfigStore,
-        file::with_kittynode_path_override,
-    };
+    use crate::infra::{config::ConfigStore, file::with_kittynode_path_override};
     use tempfile::tempdir;
 
     #[test]

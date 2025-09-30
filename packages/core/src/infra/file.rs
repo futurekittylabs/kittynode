@@ -149,7 +149,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
 
         let panic_result = panic::catch_unwind(AssertUnwindSafe(|| {
-            with_kittynode_path_override(temp_dir.path(), || -> () {
+            with_kittynode_path_override(temp_dir.path(), || {
                 panic!("intentional test panic");
             })
         }));
