@@ -36,7 +36,7 @@ impl PackageConfigStore {
         Ok(())
     }
 
-    fn config_file_path(base_dir: &Path, package_name: &str) -> PathBuf {
+    pub(crate) fn config_file_path(base_dir: &Path, package_name: &str) -> PathBuf {
         base_dir
             .join("packages")
             .join(package_name)
@@ -100,6 +100,26 @@ mod tests {
                 .map(std::string::String::as_str),
             Some("https://example.invalid"),
             "round trip should preserve values"
+        );
+    }
+
+    #[test]
+    fn config_file_path_constructs_correct_path() {
+        let base_dir = Path::new("/home/user/.kittynode");
+        let path = PackageConfigStore::config_file_path(base_dir, "ethereum");
+        assert_eq!(
+            path,
+            Path::new("/home/user/.kittynode/packages/ethereum/config.toml")
+        );
+    }
+
+    #[test]
+    fn config_file_path_handles_special_characters() {
+        let base_dir = Path::new("/tmp/test");
+        let path = PackageConfigStore::config_file_path(base_dir, "my-validator");
+        assert_eq!(
+            path,
+            Path::new("/tmp/test/packages/my-validator/config.toml")
         );
     }
 }
