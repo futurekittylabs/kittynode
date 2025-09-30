@@ -8,7 +8,7 @@ use kittynode_core::api::{
 use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::fs::OpenOptions;
-use std::io::{BufRead, BufReader, ErrorKind, Read, Seek, SeekFrom, Write};
+use std::io::{BufRead, BufReader, ErrorKind, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 macro_rules! writeln_string {
@@ -394,46 +394,17 @@ fn stream_log_file_with_writer(
         .open(path)
         .map_err(|err| eyre!("Failed to open log file: {err}"))?;
 
-    {
-        let mut reader = BufReader::new(
+    let snapshot = collect_initial_log_output(
+        BufReader::new(
             file.try_clone()
                 .map_err(|err| eyre!("Failed to clone log file handle: {err}"))?,
-        );
-        if let Some(limit) = tail {
-            let mut buffer = VecDeque::with_capacity(limit);
-            let mut line = String::new();
-            loop {
-                line.clear();
-                let bytes = match reader.read_line(&mut line) {
-                    Ok(count) => count,
-                    Err(err) if err.kind() == ErrorKind::Interrupted => continue,
-                    Err(err) => {
-                        return Err(eyre!("Failed to read kittynode web log file: {err}"));
-                    }
-                };
-                if bytes == 0 {
-                    break;
-                }
-                if buffer.len() == limit {
-                    buffer.pop_front();
-                }
-                buffer.push_back(line.clone());
-            }
-            for entry in buffer {
-                writer
-                    .write_all(entry.as_bytes())
-                    .map_err(|err| eyre!("Failed to write log output: {err}"))?;
-            }
-        } else {
-            let mut content = String::new();
-            reader
-                .read_to_string(&mut content)
-                .map_err(|err| eyre!("Failed to read kittynode web log file: {err}"))?;
-            writer
-                .write_all(content.as_bytes())
-                .map_err(|err| eyre!("Failed to write log output: {err}"))?;
-        }
-    }
+        ),
+        tail,
+    )?;
+
+    writer
+        .write_all(snapshot.as_bytes())
+        .map_err(|err| eyre!("Failed to write log output: {err}"))?;
 
     writer
         .flush()
@@ -468,6 +439,46 @@ fn stream_log_file_with_writer(
     }
 }
 
+fn collect_initial_log_output<R: BufRead>(mut reader: R, tail: Option<usize>) -> Result<String> {
+    if let Some(limit) = tail {
+        read_tail_lines(&mut reader, limit)
+    } else {
+        let mut content = String::new();
+        reader
+            .read_to_string(&mut content)
+            .map_err(|err| eyre!("Failed to read kittynode web log file: {err}"))?;
+        Ok(content)
+    }
+}
+
+fn read_tail_lines<R: BufRead>(reader: &mut R, limit: usize) -> Result<String> {
+    let mut buffer = VecDeque::with_capacity(limit);
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let bytes = match reader.read_line(&mut line) {
+            Ok(count) => count,
+            Err(err) if err.kind() == ErrorKind::Interrupted => continue,
+            Err(err) => {
+                return Err(eyre!("Failed to read kittynode web log file: {err}"));
+            }
+        };
+        if bytes == 0 {
+            break;
+        }
+        if buffer.len() == limit {
+            buffer.pop_front();
+        }
+        buffer.push_back(line.clone());
+    }
+
+    let mut collected = String::new();
+    for entry in buffer {
+        collected.push_str(&entry);
+    }
+    Ok(collected)
+}
+
 pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -> Result<()> {
     let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
     let Some(_token) = service_token else {
@@ -483,7 +494,26 @@ pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
 mod tests {
     use super::*;
     use serde_json::json;
+    use std::io::Cursor;
     use tempfile::NamedTempFile;
+
+    #[test]
+    fn collect_initial_log_output_without_tail_returns_full_content() {
+        let content = "first line\nsecond line\n";
+        let result = collect_initial_log_output(Cursor::new(content.as_bytes()), None)
+            .expect("reading snapshot without tail succeeds");
+
+        assert_eq!(result, content);
+    }
+
+    #[test]
+    fn collect_initial_log_output_with_tail_limits_to_requested_lines() {
+        let content = "line1\nline2\nline3\n";
+        let result = collect_initial_log_output(Cursor::new(content.as_bytes()), Some(2))
+            .expect("reading snapshot with tail succeeds");
+
+        assert_eq!(result, "line2\nline3\n");
+    }
 
     #[test]
     fn render_config_formats_remote_server_with_capabilities() {
