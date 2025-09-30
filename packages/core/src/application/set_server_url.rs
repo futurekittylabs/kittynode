@@ -59,8 +59,13 @@ pub fn set_server_url(endpoint: String) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_server_url, validate_server_url};
+    use super::{apply_server_url, set_server_url, validate_server_url};
     use crate::domain::config::Config;
+    use crate::infra::{
+        config::ConfigStore,
+        file::with_kittynode_path_override,
+    };
+    use tempfile::tempdir;
 
     #[test]
     fn validate_allows_empty_endpoint() {
@@ -114,5 +119,57 @@ mod tests {
         assert_eq!(config.server_url, "");
         assert_eq!(config.last_server_url, "");
         assert!(!config.has_remote_server);
+    }
+
+    #[test]
+    fn set_server_url_persists_normalized_endpoint() {
+        let temp = tempdir().unwrap();
+
+        with_kittynode_path_override(temp.path(), || {
+            set_server_url(" https://example.com ".into()).expect("setting url should succeed");
+
+            let persisted = ConfigStore::load().expect("config should load");
+            assert_eq!(persisted.server_url, "https://example.com");
+            assert_eq!(persisted.last_server_url, "https://example.com");
+            assert!(persisted.has_remote_server);
+        });
+    }
+
+    #[test]
+    fn set_server_url_allows_clearing_endpoint() {
+        let temp = tempdir().unwrap();
+
+        with_kittynode_path_override(temp.path(), || {
+            set_server_url("https://example.com".into()).expect("initial set should succeed");
+            set_server_url("".into()).expect("clearing should succeed");
+
+            let persisted = ConfigStore::load().expect("config should load");
+            assert_eq!(persisted.server_url, "");
+            assert_eq!(persisted.last_server_url, "https://example.com");
+            assert!(!persisted.has_remote_server);
+        });
+    }
+
+    #[test]
+    fn set_server_url_does_not_persist_on_failure() {
+        let temp = tempdir().unwrap();
+
+        with_kittynode_path_override(temp.path(), || {
+            let mut existing = Config {
+                server_url: "https://example.com".into(),
+                last_server_url: "https://example.com".into(),
+                has_remote_server: true,
+                ..Config::default()
+            };
+            ConfigStore::save_normalized(&mut existing).expect("initial save should succeed");
+
+            let err = set_server_url("notaurl".into()).expect_err("should fail to set url");
+            assert!(err.to_string().contains("invalid server URL"));
+
+            let persisted = ConfigStore::load().expect("config should load");
+            assert_eq!(persisted.server_url, "https://example.com");
+            assert_eq!(persisted.last_server_url, "https://example.com");
+            assert!(persisted.has_remote_server);
+        });
     }
 }
