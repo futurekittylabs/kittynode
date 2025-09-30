@@ -286,6 +286,15 @@ enum WebCommands {
         )]
         port: Option<u16>,
     },
+    #[command(name = "restart", about = "Restart the Kittynode web service")]
+    Restart {
+        #[arg(
+            long = "port",
+            value_name = "PORT",
+            help = "Port to bind the Kittynode web service"
+        )]
+        port: Option<u16>,
+    },
     #[command(name = "stop", about = "Stop the Kittynode web service")]
     Stop,
     #[command(name = "status", about = "Show Kittynode web service status")]
@@ -450,6 +459,7 @@ impl WebCommands {
     async fn execute(self) -> Result<()> {
         match self {
             WebCommands::Start { port } => commands::start_web_service(port),
+            WebCommands::Restart { port } => commands::restart_web_service(port),
             WebCommands::Stop => commands::stop_web_service(),
             WebCommands::Status => commands::web_status(),
             WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail),
@@ -480,4 +490,33 @@ async fn main() -> Result<()> {
         .init();
     let cli = Cli::parse();
     cli.command.execute().await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_key_val;
+
+    #[test]
+    fn parse_key_val_returns_trimmed_pair() {
+        let result = parse_key_val("FOO = bar").expect("expected key=val to parse");
+        assert_eq!(result, ("FOO".to_string(), "bar".to_string()));
+    }
+
+    #[test]
+    fn parse_key_val_handles_values_with_equals() {
+        let result = parse_key_val("TOKEN=abc=123").expect("expected parser to keep tail");
+        assert_eq!(result, ("TOKEN".to_string(), "abc=123".to_string()));
+    }
+
+    #[test]
+    fn parse_key_val_missing_delimiter_errors() {
+        let error = parse_key_val("NOVALUE").expect_err("missing '=' should error");
+        assert_eq!(error, "expected KEY=VALUE");
+    }
+
+    #[test]
+    fn parse_key_val_rejects_empty_key() {
+        let error = parse_key_val(" =value").expect_err("empty key should error");
+        assert_eq!(error, "key cannot be empty");
+    }
 }

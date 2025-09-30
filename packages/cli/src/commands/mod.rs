@@ -333,6 +333,22 @@ pub fn stop_web_service() -> Result<()> {
     Ok(())
 }
 
+pub fn restart_web_service(port: Option<u16>) -> Result<()> {
+    let port = match port {
+        Some(port) => Some(port),
+        None => match api::get_web_service_status()? {
+            WebServiceStatus::Started { port, .. }
+            | WebServiceStatus::AlreadyRunning { port, .. } => Some(port),
+            _ => None,
+        },
+    };
+
+    let status = api::stop_web_service()?;
+    println!("{}", status);
+
+    start_web_service(port)
+}
+
 pub fn web_status() -> Result<()> {
     match api::get_web_service_status()? {
         WebServiceStatus::Started { pid, port }
@@ -362,6 +378,17 @@ pub fn web_logs(follow: bool, tail: Option<usize>) -> Result<()> {
 }
 
 fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()> {
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+    stream_log_file_with_writer(path, tail, follow, &mut handle)
+}
+
+fn stream_log_file_with_writer(
+    path: &Path,
+    tail: Option<usize>,
+    follow: bool,
+    writer: &mut dyn Write,
+) -> Result<()> {
     let mut file = OpenOptions::new()
         .read(true)
         .open(path)
@@ -375,9 +402,11 @@ fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()>
         tail,
     )?;
 
-    print!("{snapshot}");
+    writer
+        .write_all(snapshot.as_bytes())
+        .map_err(|err| eyre!("Failed to write log output: {err}"))?;
 
-    std::io::stdout()
+    writer
         .flush()
         .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
 
@@ -396,8 +425,10 @@ fn stream_log_file(path: &Path, tail: Option<usize>, follow: bool) -> Result<()>
                 std::thread::sleep(std::time::Duration::from_millis(250));
             }
             Ok(_) => {
-                print!("{line}");
-                std::io::stdout()
+                writer
+                    .write_all(line.as_bytes())
+                    .map_err(|err| eyre!("Failed to write log output: {err}"))?;
+                writer
                     .flush()
                     .map_err(|err| eyre!("Failed to flush stdout: {err}"))?;
                 line.clear();
@@ -464,6 +495,7 @@ mod tests {
     use super::*;
     use serde_json::json;
     use std::io::Cursor;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn collect_initial_log_output_without_tail_returns_full_content() {
@@ -571,5 +603,106 @@ mod tests {
         let rendered = render_config(&config);
         let expected = "Server URL: (local)\nCapabilities:\nOnboarding completed: no\nAuto start Docker: enabled\n";
         assert_eq!(rendered, expected);
+    }
+
+    #[test]
+    fn render_operational_state_without_diagnostics_omits_section() {
+        let state = OperationalState {
+            mode: OperationalMode::Local,
+            docker_running: false,
+            can_install: true,
+            can_manage: false,
+            diagnostics: vec![],
+        };
+
+        let rendered = render_operational_state(&state);
+        assert!(
+            !rendered.contains("Diagnostics"),
+            "expected diagnostics section to be omitted, got {rendered}",
+            rendered = rendered
+        );
+        let expected_prefix = "Mode: local\nDocker running: no\nCan install: yes\nCan manage: no\n";
+        assert!(
+            rendered.starts_with(expected_prefix),
+            "expected output to start with {expected_prefix}, got {rendered}",
+            expected_prefix = expected_prefix,
+            rendered = rendered
+        );
+    }
+
+    #[test]
+    fn render_system_info_without_disks_still_lists_storage_section() {
+        let info: SystemInfo = serde_json::from_value(json!({
+            "processor": {
+                "name": "Test CPU",
+                "cores": 4,
+                "frequencyGhz": 2.25,
+                "architecture": "x86_64"
+            },
+            "memory": {
+                "totalBytes": 17179869184u64,
+                "totalDisplay": "16 GB"
+            },
+            "storage": {
+                "disks": []
+            }
+        }))
+        .expect("json literal is valid system info");
+
+        let rendered = render_system_info(&info);
+        let expected = "Processor: Test CPU (4 cores, 2.25 GHz)\nMemory: 16 GB\nStorage:\n";
+        assert!(
+            rendered.starts_with(expected),
+            "expected output to start with {expected}, got {rendered}",
+            expected = expected,
+            rendered = rendered
+        );
+        assert_eq!(rendered.lines().count(), 3);
+    }
+
+    #[test]
+    fn stream_log_file_without_tail_writes_entire_contents() {
+        let mut temp = NamedTempFile::new().expect("failed to create temp log file");
+        writeln!(temp, "first line").expect("failed to write first line");
+        writeln!(temp, "second line").expect("failed to write second line");
+        temp.flush().expect("failed to flush log file");
+
+        let mut buffer = Vec::new();
+        stream_log_file_with_writer(temp.path(), None, false, &mut buffer)
+            .expect("streaming log file without tail should succeed");
+
+        let output = String::from_utf8(buffer).expect("log output should be utf8");
+        assert_eq!(output, "first line\nsecond line\n");
+    }
+
+    #[test]
+    fn stream_log_file_with_tail_limits_output() {
+        let mut temp = NamedTempFile::new().expect("failed to create temp log file");
+        writeln!(temp, "line 1").expect("failed to write line 1");
+        writeln!(temp, "line 2").expect("failed to write line 2");
+        writeln!(temp, "line 3").expect("failed to write line 3");
+        temp.flush().expect("failed to flush log file");
+
+        let mut buffer = Vec::new();
+        stream_log_file_with_writer(temp.path(), Some(2), false, &mut buffer)
+            .expect("streaming log file with tail should succeed");
+
+        let output = String::from_utf8(buffer).expect("log output should be utf8");
+        assert_eq!(output, "line 2\nline 3\n");
+    }
+
+    #[test]
+    fn stream_log_file_tail_longer_than_log_outputs_all_lines() {
+        let mut temp = NamedTempFile::new().expect("failed to create temp log file");
+        writeln!(temp, "alpha").expect("failed to write alpha");
+        writeln!(temp, "beta").expect("failed to write beta");
+        temp.flush().expect("failed to flush log file");
+
+        let mut buffer = Vec::new();
+        stream_log_file_with_writer(temp.path(), Some(5), false, &mut buffer)
+            .expect("streaming log file with large tail should succeed");
+
+        let output = String::from_utf8(buffer).expect("log output should be utf8");
+        assert_eq!(output, "alpha\nbeta\n");
     }
 }
