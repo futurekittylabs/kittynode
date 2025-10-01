@@ -31,3 +31,6 @@ vite.config.ts.timestamp-*
 # Temp
 .worktrees
 tmp
+
+# Nix
+.direnv
