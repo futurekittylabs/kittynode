@@ -7,7 +7,7 @@
   inputs = {
     flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
 
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     rust-overlay = {
       url = "https://flakehub.com/f/oxalica/rust-overlay/0.1.*";
@@ -43,11 +43,12 @@
             rustToolchain
             cargo-edit
             cargo-udeps
+            cargo-nextest
             nixpkgs-fmt
             just
             bun
+            cargo-tauri
           ];
-
           # Environment variables
           env = {
             RUST_BACKTRACE = "1";
