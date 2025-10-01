@@ -44,6 +44,8 @@
             cargo-edit
             cargo-udeps
             nixpkgs-fmt
+            just
+            bun
           ];
 
           # Environment variables
