@@ -7,7 +7,7 @@
   inputs = {
     flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*";
 
     rust-overlay = {
       url = "https://flakehub.com/f/oxalica/rust-overlay/0.1.*";
