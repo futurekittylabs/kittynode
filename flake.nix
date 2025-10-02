@@ -48,6 +48,7 @@
             just
             bun
             cargo-tauri
+            nodejs
           ];
           # Environment variables
           env = {
