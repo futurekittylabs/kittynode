@@ -36,6 +36,12 @@ const installedState = $derived(packagesStore.installedState);
 const installedNodes = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
+
+const validatorConfigPackages = new Set(["ethereum"]);
+
+function hasValidatorConfigFor(name: string): boolean {
+  return validatorConfigPackages.has(name.toLowerCase());
+}
 const remoteServerUrl = $derived(serverUrlStore.serverUrl);
 const showRemoteBanner = $derived(remoteServerUrl !== "");
 
@@ -146,6 +152,22 @@ onMount(async () => {
                       </a>
                     {/snippet}
                   </Sidebar.MenuButton>
+
+                  {#if hasValidatorConfigFor(pkg.name)}
+                    <Sidebar.MenuSub>
+                      <Sidebar.MenuSubItem>
+                        <Sidebar.MenuSubButton
+                          isActive={currentPath === `/node/${pkg.name}/validator-config`}
+                        >
+                          {#snippet child({ props })}
+                            <a href={`/node/${pkg.name}/validator-config`} {...props}>
+                              <span>Validator config</span>
+                            </a>
+                          {/snippet}
+                        </Sidebar.MenuSubButton>
+                      </Sidebar.MenuSubItem>
+                    </Sidebar.MenuSub>
+                  {/if}
                 </Sidebar.MenuItem>
               {/each}
             </Sidebar.Menu>

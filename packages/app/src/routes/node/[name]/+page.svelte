@@ -22,6 +22,7 @@ import {
   FileText,
   CircleAlert,
   PauseCircle,
+  KeyRound,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
@@ -39,6 +40,7 @@ const packageStatus = $derived(
 
 const runtime = createPackageRuntimeController();
 let lastLoadedConfig: string | null = null;
+let configValues = $state<Record<string, string>>({});
 
 let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
@@ -114,12 +116,14 @@ async function loadConfigFor(name: string) {
 
   try {
     const config = await packageConfigStore.getConfig(name);
-    const network = config.values.network || "hoodi";
+    configValues = { ...config.values };
+    const network = configValues.network || "hoodi";
     currentNetwork = network;
     selectedNetwork = network;
     lastLoadedConfig = name;
   } catch (error) {
     notifyError("Failed to get package config", error);
+    configValues = {};
   }
 }
 
@@ -168,11 +172,15 @@ async function updateConfig() {
 
   configLoading = true;
   try {
+    const updatedValues = {
+      ...configValues,
+      network: selectedNetwork,
+    } satisfies Record<string, string>;
+
     await packageConfigStore.updateConfig(packageName, {
-      values: {
-        network: selectedNetwork,
-      },
+      values: updatedValues,
     });
+    configValues = updatedValues;
     currentNetwork = selectedNetwork;
     lastLoadedConfig = packageName;
     notifySuccess("Configuration updated successfully");
@@ -195,6 +203,7 @@ $effect(() => {
     void loadConfigFor(name);
   } else {
     lastLoadedConfig = null;
+    configValues = {};
     selectedNetwork = "hoodi";
     currentNetwork = "hoodi";
   }
@@ -345,7 +354,7 @@ onDestroy(() => {
       </Card.Root>
     {:else}
       <!-- Quick Actions -->
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card.Root>
           <Card.Header class="pb-3">
             <Card.Title class="text-sm font-medium">Network</Card.Title>
@@ -440,58 +449,87 @@ onDestroy(() => {
             </Button>
           </Card.Content>
         </Card.Root>
-      </div>
 
-      <!-- Configuration -->
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center gap-2">
-            <Settings class="h-5 w-5" />
-            Configuration
-          </Card.Title>
-          <Card.Description>
-            Adjust settings for your {pkg.name} node
-          </Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <form
-            class="space-y-4"
-            onsubmit={(e) => {
-              e.preventDefault();
-              updateConfig();
-            }}
-          >
-            <div class="space-y-2">
-              <label for="network" class="text-sm font-medium">Network</label>
-              <Select.Root
-                type="single"
-                name="network"
-                bind:value={selectedNetwork}
-              >
-                <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
-                  {networkTriggerContent}
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Group>
-                    {#each networks as network}
-                      <Select.Item value={network.value} label={network.label}>
-                        {network.label}
-                      </Select.Item>
-                    {/each}
-                  </Select.Group>
-                </Select.Content>
-              </Select.Root>
-            </div>
-            <Button
-              type="submit"
-              disabled={configLoading || selectedNetwork === currentNetwork}
-              size="sm"
+        <!-- Configuration -->
+        <Card.Root class="sm:col-span-2 lg:col-span-2">
+          <Card.Header>
+            <Card.Title class="flex items-center gap-2">
+              <Settings class="h-5 w-5" />
+              Configuration
+            </Card.Title>
+            <Card.Description>
+              Adjust settings for your {pkg.name} node
+            </Card.Description>
+          </Card.Header>
+          <Card.Content>
+            <form
+              class="space-y-4"
+              onsubmit={(e) => {
+                e.preventDefault();
+                updateConfig();
+              }}
             >
-              {configLoading ? "Updating..." : "Update Configuration"}
-            </Button>
-          </form>
-        </Card.Content>
-      </Card.Root>
+              <div class="space-y-2">
+                <label for="network" class="text-sm font-medium">Network</label>
+                <Select.Root
+                  type="single"
+                  name="network"
+                  bind:value={selectedNetwork}
+                >
+                  <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
+                    {networkTriggerContent}
+                  </Select.Trigger>
+                  <Select.Content>
+                    <Select.Group>
+                      {#each networks as network}
+                        <Select.Item value={network.value} label={network.label}>
+                          {network.label}
+                        </Select.Item>
+                      {/each}
+                    </Select.Group>
+                  </Select.Content>
+                </Select.Root>
+              </div>
+              <Button
+                type="submit"
+                disabled={configLoading || selectedNetwork === currentNetwork}
+                size="sm"
+              >
+                {configLoading ? "Updating..." : "Update Configuration"}
+              </Button>
+            </form>
+          </Card.Content>
+        </Card.Root>
+
+        {#if pkg.name.toLowerCase() === "ethereum"}
+          <Card.Root class="sm:col-span-2 lg:col-span-2">
+            <Card.Header>
+              <Card.Title class="flex items-center gap-2 text-base">
+                <KeyRound class="h-5 w-5" />
+                Validator tooling
+              </Card.Title>
+              <Card.Description>
+                Configure validator keys and client preferences for Ethereum.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <p class="text-sm text-muted-foreground">
+                Manage validator-specific preferences like fee recipient,
+                graffiti, and builder endpoints.
+              </p>
+            </Card.Content>
+            <Card.Footer>
+              <Button
+                size="sm"
+                href={`/node/${pkg.name}/validator-config`}
+                class="w-full sm:w-auto"
+              >
+                Open validator config
+              </Button>
+            </Card.Footer>
+          </Card.Root>
+        {/if}
+      </div>
 
       <!-- Logs -->
       <Card.Root class="min-w-0">
