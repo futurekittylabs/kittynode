@@ -1,4 +1,5 @@
 <script lang="ts">
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
@@ -22,6 +23,8 @@ import {
   FileText,
   CircleAlert,
   PauseCircle,
+  ShieldCheck,
+  ArrowRight,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 
@@ -492,6 +495,35 @@ onDestroy(() => {
           </form>
         </Card.Content>
       </Card.Root>
+
+      {#if pkg.name === "Ethereum"}
+        <Card.Root>
+          <Card.Header>
+            <Card.Title class="flex items-center gap-2">
+              <ShieldCheck class="h-5 w-5" />
+              Validator Config
+            </Card.Title>
+            <Card.Description>
+              Fine-tune validator settings for your Ethereum node
+            </Card.Description>
+          </Card.Header>
+          <Card.Content
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p class="text-sm text-muted-foreground">
+              Manage keys, duties, and validator preferences.
+            </p>
+            <Button
+              size="sm"
+              onclick={() => void goto(`/node/${pkg.name}/validator-config`)}
+              class="w-full sm:w-auto"
+            >
+              <span>Manage Validator Config</span>
+              <ArrowRight class="h-4 w-4" />
+            </Button>
+          </Card.Content>
+        </Card.Root>
+      {/if}
 
       <!-- Logs -->
       <Card.Root class="min-w-0">

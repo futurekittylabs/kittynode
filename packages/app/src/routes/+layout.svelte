@@ -50,6 +50,15 @@ const navigationItems = [
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
+const nodeSubNavigation: Record<string, { label: string; href: string }[]> = {
+  Ethereum: [
+    {
+      label: "Validator Config",
+      href: "/node/Ethereum/validator-config",
+    },
+  ],
+};
+
 let onboardingCompleted = $state(false);
 let checkingOnboarding = $state(true);
 
@@ -135,6 +144,7 @@ onMount(async () => {
             <Sidebar.GroupLabel>Installed Nodes</Sidebar.GroupLabel>
             <Sidebar.Menu>
               {#each installedNodes as pkg}
+                {@const subPages = nodeSubNavigation[pkg.name]}
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton
                     isActive={currentPath.startsWith(`/node/${pkg.name}`)}
@@ -146,6 +156,23 @@ onMount(async () => {
                       </a>
                     {/snippet}
                   </Sidebar.MenuButton>
+                  {#if subPages}
+                    <Sidebar.MenuSub>
+                      {#each subPages as subPage}
+                        <Sidebar.MenuSubItem>
+                          <Sidebar.MenuSubButton
+                            isActive={currentPath === subPage.href}
+                          >
+                            {#snippet child({ props })}
+                              <a href={subPage.href} {...props}>
+                                <span>{subPage.label}</span>
+                              </a>
+                            {/snippet}
+                          </Sidebar.MenuSubButton>
+                        </Sidebar.MenuSubItem>
+                      {/each}
+                    </Sidebar.MenuSub>
+                  {/if}
                 </Sidebar.MenuItem>
               {/each}
             </Sidebar.Menu>
