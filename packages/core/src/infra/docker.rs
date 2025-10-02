@@ -1,5 +1,5 @@
 use crate::domain::container::{Binding, Container, PortBinding};
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use bollard::API_DEFAULT_VERSION;
 use bollard::{
     Docker,
@@ -18,8 +18,9 @@ use eyre::eyre;
 use eyre::{Report, Result};
 use std::collections::HashMap;
 #[cfg(target_os = "linux")]
+use std::collections::HashSet;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::{
-    collections::HashSet,
     env,
     path::{Path, PathBuf},
 };
@@ -71,6 +72,16 @@ pub(crate) async fn get_docker_instance() -> Result<Docker> {
 
 #[cfg(not(target_os = "linux"))]
 pub(crate) async fn get_docker_instance() -> Result<Docker> {
+    #[cfg(target_os = "macos")]
+    {
+        if env::var("DOCKER_HOST").is_err() {
+            let maybe_docker = try_colima_sockets().await?;
+            if let Some(docker) = maybe_docker {
+                return Ok(docker);
+            }
+        }
+    }
+
     let docker = Docker::connect_with_local_defaults().map_err(Report::from)?;
     docker.version().await.map_err(Report::from)?;
     Ok(docker)
@@ -118,7 +129,7 @@ fn linux_socket_candidates() -> Vec<PathBuf> {
     sockets
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 async fn try_unix_socket(path: &Path) -> Result<Docker> {
     let host = format!("unix://{}", path.to_string_lossy());
     match Docker::connect_with_unix(host.as_str(), 120, API_DEFAULT_VERSION) {
@@ -131,6 +142,39 @@ async fn try_unix_socket(path: &Path) -> Result<Docker> {
         },
         Err(err) => Err(Report::from(err)),
     }
+}
+
+#[cfg(target_os = "macos")]
+async fn try_colima_sockets() -> Result<Option<Docker>> {
+    for socket in colima_socket_candidates() {
+        if !socket.exists() {
+            continue;
+        }
+
+        match try_unix_socket(&socket).await {
+            Ok(docker) => return Ok(Some(docker)),
+            Err(_) => continue,
+        }
+    }
+
+    Ok(None)
+}
+
+#[cfg(target_os = "macos")]
+fn colima_socket_candidates() -> Vec<PathBuf> {
+    let mut sockets = Vec::new();
+
+    if let Some(base) = env::var_os("COLIMA_HOME").map(PathBuf::from).or_else(|| {
+        env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join(".colima"))
+    }) {
+        sockets.push(base.join("default/docker.sock"));
+    }
+
+    sockets.push(PathBuf::from("/var/run/colima/docker.sock"));
+
+    sockets
 }
 
 #[cfg(target_os = "linux")]
