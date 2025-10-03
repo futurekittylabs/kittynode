@@ -16,7 +16,12 @@
   };
 
   # Flake outputs that other flakes can use
-  outputs = { self, flake-schemas, nixpkgs, rust-overlay }:
+  outputs =
+    {
+      flake-schemas,
+      nixpkgs,
+      rust-overlay,
+    }:
     let
       # Nixpkgs overlays
       overlays = [
@@ -27,34 +32,62 @@
       ];
 
       # Helpers for producing system-specific outputs
-      supportedSystems = [ "aarch64-darwin" "aarch64-linux" "x86-64-linux" ];
-      forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import nixpkgs { inherit overlays system; };
-      });
-    in {
+      supportedSystems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+      forEachSupportedSystem =
+        f:
+        nixpkgs.lib.genAttrs supportedSystems (
+          system:
+          f {
+            pkgs = import nixpkgs { inherit overlays system; };
+          }
+        );
+    in
+    {
       # Schemas tell Nix about the structure of your flake's outputs
       schemas = flake-schemas.schemas;
 
       # Development environments
-      devShells = forEachSupportedSystem ({ pkgs }: {
-        default = pkgs.mkShell {
-          # Pinned packages available in the environment
-          packages = with pkgs; [
-            rustToolchain
-            cargo-edit
-            cargo-udeps
-            cargo-nextest
-            nixpkgs-fmt
-            just
-            bun
-            cargo-tauri
-            nodejs
-          ];
-          # Environment variables
-          env = {
-            RUST_BACKTRACE = "1";
+      devShells = forEachSupportedSystem (
+        { pkgs }:
+        {
+          default = pkgs.mkShell {
+            # Pinned packages available in the environment
+            packages =
+              with pkgs;
+              [
+                rustToolchain
+                cargo-edit
+                cargo-udeps
+                cargo-nextest
+                nixpkgs-fmt
+                just
+                bun
+                cargo-tauri
+                nodejs
+              ]
+              # Linux-only system dependencies for Tauri
+              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+                pkgs.webkitgtk_4_1 # libwebkit2gtk-4.1-dev
+                pkgs.gcc # build-essential → gcc/g++
+                pkgs.gnumake # build-essential → make
+                pkgs.curl # curl
+                pkgs.wget # wget
+                pkgs.file # file
+                pkgs.libxdo # libxdo-dev
+                pkgs.openssl # libssl-dev
+                pkgs.libayatana-appindicator # libayatana-appindicator3-dev
+                pkgs.librsvg # librsvg2-dev
+              ];
+            # Environment variables
+            env = {
+              RUST_BACKTRACE = "1";
+            };
           };
-        };
-      });
+        }
+      );
     };
 }
