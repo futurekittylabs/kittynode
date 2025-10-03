@@ -77,7 +77,7 @@
                 pkgs.curl # curl
                 pkgs.wget # wget
                 pkgs.file # file
-                pkgs.libxdo # libxdo-dev
+                pkgs.xdotool # libxdo-dev
                 pkgs.openssl # libssl-dev
                 pkgs.libayatana-appindicator # libayatana-appindicator3-dev
                 pkgs.librsvg # librsvg2-dev
