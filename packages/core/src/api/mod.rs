@@ -1,4 +1,3 @@
-pub mod validator;
 pub use crate::application::DockerStartStatus;
 pub use crate::application::add_capability;
 pub use crate::application::delete_kittynode;
@@ -32,9 +31,5 @@ pub use crate::application::update_package_config;
 pub use crate::application::web_service::validate_web_port;
 pub use crate::application::{get_web_service_log_path, get_web_service_status};
 pub use crate::domain::web_service::DEFAULT_WEB_PORT;
-
-pub use validator::{
-    CreateDepositDataParams, GenerateKeysParams, create_deposit_data, generate_keys,
-};
 
 pub mod types;

@@ -1,4 +1,3 @@
-pub use crate::api::validator::{DepositData, ValidatorKey};
 pub use crate::domain::config::Config;
 pub use crate::domain::logs::LogsQuery;
 pub use crate::domain::operational_state::{OperationalMode, OperationalState};

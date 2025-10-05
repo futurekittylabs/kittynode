@@ -1,12 +1,10 @@
 use async_trait::async_trait;
-use eyre::{Context, Result, eyre};
+use eyre::{Context, Result};
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
-    Config, DepositData, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
-    ValidatorKey,
+    Config, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
 };
-use kittynode_core::api::{CreateDepositDataParams, GenerateKeysParams};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
@@ -73,13 +71,6 @@ pub trait CoreClient: Send + Sync + std::any::Any {
         &self,
         names: &[String],
     ) -> Result<HashMap<String, PackageRuntimeState>>;
-    /// Generate validator keys on the local filesystem.
-    async fn generate_validator_keys(&self, params: GenerateKeysParams) -> Result<ValidatorKey>;
-    /// Create deposit data for an existing validator key.
-    async fn create_validator_deposit_data(
-        &self,
-        params: CreateDepositDataParams,
-    ) -> Result<DepositData>;
 }
 
 #[cfg(test)]
@@ -190,17 +181,6 @@ impl CoreClient for LocalCoreClient {
         names: &[String],
     ) -> Result<HashMap<String, PackageRuntimeState>> {
         api::get_packages_runtime_state(names).await
-    }
-
-    async fn generate_validator_keys(&self, params: GenerateKeysParams) -> Result<ValidatorKey> {
-        api::generate_keys(params)
-    }
-
-    async fn create_validator_deposit_data(
-        &self,
-        params: CreateDepositDataParams,
-    ) -> Result<DepositData> {
-        api::create_deposit_data(params)
     }
 }
 
@@ -433,21 +413,6 @@ impl CoreClient for HttpCoreClient {
 
         self.post_json("/package_runtime", Some(&RuntimeStatesRequest { names }))
             .await
-    }
-
-    async fn generate_validator_keys(&self, _params: GenerateKeysParams) -> Result<ValidatorKey> {
-        Err(eyre!(
-            "validator key generation is not available when connected to a remote core"
-        ))
-    }
-
-    async fn create_validator_deposit_data(
-        &self,
-        _params: CreateDepositDataParams,
-    ) -> Result<DepositData> {
-        Err(eyre!(
-            "validator deposit data creation is not available when connected to a remote core"
-        ))
     }
 }
 

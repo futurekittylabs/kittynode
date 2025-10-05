@@ -25,7 +25,7 @@ Kittynode is split into packages that cover the core logic, user interfaces, and
 
 Inside `kittynode-core` the folders map directly to responsibilities:
 
-- `application` orchestrates use cases such as installing packages, generating validator data, and managing capabilities.
+- `application` orchestrates use cases such as installing packages, updating configuration, and managing capabilities.
 - `domain` defines the data types that move between layers as plain structs and enums.
 - `infra` talks to Docker through Bollard, manages files under `~/.kittynode`, and persists configuration.
 - `manifests` holds package definitions. Each manifest describes the containers, networks, and volumes needed for a stack like Ethereum.
@@ -106,7 +106,7 @@ The system checker is a utility within Kittynode that checks the system prerequi
 - **Network settings**: Checking the firewall and internet connectivity.
 - **Security settings**: Checking file permissions and other system security settings.
 
-The system checker is important in several areas of Kittynode. For example, when creating a validator key it is important to ensure WiFi is disabled, and file permissions are properly set on the key file.
+The system checker is important in several areas of Kittynode. For example, when applying configuration changes it ensures networking and file permissions meet our security expectations.
 
 ### Remote access
 
