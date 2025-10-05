@@ -2,14 +2,12 @@ use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo, WebServiceStatus,
 };
-use kittynode_core::api::{
-    self, CreateDepositDataParams, DEFAULT_WEB_PORT, GenerateKeysParams, validate_web_port,
-};
+use kittynode_core::api::{self, DEFAULT_WEB_PORT, validate_web_port};
 use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, ErrorKind, Seek, SeekFrom, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 macro_rules! writeln_string {
     ($dst:expr, $($arg:tt)*) => {{
@@ -287,33 +285,6 @@ fn render_operational_state(state: &OperationalState) -> String {
         }
     }
     output
-}
-
-pub fn validator_generate_keys(
-    output_dir: PathBuf,
-    file_name: Option<String>,
-    entropy: String,
-    overwrite: bool,
-) -> Result<()> {
-    let params = GenerateKeysParams {
-        output_dir,
-        file_name,
-        entropy,
-        overwrite,
-    };
-    let key_path = params.key_path();
-    let key = api::generate_keys(params)?;
-    println!("Stored validator key at {}", key_path.display());
-    println!("Public key: {}", key.public_key);
-    Ok(())
-}
-
-pub fn validator_create_deposit_data(params: CreateDepositDataParams) -> Result<()> {
-    let output_path = params.output_path.clone();
-    let deposit = api::create_deposit_data(params)?;
-    println!("Stored deposit data at {}", output_path.display());
-    println!("Deposit data root: {}", deposit.deposit_data_root);
-    Ok(())
 }
 
 pub fn start_web_service(port: Option<u16>) -> Result<()> {

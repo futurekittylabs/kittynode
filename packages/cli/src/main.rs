@@ -2,14 +2,12 @@ mod commands;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
-use kittynode_core::api::CreateDepositDataParams;
-use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(
     version,
     about = "Manage your Kittynode installation from the terminal",
-    long_about = "Use kittynode commands to install packages, inspect configuration, and work with validator tooling."
+    long_about = "Use kittynode commands to install packages, inspect configuration, and manage your Kittynode environment."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -47,11 +45,6 @@ enum Commands {
     Container {
         #[command(subcommand)]
         command: ContainerCommands,
-    },
-    #[command(about = "Validator tooling for key management and deposits")]
-    Validator {
-        #[command(subcommand)]
-        command: ValidatorCommands,
     },
     #[command(about = "Control the Kittynode web service")]
     Web {
@@ -201,81 +194,6 @@ enum ContainerCommands {
 }
 
 #[derive(Subcommand)]
-enum ValidatorCommands {
-    #[command(
-        name = "generate-keys",
-        about = "Create a new validator keypair on disk"
-    )]
-    GenerateKeys {
-        #[arg(
-            long = "output-dir",
-            value_name = "PATH",
-            help = "Folder where key files should be written"
-        )]
-        output_dir: PathBuf,
-        #[arg(
-            long = "entropy",
-            value_name = "STRING",
-            help = "Entropy string used to derive the keys"
-        )]
-        entropy: String,
-        #[arg(
-            long = "file-name",
-            value_name = "NAME",
-            help = "Optional custom base name for the key files"
-        )]
-        file_name: Option<String>,
-        #[arg(
-            long = "overwrite",
-            help = "Replace existing key files if they already exist"
-        )]
-        overwrite: bool,
-    },
-    #[command(
-        name = "create-deposit-data",
-        about = "Build deposit data for an existing validator key"
-    )]
-    CreateDepositData {
-        #[arg(
-            long = "key",
-            value_name = "PATH",
-            help = "Path to the validator key file"
-        )]
-        key_path: PathBuf,
-        #[arg(
-            long = "output",
-            value_name = "PATH",
-            help = "Destination file for the deposit data JSON"
-        )]
-        output_path: PathBuf,
-        #[arg(
-            long = "withdrawal-address",
-            visible_alias = "withdrawal-credentials",
-            value_name = "ADDRESS",
-            help = "Execution withdrawal address to receive exit payouts"
-        )]
-        withdrawal_address: String,
-        #[arg(
-            long = "amount-gwei",
-            default_value_t = 32_000_000_000,
-            help = "Deposit amount in gwei (defaults to 32 ETH)"
-        )]
-        amount_gwei: u64,
-        #[arg(
-            long = "network",
-            value_name = "NAME",
-            help = "Network to target (mainnet, sepolia, hoodi)"
-        )]
-        network: String,
-        #[arg(
-            long = "overwrite",
-            help = "Replace the output file if it already exists"
-        )]
-        overwrite: bool,
-    },
-}
-
-#[derive(Subcommand)]
 enum WebCommands {
     #[command(name = "start", about = "Start the Kittynode web service")]
     Start {
@@ -341,7 +259,6 @@ impl Commands {
             Commands::System { command } => command.execute().await,
             Commands::Docker { command } => command.execute().await,
             Commands::Container { command } => command.execute().await,
-            Commands::Validator { command } => command.execute(),
             Commands::Web { command } => command.execute().await,
         }
     }
@@ -418,38 +335,6 @@ impl ContainerCommands {
         match self {
             ContainerCommands::Logs { container, tail } => {
                 commands::get_container_logs(container, tail).await
-            }
-        }
-    }
-}
-
-impl ValidatorCommands {
-    fn execute(self) -> Result<()> {
-        match self {
-            ValidatorCommands::GenerateKeys {
-                output_dir,
-                entropy,
-                file_name,
-                overwrite,
-            } => commands::validator_generate_keys(output_dir, file_name, entropy, overwrite),
-            ValidatorCommands::CreateDepositData {
-                key_path,
-                output_path,
-                withdrawal_address,
-                amount_gwei,
-                network,
-                overwrite,
-            } => {
-                let params = CreateDepositDataParams::for_network(
-                    key_path,
-                    output_path,
-                    &withdrawal_address,
-                    amount_gwei,
-                    &network,
-                    overwrite,
-                )?;
-
-                commands::validator_create_deposit_data(params)
             }
         }
     }

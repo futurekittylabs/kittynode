@@ -4,5 +4,4 @@ pub mod logs;
 pub mod operational_state;
 pub mod package;
 pub mod system_info;
-pub mod validator;
 pub mod web_service;
