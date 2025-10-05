@@ -25,7 +25,6 @@ pub mod start_docker;
 pub mod start_docker_if_needed;
 pub mod stop_package;
 pub mod update_package_config;
-pub mod validator;
 pub mod web_service;
 
 pub use add_capability::add_capability;
