@@ -44,7 +44,7 @@ onMount(() => {
   ctx = context;
 
   const nodes: NodePoint[] = [];
-  const maxVelocity = 1.2;
+  const maxVelocity = 1.4;
   const nodeDensity = 0.00008;
 
   function calculateNumNodes() {
