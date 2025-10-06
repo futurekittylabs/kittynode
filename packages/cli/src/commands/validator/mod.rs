@@ -1,9 +1,10 @@
 mod input_validation;
 
-use std::fmt;
+use std::convert::TryInto;
+use std::fs::{self, File};
 use std::io::{Write, stdout};
 use std::net::{TcpStream, ToSocketAddrs};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crossterm::{
     cursor::MoveTo,
@@ -11,8 +12,14 @@ use crossterm::{
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
-use eyre::{Result, eyre};
+use eyre::{Result, WrapErr, eyre};
+use hex::decode;
+use kittynode_core::validator::{
+    self, GeneratedMnemonic, KeygenRequest, Network as ValidatorNetwork,
+};
+use serde_json::to_writer_pretty;
 use tracing::debug;
+use zeroize::Zeroizing;
 
 use input_validation::{
     normalize_withdrawal_address, parse_deposit_amount, parse_validator_count, validate_password,
@@ -24,44 +31,7 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
     ("www.google.com", 80),
 ];
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
-// TODO(part 2): Replace with generated BIP-39 mnemonic
-const PLACEHOLDER_MNEMONIC: &str = "absorb adjust bridge coral exit fresh garment hockey invite jelly kitten lamp mango noon obey pepper quantum rocket solution theory umbrella velvet whale zebra";
-
-#[derive(Clone, Copy, Debug)]
-enum ValidatorNetwork {
-    Hoodi,
-    Sepolia,
-    Ephemery,
-}
-
-impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] {
-        ["hoodi", "sepolia", "ephemery"]
-    }
-
-    fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Self::Hoodi),
-            1 => Some(Self::Sepolia),
-            2 => Some(Self::Ephemery),
-            _ => None,
-        }
-    }
-
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Hoodi => "hoodi",
-            Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
-        }
-    }
-}
-
-impl fmt::Display for ValidatorNetwork {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+const OUTPUT_DIR: &str = "validator_keys";
 
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
@@ -100,23 +70,29 @@ pub async fn keygen() -> Result<()> {
         .default(0)
         .items(network_labels)
         .interact()?;
-    let network = ValidatorNetwork::from_index(network_index)
+    let network = ValidatorNetwork::all()
+        .get(network_index)
+        .copied()
         .ok_or_else(|| eyre!("Invalid network selection"))?;
-
-    let withdrawal_address_input = Input::<String>::with_theme(&theme)
-        .with_prompt("Enter the withdrawal address")
-        .validate_with(|text: &String| {
-            normalize_withdrawal_address(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
-        })
-        .interact_text()?;
-    let withdrawal_address = normalize_withdrawal_address(&withdrawal_address_input)?;
 
     let compounding = Confirm::with_theme(&theme)
         .with_prompt("Use 0x02 compounding validators?")
         .default(true)
         .interact()?;
+
+    let withdrawal_address = if compounding {
+        None
+    } else {
+        let input = Input::<String>::with_theme(&theme)
+            .with_prompt("Enter the withdrawal address")
+            .validate_with(|text: &String| {
+                normalize_withdrawal_address(text)
+                    .map(|_| ())
+                    .map_err(|error| error.to_string())
+            })
+            .interact_text()?;
+        Some(normalize_withdrawal_address(&input)?)
+    };
 
     let deposit_amount_input = Input::<String>::with_theme(&theme)
         .with_prompt("How much ETH do you want to deposit to these validators?")
@@ -128,16 +104,37 @@ pub async fn keygen() -> Result<()> {
         })
         .interact_text()?;
     let deposit_amount = parse_deposit_amount(&deposit_amount_input)?;
+    let validator_count_u64 = u64::from(validator_count);
+    let total_deposit_gwei = (deposit_amount * 1_000_000_000.0).round() as u64;
+    if !total_deposit_gwei.is_multiple_of(validator_count_u64) {
+        return Err(eyre!(
+            "Deposit amount must be evenly divisible across validators when expressed in gwei"
+        ));
+    }
+    let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
+    if deposit_amount_gwei_per_validator > 32_000_000_000 {
+        return Err(eyre!("Per-validator deposit cannot exceed 32 ETH"));
+    }
+    let deposit_amount_per_validator_eth =
+        deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {network}");
-    println!("  Withdrawal address: {withdrawal_address}");
     println!(
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
     );
-    println!("  Deposit amount: {deposit_amount} ETH");
+    if let Some(address) = withdrawal_address.as_ref() {
+        println!("  Withdrawal address: {address}");
+    } else {
+        println!("  Withdrawal credentials: compounding (0x02 prefix)");
+    }
+    println!("  Total deposit: {deposit_amount} ETH");
+    println!(
+        "  Deposit per validator: {:.9} ETH",
+        deposit_amount_per_validator_eth
+    );
 
     let confirm_details = Confirm::with_theme(&theme)
         .with_prompt("Are these details correct?")
@@ -148,8 +145,9 @@ pub async fn keygen() -> Result<()> {
         return Ok(());
     }
 
-    display_mnemonic_securely(PLACEHOLDER_MNEMONIC)?;
-    let mnemonic_verified = validate_mnemonic_once(&theme, PLACEHOLDER_MNEMONIC)?;
+    let mnemonic = GeneratedMnemonic::generate()?;
+    display_mnemonic_securely(mnemonic.phrase())?;
+    let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic.phrase())?;
     clear_clipboard();
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
@@ -157,15 +155,19 @@ pub async fn keygen() -> Result<()> {
     }
     println!("Mnemonic successfully verified!");
 
-    let password = Password::with_theme(&theme)
-        .with_prompt("Enter a password to secure the keystore")
-        .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
-        .interact()?;
+    let password = Zeroizing::new(
+        Password::with_theme(&theme)
+            .with_prompt("Enter a password to secure the keystore")
+            .validate_with(|value: &String| {
+                validate_password(value).map_err(|error| error.to_string())
+            })
+            .interact()?,
+    );
     let password_for_confirmation = password.clone();
-    let password_confirmation = Password::with_theme(&theme)
+    Password::with_theme(&theme)
         .with_prompt("Re-enter the password to confirm")
         .validate_with(move |value: &String| {
-            if value == &password_for_confirmation {
+            if value == password_for_confirmation.as_str() {
                 Ok(())
             } else {
                 Err("Passwords do not match".to_string())
@@ -173,11 +175,63 @@ pub async fn keygen() -> Result<()> {
         })
         .interact()?;
 
-    // TODO(part 2): Replace with zeroize-based clearing
-    drop(password_confirmation);
+    let withdrawal_bytes = withdrawal_address
+        .as_deref()
+        .map(withdrawal_address_to_bytes)
+        .transpose()?;
+
+    let output_dir = std::env::current_dir()?.join(OUTPUT_DIR);
+    fs::create_dir_all(&output_dir).wrap_err("failed to create validator key output directory")?;
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .wrap_err("system time appears to be before UNIX_EPOCH")?
+        .as_secs();
+
+    let artifacts = validator::generate_validators(KeygenRequest {
+        seed: mnemonic.seed(),
+        password: password.as_str(),
+        validator_indices: 0..u32::from(validator_count),
+        network,
+        deposit_amount_gwei: deposit_amount_gwei_per_validator,
+        withdrawal_address: withdrawal_bytes,
+        compounding,
+    })?;
+
     drop(password);
 
-    println!("Validation complete. Key and deposit file generation will be implemented in part 2.");
+    let mut deposits = Vec::with_capacity(artifacts.len());
+    for artifact in &artifacts {
+        let filename = format!(
+            "keystore-m_12381_3600_{}_0_0-{timestamp}.json",
+            artifact.index
+        );
+        let path = output_dir.join(&filename);
+        let mut file = File::create(&path)
+            .wrap_err_with(|| format!("failed to create keystore {filename}"))?;
+        to_writer_pretty(&mut file, &artifact.keystore)
+            .wrap_err("failed to write keystore JSON")?;
+        file.write_all(
+            b"
+",
+        )?;
+        deposits.push(artifact.deposit.clone());
+    }
+
+    let deposit_path = output_dir.join(format!("deposit_data-{timestamp}.json"));
+    let mut deposit_file =
+        File::create(&deposit_path).wrap_err("failed to create deposit data file")?;
+    to_writer_pretty(&mut deposit_file, &deposits).wrap_err("failed to write deposit data")?;
+    deposit_file.write_all(
+        b"
+",
+    )?;
+
+    println!(
+        "Generated {} keystore(s) in {}",
+        artifacts.len(),
+        output_dir.display()
+    );
+    println!("Deposit data saved to {}", deposit_path.display());
 
     Ok(())
 }
@@ -246,6 +300,15 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
 
 fn normalize_mnemonic(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn withdrawal_address_to_bytes(address: &str) -> Result<[u8; 20]> {
+    let body = address.trim_start_matches("0x");
+    let bytes = decode(body).map_err(|_| eyre!("Failed to decode withdrawal address"))?;
+    let array: [u8; 20] = bytes
+        .try_into()
+        .map_err(|_| eyre!("Withdrawal address must be exactly 20 bytes"))?;
+    Ok(array)
 }
 
 #[cfg(test)]

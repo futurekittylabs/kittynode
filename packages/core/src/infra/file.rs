@@ -19,7 +19,7 @@ pub(crate) fn generate_jwt_secret_with_path(path: &PathBuf) -> Result<String> {
 
     // Generate 32 random bytes
     let mut buf = [0u8; 32];
-    rand::rng().fill_bytes(&mut buf);
+    rand::thread_rng().fill_bytes(&mut buf);
 
     // Convert the random bytes to hex
     let secret = hex::encode(buf);

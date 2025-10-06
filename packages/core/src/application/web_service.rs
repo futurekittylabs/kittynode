@@ -225,7 +225,7 @@ fn args_contain_token(cmd: &[OsString], token: Option<&str>) -> bool {
 
 fn generate_service_token() -> String {
     let mut buf = [0u8; 16];
-    rand::rng().fill_bytes(&mut buf);
+    rand::thread_rng().fill_bytes(&mut buf);
     hex::encode(buf)
 }
 
