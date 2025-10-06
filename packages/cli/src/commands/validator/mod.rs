@@ -98,7 +98,7 @@ pub async fn keygen() -> Result<()> {
     let network_index = Select::with_theme(&theme)
         .with_prompt("Select the network")
         .default(0)
-        .items(&network_labels)
+        .items(network_labels)
         .interact()?;
     let network = ValidatorNetwork::from_index(network_index)
         .ok_or_else(|| eyre!("Invalid network selection"))?;
