@@ -39,7 +39,7 @@ jobs:
           echo "Version check passed: $TAG_VERSION"
 
       - name: Install system dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -59,14 +59,6 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Mask sensitive values
-        run: |
-          echo "::add-mask::${{ secrets.APPLE_CERTIFICATE }}"
-          echo "::add-mask::${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
-          echo "::add-mask::${{ secrets.APPLE_ID }}"
-          echo "::add-mask::${{ secrets.APPLE_PASSWORD }}"
-          echo "::add-mask::${{ secrets.APPLE_TEAM_ID }}"
-
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -74,15 +66,47 @@ jobs:
           draft: true
           generate_release_notes: true
 
-      - name: Build the app
+      - name: Write App Store Connect API key (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          install -m 600 /dev/null "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY}.p8"
+          printf '%s' "$APPLE_API_KEY_P8_BASE64" | base64 -D > "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY}.p8"
+
+      - name: Build the app (macOS + notarize)
+        if: matrix.platform == 'macos-latest'
         uses: tauri-apps/tauri-action@v0.5.23
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: ${{ format('{0}/private_keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) }}
+        with:
+          releaseId: ${{ steps.create_release.outputs.id }}
+          tagName: ${{ github.ref_name }}
+          projectPath: packages/app/src-tauri
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+
+      - name: Cleanup ASC key (macOS)
+        if: always() && matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/private_keys/"AuthKey_*.p8
+
+      - name: Build the app (non-macOS)
+        if: matrix.platform != 'macos-latest'
+        uses: tauri-apps/tauri-action@v0.5.23
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
@@ -111,7 +135,6 @@ jobs:
       contents: write
     steps:
       # Requires RELEASE_BOT_PAT secret with Contents: Write permission
-      # to push past branch protection rules on main branch
       - uses: actions/checkout@v5
         with:
           ref: main
@@ -130,8 +153,6 @@ jobs:
           else
             git add website/src/lib/release.json
             git commit -m "Update website version to $VERSION"
-
-            # Pull latest changes before pushing to avoid non-fast-forward errors
             git pull --rebase origin main
             git push
           fi
