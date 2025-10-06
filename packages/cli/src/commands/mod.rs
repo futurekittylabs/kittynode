@@ -1,3 +1,5 @@
+pub mod validator;
+
 use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo, WebServiceStatus,
