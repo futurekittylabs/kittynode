@@ -67,6 +67,90 @@ pub fn parse_deposit_amount(input: &str) -> Result<f64> {
     Ok(amount)
 }
 
+pub fn parse_deposit_amount_to_gwei(input: &str) -> Result<u64> {
+    let _ = parse_deposit_amount(input)?;
+
+    let trimmed = input.trim();
+    let (mantissa, exponent) = split_exponent(trimmed);
+
+    let mut digits = String::with_capacity(mantissa.len());
+    let mut fractional_len = 0usize;
+    let mut saw_decimal = false;
+
+    for (index, ch) in mantissa.chars().enumerate() {
+        match ch {
+            '0'..='9' => {
+                digits.push(ch);
+                if saw_decimal {
+                    fractional_len += 1;
+                }
+            }
+            '.' if !saw_decimal => {
+                saw_decimal = true;
+            }
+            '+' if index == 0 => {}
+            _ => return Err(eyre!("Deposit amount must be a valid decimal value")),
+        }
+    }
+
+    // Remove redundant trailing zeros from the fractional component so inputs like
+    // "32.0000000000" are treated as valid whole-number amounts.
+    while fractional_len > 0 && digits.ends_with('0') {
+        digits.pop();
+        fractional_len -= 1;
+    }
+
+    if digits.is_empty() {
+        digits.push('0');
+    }
+
+    let exponent = exponent
+        .map(|value| {
+            value
+                .parse::<i32>()
+                .map_err(|_| eyre!("Invalid exponent value"))
+        })
+        .transpose()?;
+
+    let digits_value = digits
+        .parse::<u128>()
+        .map_err(|_| eyre!("Deposit amount is too large"))?;
+
+    let power = exponent
+        .unwrap_or(0)
+        .checked_sub(fractional_len as i32)
+        .ok_or_else(|| eyre!("Deposit amount must be a valid decimal value"))?
+        + 9;
+
+    if power < 0 {
+        return Err(eyre!("Deposit amount must be specified to at least 1 gwei"));
+    }
+
+    let multiplier = 10u128
+        .checked_pow(power as u32)
+        .ok_or_else(|| eyre!("Deposit amount is too large"))?;
+
+    let gwei = digits_value
+        .checked_mul(multiplier)
+        .ok_or_else(|| eyre!("Deposit amount is too large"))?;
+
+    if gwei > u64::MAX as u128 {
+        return Err(eyre!("Deposit amount is too large"));
+    }
+
+    Ok(gwei as u64)
+}
+
+fn split_exponent(value: &str) -> (&str, Option<&str>) {
+    if let Some(index) = value.find(['e', 'E']) {
+        let (mantissa, exponent) = value.split_at(index);
+        let exponent = exponent.strip_prefix(['e', 'E']).unwrap_or(exponent);
+        (mantissa, Some(exponent))
+    } else {
+        (value, None)
+    }
+}
+
 pub fn validate_password(password: &str) -> Result<()> {
     let length = password.chars().count();
     if length < MIN_PASSWORD_LEN {
@@ -150,6 +234,41 @@ mod tests {
     #[test]
     fn parse_deposit_amount_rejects_non_numeric() {
         assert!(parse_deposit_amount("abc").is_err());
+    }
+
+    #[test]
+    fn parse_deposit_amount_to_gwei_handles_integers() {
+        assert_eq!(parse_deposit_amount_to_gwei("32").unwrap(), 32_000_000_000);
+    }
+
+    #[test]
+    fn parse_deposit_amount_to_gwei_handles_decimals() {
+        assert_eq!(parse_deposit_amount_to_gwei("1.5").unwrap(), 1_500_000_000);
+    }
+
+    #[test]
+    fn parse_deposit_amount_to_gwei_handles_exponents() {
+        assert_eq!(
+            parse_deposit_amount_to_gwei("1e2").unwrap(),
+            100_000_000_000
+        );
+        assert_eq!(
+            parse_deposit_amount_to_gwei("1.25e2").unwrap(),
+            125_000_000_000
+        );
+    }
+
+    #[test]
+    fn parse_deposit_amount_to_gwei_rejects_fractional_gwei() {
+        assert!(parse_deposit_amount_to_gwei("1.0000000001").is_err());
+    }
+
+    #[test]
+    fn parse_deposit_amount_to_gwei_respects_padding() {
+        assert_eq!(
+            parse_deposit_amount_to_gwei("1.000000001").unwrap(),
+            1_000_000_001
+        );
     }
 
     #[test]

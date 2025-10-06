@@ -1,21 +1,30 @@
 mod input_validation;
+mod lighthouse;
 
 use std::fmt;
 use std::io::{Write, stdout};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
+use self::lighthouse::{KeygenConfig, generate_validator_files};
+use copypasta::{ClipboardContext, ClipboardProvider};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
+use eth2_wallet::bip39::{Language, Mnemonic, MnemonicType};
 use eyre::{Result, eyre};
+use std::path::PathBuf;
+use std::str::FromStr;
 use tracing::debug;
+use types::Address;
+use zeroize::Zeroizing;
 
 use input_validation::{
-    normalize_withdrawal_address, parse_deposit_amount, parse_validator_count, validate_password,
+    normalize_withdrawal_address, parse_deposit_amount, parse_deposit_amount_to_gwei,
+    parse_validator_count, validate_password,
 };
 
 const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
@@ -24,26 +33,21 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
     ("www.google.com", 80),
 ];
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
-// TODO(part 2): Replace with generated BIP-39 mnemonic
-const PLACEHOLDER_MNEMONIC: &str = "absorb adjust bridge coral exit fresh garment hockey invite jelly kitten lamp mango noon obey pepper quantum rocket solution theory umbrella velvet whale zebra";
-
 #[derive(Clone, Copy, Debug)]
 enum ValidatorNetwork {
     Hoodi,
     Sepolia,
-    Ephemery,
 }
 
 impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] {
-        ["hoodi", "sepolia", "ephemery"]
+    fn labels() -> [&'static str; 2] {
+        ["hoodi", "sepolia"]
     }
 
     fn from_index(index: usize) -> Option<Self> {
         match index {
             0 => Some(Self::Hoodi),
             1 => Some(Self::Sepolia),
-            2 => Some(Self::Ephemery),
             _ => None,
         }
     }
@@ -52,7 +56,6 @@ impl ValidatorNetwork {
         match self {
             Self::Hoodi => "hoodi",
             Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
         }
     }
 }
@@ -148,8 +151,12 @@ pub async fn keygen() -> Result<()> {
         return Ok(());
     }
 
-    display_mnemonic_securely(PLACEHOLDER_MNEMONIC)?;
-    let mnemonic_verified = validate_mnemonic_once(&theme, PLACEHOLDER_MNEMONIC)?;
+    let mnemonic = Mnemonic::new(MnemonicType::Words24, Language::English);
+    let mnemonic_phrase = Zeroizing::new(mnemonic.to_string());
+    drop(mnemonic);
+
+    display_mnemonic_securely(mnemonic_phrase.as_str())?;
+    let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic_phrase.as_str())?;
     clear_clipboard();
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
@@ -173,11 +180,36 @@ pub async fn keygen() -> Result<()> {
         })
         .interact()?;
 
-    // TODO(part 2): Replace with zeroize-based clearing
+    let password = Zeroizing::new(password);
     drop(password_confirmation);
-    drop(password);
 
-    println!("Validation complete. Key and deposit file generation will be implemented in part 2.");
+    let withdrawal_address = Address::from_str(&withdrawal_address)
+        .map_err(|error| eyre!("Failed to parse withdrawal address: {error}"))?;
+    let deposit_amount_gwei = parse_deposit_amount_to_gwei(&deposit_amount_input)?;
+
+    let outcome = generate_validator_files(KeygenConfig {
+        mnemonic_phrase,
+        validator_count,
+        withdrawal_address,
+        network: network.as_str().to_string(),
+        deposit_gwei: deposit_amount_gwei,
+        compounding,
+        password,
+        output_dir: PathBuf::from("./validator-keys"),
+    })?;
+
+    println!(
+        "✔ Generated {} validator keystore(s):",
+        outcome.keystore_paths.len()
+    );
+    for path in &outcome.keystore_paths {
+        println!("   {}", path.display());
+    }
+    println!(
+        "✔ Deposit data written to {}",
+        outcome.deposit_data_path.display()
+    );
+    println!("Store the password safely—it is not saved anywhere else.");
 
     Ok(())
 }
@@ -195,9 +227,11 @@ fn check_internet_connectivity() -> bool {
             }
         })
 }
-
-// TODO: Implement clipboard clearing
-fn clear_clipboard() {}
+fn clear_clipboard() {
+    if let Ok(mut context) = ClipboardContext::new() {
+        let _ = context.set_contents(String::new());
+    }
+}
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
     let mut stdout = stdout();
