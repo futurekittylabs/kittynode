@@ -22,7 +22,7 @@ kittynode-web = { version = "0.18.0", path = "../web" }
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = "0.3.20"
 tracing = "0.1.41"
-dialoguer = { version = "0.11.0", default-features = false, features = ["editor", "password"] }
+dialoguer = { version = "0.12.0", default-features = false, features = ["editor", "password"] }
 crossterm = "0.28.1"
 
 [dev-dependencies]
