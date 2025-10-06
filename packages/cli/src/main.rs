@@ -46,6 +46,11 @@ enum Commands {
         #[command(subcommand)]
         command: ContainerCommands,
     },
+    #[command(about = "Manage validator key material")]
+    Validator {
+        #[command(subcommand)]
+        command: ValidatorCommands,
+    },
     #[command(about = "Control the Kittynode web service")]
     Web {
         #[command(subcommand)]
@@ -194,6 +199,12 @@ enum ContainerCommands {
 }
 
 #[derive(Subcommand)]
+enum ValidatorCommands {
+    #[command(name = "keygen", about = "Generate Ethereum validator keys")]
+    Keygen,
+}
+
+#[derive(Subcommand)]
 enum WebCommands {
     #[command(name = "start", about = "Start the Kittynode web service")]
     Start {
@@ -259,6 +270,7 @@ impl Commands {
             Commands::System { command } => command.execute().await,
             Commands::Docker { command } => command.execute().await,
             Commands::Container { command } => command.execute().await,
+            Commands::Validator { command } => command.execute().await,
             Commands::Web { command } => command.execute().await,
         }
     }
@@ -336,6 +348,14 @@ impl ContainerCommands {
             ContainerCommands::Logs { container, tail } => {
                 commands::get_container_logs(container, tail).await
             }
+        }
+    }
+}
+
+impl ValidatorCommands {
+    async fn execute(self) -> Result<()> {
+        match self {
+            ValidatorCommands::Keygen => commands::validator::keygen().await,
         }
     }
 }
