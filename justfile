@@ -29,7 +29,7 @@ icons:
   mv tmp/ios/* packages/app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
   rm -rf tmp
 
-# install or update dev tools
+# install dev tools
 install-dev-tools:
   cargo install cargo-edit cargo-llvm-cov cargo-nextest just tauri-cli
 
@@ -113,12 +113,9 @@ test-coverage:
 test-coverage-all:
   cargo llvm-cov nextest -- --include-ignored
 
-# update all toolchains and dependencies
+# update dependencies
 update:
-  rustup update
-  just install-dev-tools
   cargo upgrade
-  bun upgrade
   bun update
 
 # start the web server
