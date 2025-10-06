@@ -62,9 +62,7 @@ jobs:
       - name: Mask sensitive values
         run: |
           echo "::add-mask::${{ secrets.APPLE_CERTIFICATE }}"
-          echo "::add-mask::${{ secrets.APPLE_CERTIFICATE_KEY_ID }}"
           echo "::add-mask::${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
-          echo "::add-mask::${{ secrets.APPLE_DEVELOPER_ID }}"
           echo "::add-mask::${{ secrets.APPLE_ID }}"
           echo "::add-mask::${{ secrets.APPLE_PASSWORD }}"
           echo "::add-mask::${{ secrets.APPLE_TEAM_ID }}"
