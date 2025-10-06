@@ -11,7 +11,7 @@ use crossterm::{
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
-use eyre::Result;
+use eyre::{Result, eyre};
 use tracing::debug;
 
 use input_validation::{
@@ -31,18 +31,20 @@ const PLACEHOLDER_MNEMONIC: &str = "absorb adjust bridge coral exit fresh garmen
 enum ValidatorNetwork {
     Hoodi,
     Sepolia,
+    Ephemery,
 }
 
 impl ValidatorNetwork {
-    fn labels() -> [&'static str; 2] {
-        ["hoodi", "sepolia"]
+    fn labels() -> [&'static str; 3] {
+        ["hoodi", "sepolia", "ephemery"]
     }
 
-    fn from_index(index: usize) -> Self {
+    fn from_index(index: usize) -> Option<Self> {
         match index {
-            0 => Self::Hoodi,
-            1 => Self::Sepolia,
-            _ => Self::Hoodi,
+            0 => Some(Self::Hoodi),
+            1 => Some(Self::Sepolia),
+            2 => Some(Self::Ephemery),
+            _ => None,
         }
     }
 
@@ -50,6 +52,7 @@ impl ValidatorNetwork {
         match self {
             Self::Hoodi => "hoodi",
             Self::Sepolia => "sepolia",
+            Self::Ephemery => "ephemery",
         }
     }
 }
@@ -97,7 +100,8 @@ pub async fn keygen() -> Result<()> {
         .default(0)
         .items(&network_labels)
         .interact()?;
-    let network = ValidatorNetwork::from_index(network_index);
+    let network = ValidatorNetwork::from_index(network_index)
+        .ok_or_else(|| eyre!("Invalid network selection"))?;
 
     let withdrawal_address_input = Input::<String>::with_theme(&theme)
         .with_prompt("Enter the withdrawal address")
@@ -146,7 +150,7 @@ pub async fn keygen() -> Result<()> {
 
     display_mnemonic_securely(PLACEHOLDER_MNEMONIC)?;
     let mnemonic_verified = validate_mnemonic_once(&theme, PLACEHOLDER_MNEMONIC)?;
-    clear_clipboard_placeholder();
+    clear_clipboard();
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
         return Ok(());
@@ -173,7 +177,7 @@ pub async fn keygen() -> Result<()> {
     drop(password_confirmation);
     drop(password);
 
-    println!("Success! Your validator keys are located at ./validator-keys");
+    println!("Validation complete. Key and deposit file generation will be implemented in part 2.");
 
     Ok(())
 }
@@ -192,7 +196,8 @@ fn check_internet_connectivity() -> bool {
         })
 }
 
-fn clear_clipboard_placeholder() {}
+// TODO: Implement clipboard clearing
+fn clear_clipboard() {}
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
     let mut stdout = stdout();

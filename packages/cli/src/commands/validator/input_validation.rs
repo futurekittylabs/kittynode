@@ -82,15 +82,6 @@ pub fn validate_password(password: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
-pub fn confirm_password(password: &str, confirmation: &str) -> Result<()> {
-    validate_password(password)?;
-    if password != confirmation {
-        return Err(eyre!("Passwords do not match"));
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,12 +170,5 @@ mod tests {
     fn validate_password_rejects_long() {
         let password = "a".repeat(129);
         assert!(validate_password(&password).is_err());
-    }
-
-    #[test]
-    fn confirm_password_requires_match() {
-        let password = "a".repeat(12);
-        assert!(confirm_password(&password, &password).is_ok());
-        assert!(confirm_password(&password, "different").is_err());
     }
 }
