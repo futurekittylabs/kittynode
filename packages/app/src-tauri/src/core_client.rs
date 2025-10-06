@@ -562,8 +562,8 @@ mod tests {
         let state = TestState::default();
         let router = Router::new()
             .route("/get_capabilities", get(get_capabilities))
-            .route("/add_capability/:name", post(add_capability))
-            .route("/install_package/:name", post(install_package))
+            .route("/add_capability/{name}", post(add_capability))
+            .route("/install_package/{name}", post(install_package))
             .route("/package_runtime", post(package_runtime_states))
             .route("/start_docker_if_needed", post(start_docker_if_needed))
             .route("/is_docker_running", get(is_docker_running))
