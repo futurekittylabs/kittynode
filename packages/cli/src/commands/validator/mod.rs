@@ -1,18 +1,25 @@
 mod input_validation;
+mod lighthouse;
 
 use std::fmt;
 use std::io::{Write, stdout};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
+use self::lighthouse::{KeygenConfig, generate_validator_files};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
+use eth2_wallet::bip39::{Language, Mnemonic, MnemonicType};
 use eyre::{Result, eyre};
+use std::str::FromStr;
+use std::path::PathBuf;
 use tracing::debug;
+use types::Address;
+use zeroize::Zeroizing;
 
 use input_validation::{
     normalize_withdrawal_address, parse_deposit_amount, parse_validator_count, validate_password,
@@ -24,8 +31,6 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
     ("www.google.com", 80),
 ];
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
-// TODO(part 2): Replace with generated BIP-39 mnemonic
-const PLACEHOLDER_MNEMONIC: &str = "absorb adjust bridge coral exit fresh garment hockey invite jelly kitten lamp mango noon obey pepper quantum rocket solution theory umbrella velvet whale zebra";
 
 #[derive(Clone, Copy, Debug)]
 enum ValidatorNetwork {
@@ -35,26 +40,13 @@ enum ValidatorNetwork {
 }
 
 impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] {
-        ["hoodi", "sepolia", "ephemery"]
-    }
+    fn labels() -> [&'static str; 3] { ["hoodi", "sepolia", "ephemery"] }
 
     fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Self::Hoodi),
-            1 => Some(Self::Sepolia),
-            2 => Some(Self::Ephemery),
-            _ => None,
-        }
+        match index { 0 => Some(Self::Hoodi), 1 => Some(Self::Sepolia), 2 => Some(Self::Ephemery), _ => None }
     }
 
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Hoodi => "hoodi",
-            Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
-        }
-    }
+    fn as_str(self) -> &'static str { match self { Self::Hoodi => "hoodi", Self::Sepolia => "sepolia", Self::Ephemery => "ephemery" } }
 }
 
 impl fmt::Display for ValidatorNetwork {
@@ -106,9 +98,7 @@ pub async fn keygen() -> Result<()> {
     let withdrawal_address_input = Input::<String>::with_theme(&theme)
         .with_prompt("Enter the withdrawal address")
         .validate_with(|text: &String| {
-            normalize_withdrawal_address(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
+            normalize_withdrawal_address(text).map(|_| ()).map_err(|error| error.to_string())
         })
         .interact_text()?;
     let withdrawal_address = normalize_withdrawal_address(&withdrawal_address_input)?;
@@ -122,22 +112,28 @@ pub async fn keygen() -> Result<()> {
         .with_prompt("How much ETH do you want to deposit to these validators?")
         .default("32".to_string())
         .validate_with(|text: &String| {
-            parse_deposit_amount(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
+            parse_deposit_amount(text).map(|_| ()).map_err(|error| error.to_string())
         })
         .interact_text()?;
-    let deposit_amount = parse_deposit_amount(&deposit_amount_input)?;
+    let deposit_amount_total_eth = parse_deposit_amount(&deposit_amount_input)?;
+    let validator_count_u64 = u64::from(validator_count);
+    let total_deposit_gwei = (deposit_amount_total_eth * 1_000_000_000.0).round() as u64;
+    if total_deposit_gwei % validator_count_u64 != 0 {
+        return Err(eyre!("Deposit amount must be evenly divisible across validators when expressed in gwei"));
+    }
+    let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
+    if deposit_amount_gwei_per_validator > 32_000_000_000 {
+        return Err(eyre!("Per-validator deposit cannot exceed 32 ETH"));
+    }
+    let deposit_amount_per_validator_eth = deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {network}");
     println!("  Withdrawal address: {withdrawal_address}");
-    println!(
-        "  0x02 compounding validators: {}",
-        if compounding { "yes" } else { "no" }
-    );
-    println!("  Deposit amount: {deposit_amount} ETH");
+    println!("  0x02 compounding validators: {}", if compounding { "yes" } else { "no" });
+    println!("  Total deposit: {deposit_amount_total_eth} ETH");
+    println!("  Deposit per validator: {:.9} ETH", deposit_amount_per_validator_eth);
 
     let confirm_details = Confirm::with_theme(&theme)
         .with_prompt("Are these details correct?")
@@ -148,8 +144,12 @@ pub async fn keygen() -> Result<()> {
         return Ok(());
     }
 
-    display_mnemonic_securely(PLACEHOLDER_MNEMONIC)?;
-    let mnemonic_verified = validate_mnemonic_once(&theme, PLACEHOLDER_MNEMONIC)?;
+    let mnemonic = Mnemonic::new(MnemonicType::Words24, Language::English);
+    let mnemonic_phrase = Zeroizing::new(mnemonic.to_string());
+    drop(mnemonic);
+
+    display_mnemonic_securely(mnemonic_phrase.as_str())?;
+    let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic_phrase.as_str())?;
     clear_clipboard();
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
@@ -162,22 +162,33 @@ pub async fn keygen() -> Result<()> {
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
     let password_for_confirmation = password.clone();
-    let password_confirmation = Password::with_theme(&theme)
+    let _password_confirmation = Password::with_theme(&theme)
         .with_prompt("Re-enter the password to confirm")
         .validate_with(move |value: &String| {
-            if value == &password_for_confirmation {
-                Ok(())
-            } else {
-                Err("Passwords do not match".to_string())
-            }
+            if value == &password_for_confirmation { Ok(()) } else { Err("Passwords do not match".to_string()) }
         })
         .interact()?;
 
-    // TODO(part 2): Replace with zeroize-based clearing
-    drop(password_confirmation);
-    drop(password);
+    let password = Zeroizing::new(password);
 
-    println!("Validation complete. Key and deposit file generation will be implemented in part 2.");
+    let withdrawal_address = Address::from_str(&withdrawal_address)
+        .map_err(|error| eyre!("Failed to parse withdrawal address: {error}"))?;
+    let outcome = generate_validator_files(KeygenConfig {
+        mnemonic_phrase,
+        validator_count,
+        withdrawal_address,
+        network: network.as_str().to_string(),
+        deposit_gwei: deposit_amount_gwei_per_validator,
+        compounding,
+        password,
+        output_dir: PathBuf::from("./validator-keys"),
+    })?;
+
+    println!("✔ Generated {} validator keystore(s):", outcome.keystore_paths.len());
+    for path in &outcome.keystore_paths { println!("   {}", path.display()); }
+    println!("✔ Deposit data written to {}", outcome.deposit_data_path.display());
+
+    println!("Store the password safely—it is not saved anywhere else.");
 
     Ok(())
 }
