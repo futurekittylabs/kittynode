@@ -6,6 +6,8 @@ packages = ["kittynode-cli"]
 [dist]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.30.0"
+# A prefix git tags must include for dist to care about them
+tag-namespace = "kittynode-cli-"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
