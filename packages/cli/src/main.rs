@@ -6,8 +6,7 @@ use eyre::Result;
 #[derive(Parser)]
 #[command(
     version,
-    about = "Manage your Kittynode installation from the terminal",
-    long_about = "Use kittynode commands to install packages, inspect configuration, and manage your Kittynode environment."
+    about = "Manage your Kittynode installation from the terminal"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -56,6 +55,8 @@ enum Commands {
         #[command(subcommand)]
         command: WebCommands,
     },
+    #[command(about = "Update Kittynode to the latest release")]
+    Update,
 }
 
 #[derive(Subcommand)]
@@ -272,6 +273,7 @@ impl Commands {
             Commands::Container { command } => command.execute().await,
             Commands::Validator { command } => command.execute().await,
             Commands::Web { command } => command.execute().await,
+            Commands::Update => commands::run_updater(),
         }
     }
 }
