@@ -10,6 +10,7 @@ use std::env;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, ErrorKind, Seek, SeekFrom, Write};
 use std::path::Path;
+use std::process::Command;
 
 macro_rules! writeln_string {
     ($dst:expr, $($arg:tt)*) => {{
@@ -462,6 +463,28 @@ pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -
 }
 
 pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
+
+/// Launch the standalone updater installed by cargo-dist installers.
+/// This expects a `kittynode-update` binary to be on PATH.
+pub fn run_updater() -> Result<()> {
+    match Command::new("kittynode-update").status() {
+        Ok(status) => {
+            if status.success() {
+                tracing::info!("update completed successfully");
+                Ok(())
+            } else {
+                Err(eyre!(format!(
+                    "updater exited with code {code}",
+                    code = status.code().unwrap_or(-1)
+                )))
+            }
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Err(eyre!(
+            "could not find 'kittynode-update' in PATH; reinstall via the installer or ensure the updater is installed"
+        )),
+        Err(err) => Err(eyre!(format!("failed to launch updater: {err}"))),
+    }
+}
 
 #[cfg(test)]
 mod tests {
