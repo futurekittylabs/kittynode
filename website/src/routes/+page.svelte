@@ -135,20 +135,29 @@ onMount(() => {
   }
 
   .hero {
-    /* Prefer safe viewport height when supported (set below) */
-    --vh: 1vh;
-
     display: grid;
     place-content: center;
     margin-block-end: 0;
-
-    /* Responsive frame for breathing room around centered content */
-    min-block-size: calc(70 * var(--vh));
-    padding-block: clamp(1rem, calc(4 * var(--vh)), 2.5rem);
+    min-block-size: min(100%, 100vh);
+    padding-block: clamp(1.5rem, 6vh, 2.75rem);
   }
+
+  @supports (height: 100dvh) {
+    .hero {
+      min-block-size: min(100%, 100dvh);
+      padding-block: clamp(1.5rem, 6dvh, 3rem);
+    }
+  }
+
   @supports (height: 100svh) {
     .hero {
-      --vh: 1svh;
+      min-block-size: min(100%, 100svh);
     }
+  }
+
+  :global(main:has(> .hero)) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 </style>
