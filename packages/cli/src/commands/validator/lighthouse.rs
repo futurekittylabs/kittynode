@@ -94,7 +94,10 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 
     write_json(&deposit_data_path, &deposits).wrap_err("failed to write deposit data")?;
 
-    Ok(KeygenOutcome { keystore_paths, deposit_data_path })
+    Ok(KeygenOutcome {
+        keystore_paths,
+        deposit_data_path,
+    })
 }
 
 fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathBuf, DepositEntry)> {
@@ -148,7 +151,12 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .clone()
         .context("network config name missing")?;
 
-    let DepositData { pubkey, withdrawal_credentials, amount, signature } = deposit_data;
+    let DepositData {
+        pubkey,
+        withdrawal_credentials,
+        amount,
+        signature,
+    } = deposit_data;
 
     let deposit_entry = DepositEntry {
         pubkey: to_hex(pubkey.as_serialized()),
@@ -179,9 +187,13 @@ struct DepositEntry {
 }
 
 fn load_chain_spec(network: &str) -> Result<ChainSpec> {
-    if let Some(spec) = build_spec(network)? { return Ok(spec); }
+    if let Some(spec) = build_spec(network)? {
+        return Ok(spec);
+    }
 
-    if network.eq_ignore_ascii_case("hoodi") && let Some(spec) = build_spec("holesky")? {
+    if network.eq_ignore_ascii_case("hoodi")
+        && let Some(spec) = build_spec("holesky")?
+    {
         println!("⚠️ Hoodi configuration not bundled in Lighthouse crates; using holesky spec");
         return Ok(spec);
     }
@@ -191,30 +203,47 @@ fn load_chain_spec(network: &str) -> Result<ChainSpec> {
 
 fn build_spec(network: &str) -> Result<Option<ChainSpec>> {
     match Eth2NetworkConfig::constant(network) {
-        Ok(Some(config)) => Ok(Some(config.chain_spec::<MainnetEthSpec>().map_err(|error| eyre!(
-            "failed to build chain spec for {network}: {error}"
-        ))?)),
+        Ok(Some(config)) => {
+            Ok(Some(config.chain_spec::<MainnetEthSpec>().map_err(
+                |error| eyre!("failed to build chain spec for {network}: {error}"),
+            )?))
+        }
         Ok(None) => Ok(None),
         Err(error) => Err(eyre!("failed to load network config {network}: {error}")),
     }
 }
 
 fn prepare_output_dir(path: &Path) -> Result<()> {
-    if path.exists() { if !path.is_dir() { return Err(eyre!("{path:?} must be a directory")); } }
-    else { fs::create_dir_all(path).wrap_err_with(|| format!("failed to create {path:?}"))?; }
+    if path.exists() {
+        if !path.is_dir() {
+            return Err(eyre!("{path:?} must be a directory"));
+        }
+    } else {
+        fs::create_dir_all(path).wrap_err_with(|| format!("failed to create {path:?}"))?;
+    }
     Ok(())
 }
 
-fn ensure_new_file(path: &Path) -> Result<()> { if path.exists() { return Err(eyre!("refusing to overwrite existing file {path:?}")); } Ok(()) }
+fn ensure_new_file(path: &Path) -> Result<()> {
+    if path.exists() {
+        return Err(eyre!("refusing to overwrite existing file {path:?}"));
+    }
+    Ok(())
+}
 
 fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
-    let mut file = OpenOptions::new().write(true).create_new(true).open(path)
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
         .wrap_err_with(|| format!("failed to open {path:?}"))?;
     serde_json::to_writer(&mut file, value)
         .wrap_err_with(|| format!("failed to serialize JSON to {path:?}"))
 }
 
-fn to_hex(bytes: impl AsRef<[u8]>) -> String { hex_encode(bytes.as_ref()) }
+fn to_hex(bytes: impl AsRef<[u8]>) -> String {
+    hex_encode(bytes.as_ref())
+}
 
 fn compounding_withdrawal_credentials(address: Address, spec: &ChainSpec) -> Hash256 {
     let mut credentials = [0u8; 32];
@@ -224,7 +253,10 @@ fn compounding_withdrawal_credentials(address: Address, spec: &ChainSpec) -> Has
 }
 
 fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
     let candidate = |suffix: Option<u32>| -> PathBuf {
         match suffix {
             Some(n) => output_dir.join(format!("deposit_data-{}-{}.json", timestamp, n)),
@@ -232,11 +264,14 @@ fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
         }
     };
     let path = candidate(None);
-    if !path.exists() { return Ok(path); }
+    if !path.exists() {
+        return Ok(path);
+    }
     for idx in 1..u32::MAX {
         let attempt = candidate(Some(idx));
-        if !attempt.exists() { return Ok(attempt); }
+        if !attempt.exists() {
+            return Ok(attempt);
+        }
     }
     Err(eyre!("unable to find available filename for deposit data"))
 }
-

@@ -15,8 +15,8 @@ use crossterm::{
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
 use eth2_wallet::bip39::{Language, Mnemonic, MnemonicType};
 use eyre::{Result, eyre};
-use std::str::FromStr;
 use std::path::PathBuf;
+use std::str::FromStr;
 use tracing::debug;
 use types::Address;
 use zeroize::Zeroizing;
@@ -40,13 +40,26 @@ enum ValidatorNetwork {
 }
 
 impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] { ["hoodi", "sepolia", "ephemery"] }
-
-    fn from_index(index: usize) -> Option<Self> {
-        match index { 0 => Some(Self::Hoodi), 1 => Some(Self::Sepolia), 2 => Some(Self::Ephemery), _ => None }
+    fn labels() -> [&'static str; 3] {
+        ["hoodi", "sepolia", "ephemery"]
     }
 
-    fn as_str(self) -> &'static str { match self { Self::Hoodi => "hoodi", Self::Sepolia => "sepolia", Self::Ephemery => "ephemery" } }
+    fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(Self::Hoodi),
+            1 => Some(Self::Sepolia),
+            2 => Some(Self::Ephemery),
+            _ => None,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Hoodi => "hoodi",
+            Self::Sepolia => "sepolia",
+            Self::Ephemery => "ephemery",
+        }
+    }
 }
 
 impl fmt::Display for ValidatorNetwork {
@@ -55,6 +68,7 @@ impl fmt::Display for ValidatorNetwork {
     }
 }
 
+#[allow(clippy::manual_is_multiple_of)]
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
 
@@ -98,7 +112,9 @@ pub async fn keygen() -> Result<()> {
     let withdrawal_address_input = Input::<String>::with_theme(&theme)
         .with_prompt("Enter the withdrawal address")
         .validate_with(|text: &String| {
-            normalize_withdrawal_address(text).map(|_| ()).map_err(|error| error.to_string())
+            normalize_withdrawal_address(text)
+                .map(|_| ())
+                .map_err(|error| error.to_string())
         })
         .interact_text()?;
     let withdrawal_address = normalize_withdrawal_address(&withdrawal_address_input)?;
@@ -112,28 +128,39 @@ pub async fn keygen() -> Result<()> {
         .with_prompt("How much ETH do you want to deposit to these validators?")
         .default("32".to_string())
         .validate_with(|text: &String| {
-            parse_deposit_amount(text).map(|_| ()).map_err(|error| error.to_string())
+            parse_deposit_amount(text)
+                .map(|_| ())
+                .map_err(|error| error.to_string())
         })
         .interact_text()?;
     let deposit_amount_total_eth = parse_deposit_amount(&deposit_amount_input)?;
     let validator_count_u64 = u64::from(validator_count);
     let total_deposit_gwei = (deposit_amount_total_eth * 1_000_000_000.0).round() as u64;
     if total_deposit_gwei % validator_count_u64 != 0 {
-        return Err(eyre!("Deposit amount must be evenly divisible across validators when expressed in gwei"));
+        return Err(eyre!(
+            "Deposit amount must be evenly divisible across validators when expressed in gwei"
+        ));
     }
     let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
     if deposit_amount_gwei_per_validator > 32_000_000_000 {
         return Err(eyre!("Per-validator deposit cannot exceed 32 ETH"));
     }
-    let deposit_amount_per_validator_eth = deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
+    let deposit_amount_per_validator_eth =
+        deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {network}");
     println!("  Withdrawal address: {withdrawal_address}");
-    println!("  0x02 compounding validators: {}", if compounding { "yes" } else { "no" });
+    println!(
+        "  0x02 compounding validators: {}",
+        if compounding { "yes" } else { "no" }
+    );
     println!("  Total deposit: {deposit_amount_total_eth} ETH");
-    println!("  Deposit per validator: {:.9} ETH", deposit_amount_per_validator_eth);
+    println!(
+        "  Deposit per validator: {:.9} ETH",
+        deposit_amount_per_validator_eth
+    );
 
     let confirm_details = Confirm::with_theme(&theme)
         .with_prompt("Are these details correct?")
@@ -165,7 +192,11 @@ pub async fn keygen() -> Result<()> {
     let _password_confirmation = Password::with_theme(&theme)
         .with_prompt("Re-enter the password to confirm")
         .validate_with(move |value: &String| {
-            if value == &password_for_confirmation { Ok(()) } else { Err("Passwords do not match".to_string()) }
+            if value == &password_for_confirmation {
+                Ok(())
+            } else {
+                Err("Passwords do not match".to_string())
+            }
         })
         .interact()?;
 
@@ -184,9 +215,17 @@ pub async fn keygen() -> Result<()> {
         output_dir: PathBuf::from("./validator-keys"),
     })?;
 
-    println!("✔ Generated {} validator keystore(s):", outcome.keystore_paths.len());
-    for path in &outcome.keystore_paths { println!("   {}", path.display()); }
-    println!("✔ Deposit data written to {}", outcome.deposit_data_path.display());
+    println!(
+        "✔ Generated {} validator keystore(s):",
+        outcome.keystore_paths.len()
+    );
+    for path in &outcome.keystore_paths {
+        println!("   {}", path.display());
+    }
+    println!(
+        "✔ Deposit data written to {}",
+        outcome.deposit_data_path.display()
+    );
 
     println!("Store the password safely—it is not saved anywhere else.");
 
