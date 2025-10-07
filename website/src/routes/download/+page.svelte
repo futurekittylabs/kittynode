@@ -21,7 +21,7 @@ const { version, date: releaseDate } = releaseInfo;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
-const releaseUrl = `${baseUrl}/releases/download/kittynode-app@${version}`;
+const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${version}`;
 const discordUrl = "https://discord.kittynode.com";
 
 const downloads = [

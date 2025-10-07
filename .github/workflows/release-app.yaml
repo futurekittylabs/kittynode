@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - kittynode-app@*
+      - kittynode-app-*
 
 jobs:
   publish-tauri:
@@ -28,7 +28,7 @@ jobs:
       - name: Verify version match
         shell: bash
         run: |
-          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^kittynode-app@\([0-9.]*\).*/\1/')
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^kittynode-app-\([0-9.]*\).*/\1/')
           CARGO_VERSION=$(grep '^version = ' packages/app/src-tauri/Cargo.toml | cut -d'"' -f2)
 
           if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
@@ -142,7 +142,7 @@ jobs:
 
       - name: Update and commit version
         run: |
-          VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app@}"
+          VERSION="${{ github.ref_name }}" && VERSION="${VERSION#kittynode-app-}"
           printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$VERSION" "$(date +"%B %-d, %Y")" > website/src/lib/release.json
 
           git config user.name "github-actions[bot]"

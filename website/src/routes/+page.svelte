@@ -8,7 +8,7 @@ type KnownOS = "linux" | "mac" | "windows" | "ios" | "android" | "unknown";
 
 const { version } = releaseInfo;
 const repoUrl = "https://github.com/futurekittylabs/kittynode";
-const releaseBaseUrl = `${repoUrl}/releases/download/kittynode-app@${version}`;
+const releaseBaseUrl = `${repoUrl}/releases/download/kittynode-app-${version}`;
 
 const downloads = {
   linux: `${releaseBaseUrl}/Kittynode_${version}_amd64.deb`,
