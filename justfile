@@ -71,7 +71,7 @@ lint-rs:
 lint-rs-pedantic:
   cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::too_many_lines && cargo fmt --all -- --check
 
-# release app and cli
+# release all
 release:
   #!/usr/bin/env bash
   set -euxo pipefail
@@ -86,6 +86,18 @@ release:
   cargo publish -p kittynode-web --dry-run && cargo publish -p kittynode-web --locked
   cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
   git push origin HEAD "kittynode-app-${verApp}" "kittynode-cli-${verCli}"
+
+# release cli
+release-cli:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  cargo set-version --bump minor -p kittynode-cli
+  git add $(git ls-files "*/Cargo.toml") Cargo.toml Cargo.lock
+  verCli="$(cargo pkgid -p kittynode-cli | cut -d@ -f2)"
+  git commit -m "Release kittynode-cli-${verCli}"
+  git tag "kittynode-cli-${verCli}" -m "Release kittynode-cli-${verCli}"
+  cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
+  git push origin HEAD "kittynode-cli-${verCli}"
 
 # set up the project
 setup:
