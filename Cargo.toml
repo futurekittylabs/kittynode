@@ -13,3 +13,8 @@ license = "MIT"
 edition = "2024"
 repository = "https://github.com/futurekittylabs/kittynode"
 readme = "README.md"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
