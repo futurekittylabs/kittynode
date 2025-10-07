@@ -465,9 +465,9 @@ pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -
 pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
 
 /// Launch the standalone updater installed by cargo-dist installers.
-/// This expects a `kittynode-update` binary to be on PATH.
+/// This expects a `kittynode-cli-update` binary to be on PATH.
 pub fn run_updater() -> Result<()> {
-    match Command::new("kittynode-update").status() {
+    match Command::new("kittynode-cli-update").status() {
         Ok(status) => {
             if status.success() {
                 tracing::info!("update completed successfully");
@@ -480,7 +480,7 @@ pub fn run_updater() -> Result<()> {
             }
         }
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Err(eyre!(
-            "could not find 'kittynode-update' in PATH; reinstall via the installer or ensure the updater is installed"
+            "could not find 'kittynode-cli-update' in PATH; reinstall via the installer or ensure the updater is installed"
         )),
         Err(err) => Err(eyre!(format!("failed to launch updater: {err}"))),
     }
