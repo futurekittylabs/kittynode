@@ -9,12 +9,12 @@ Kittynode is a control center for world computer operators. It's designed so tha
 
 Kittynode is split into packages that cover the core logic, user interfaces, and remote bindings. The clear boundaries let us reason about security per module, reuse the same code everywhere, and add features without reshaping the rest of the system.
 
-| Package          | What it does                                                                                               |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| `kittynode-core` | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
-| `kittynode-cli`  | Thin command-line wrapper that forwards subcommands to the core API for headless environments and can host the web service when requested |
-| `kittynode-app`  | Tauri desktop/mobile shell with the Svelte UI that talks to the core directly or through HTTP              |
-| `kittynode-web`  | Axum HTTP service that exposes the core API for remote management and automation                           |
+| Package            | What it does                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `kittynode-core`   | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
+| `kittynode-cli`    | Thin wrapper that forwards subcommands to kittynode-core and can spin up kittynode-web                     |
+| `kittynode-tauri`  | Tauri desktop/mobile shell with the Svelte UI that talks to the core directly or through HTTP              |
+| `kittynode-web`    | Axum HTTP service that exposes the core API for remote management and automation                           |
 
 ### Core API Facade
 
