@@ -1,4 +1,5 @@
 mod commands;
+mod update_banner;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
@@ -395,6 +396,11 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .init();
+
+    if !matches!(std::env::args().nth(1).as_deref(), Some("update")) {
+        update_banner::check_and_print_update().await;
+    }
+
     let cli = Cli::parse();
     cli.command.execute().await
 }
