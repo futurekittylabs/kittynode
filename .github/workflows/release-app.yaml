@@ -127,3 +127,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           draft: false
+
+  update-website-release-json:
+    needs: publish-release
+    uses: ./.github/workflows/update-website-release-json.yml
+    secrets: inherit

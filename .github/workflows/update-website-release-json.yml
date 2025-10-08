@@ -1,0 +1,134 @@
+name: Update website release.json
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: false
+        type: string
+
+concurrency:
+  group: website-release-json
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-release-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine component metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+
+          if [[ -z "$TAG" ]]; then
+            echo "Missing ref name from caller context" >&2
+            exit 1
+          fi
+
+          case "$TAG" in
+            kittynode-app-*)
+              echo "component=kittynode-app" >> "$GITHUB_OUTPUT"
+              echo "version=${TAG#kittynode-app-}" >> "$GITHUB_OUTPUT"
+              ;;
+            kittynode-cli-*)
+              echo "component=kittynode-cli" >> "$GITHUB_OUTPUT"
+              echo "version=${TAG#kittynode-cli-}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unrecognized tag '$TAG'; refusing to update release.json" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          token: ${{ secrets.MAYUSHII_PAT }}
+
+      - name: Update release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATE="$(date +"%B %-d, %Y")"
+          case "${{ steps.meta.outputs.component }}" in
+            kittynode-app)
+              FILE="website/src/lib/app-release.json"
+              ;;
+            kittynode-cli)
+              FILE="website/src/lib/cli-release.json"
+              ;;
+            *)
+              echo "Unexpected component ${{ steps.meta.outputs.component }}" >&2
+              exit 1
+              ;;
+          esac
+          mkdir -p "$(dirname "$FILE")"
+
+          if [[ -f "$FILE" ]]; then
+            CONTENT=$(cat "$FILE")
+          else
+            CONTENT='{}'
+          fi
+
+          echo "$CONTENT" \
+          | jq --arg ver "${{ steps.meta.outputs.version }}" --arg date "$DATE" \
+               '. as $in | .version = $ver | .date = $date' \
+          > "$FILE.tmp"
+
+          mv "$FILE.tmp" "$FILE"
+
+      - name: Install signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${HOME}/.ssh"
+          printf '%s' "${MAYUSHII_SSH_SIGNING}" > "${HOME}/.ssh/mayushii_signing"
+          chmod 600 "${HOME}/.ssh/mayushii_signing"
+          ssh-keygen -y -f "${HOME}/.ssh/mayushii_signing" > "${HOME}/.ssh/mayushii_signing.pub"
+
+      - name: Configure git identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "mayushii-nyan"
+          git config user.email "236751316+mayushii-nyan@users.noreply.github.com"
+          git config gpg.format ssh
+          git config commit.gpgsign true
+          git config user.signingkey "${HOME}/.ssh/mayushii_signing.pub"
+
+      - name: Commit and push changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${{ steps.meta.outputs.component }}" in
+            kittynode-app)
+              TARGET_FILE="website/src/lib/app-release.json"
+              ;;
+            kittynode-cli)
+              TARGET_FILE="website/src/lib/cli-release.json"
+              ;;
+          esac
+
+          if git diff --quiet "$TARGET_FILE"; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git add "$TARGET_FILE"
+          git commit -m "Update website ${TARGET_FILE##*/}: ${{ steps.meta.outputs.version }}"
+
+          git pull --rebase origin main
+          git push
