@@ -29,7 +29,7 @@ runs:
         git config commit.gpgsign true
         git config user.signingkey "${HOME}/.ssh/mayushii_signing"
 
-    - name: Commit and push changes
+    - name: Add kitty test file, commit, and push changes
       shell: bash
       run: |
         set -euo pipefail
