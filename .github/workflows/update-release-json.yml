@@ -17,8 +17,6 @@ permissions:
 jobs:
   update-release-json:
     runs-on: ubuntu-latest
-    env:
-      MAYUSHII_SSH_SIGNING: ${{ secrets.MAYUSHII_SSH_SIGNING }}
     steps:
       - name: Determine component metadata
         id: meta
@@ -46,11 +44,6 @@ jobs:
               exit 1
               ;;
           esac
-
-      - name: Install jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
 
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -96,7 +89,7 @@ jobs:
           set -euo pipefail
           umask 077
           mkdir -p "${HOME}/.ssh"
-          printf '%s' "${MAYUSHII_SSH_SIGNING}" > "${HOME}/.ssh/mayushii_signing"
+          printf '%s' '${{ secrets.MAYUSHII_SSH_SIGNING }}' > "${HOME}/.ssh/mayushii_signing"
           chmod 600 "${HOME}/.ssh/mayushii_signing"
           ssh-keygen -y -f "${HOME}/.ssh/mayushii_signing" > "${HOME}/.ssh/mayushii_signing.pub"
 
