@@ -6,7 +6,7 @@ import releaseInfo from "$lib/release.json";
 
 type KnownOS = "linux" | "mac" | "windows" | "ios" | "android" | "unknown";
 
-const { version } = releaseInfo;
+const { version } = releaseInfo["kittynode-app"];
 const repoUrl = "https://github.com/futurekittylabs/kittynode";
 const releaseBaseUrl = `${repoUrl}/releases/download/kittynode-app-${version}`;
 

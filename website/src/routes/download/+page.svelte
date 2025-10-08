@@ -17,7 +17,7 @@ import {
 import { CopyButton } from "$lib/components/ui/copy-button/index.js";
 import releaseInfo from "$lib/release.json";
 
-const { version, date: releaseDate } = releaseInfo;
+const { version, date: releaseDate } = releaseInfo["kittynode-app"];
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
@@ -74,7 +74,8 @@ const downloads = [
 ];
 
 let linuxHelpOpen = false;
-const cliInstallCommand = "cargo install kittynode-cli";
+const cliVersion = releaseInfo["kittynode-cli"].version;
+const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/futurekittylabs/kittynode/releases/download/kittynode-cli-${cliVersion}/kittynode-cli-installer.sh | sh`;
 </script>
 
 <div class="py-16">
@@ -148,41 +149,39 @@ const cliInstallCommand = "cargo install kittynode-cli";
   </div>
 
   <div class="mt-10 overflow-hidden rounded-lg border bg-card">
-    <div class="grid min-[900px]:grid-cols-[1.4fr_1fr]">
-      <div class="flex flex-col gap-4 px-6 py-6">
-        <div class="flex items-center gap-3">
-          <div class="rounded-md bg-muted p-2">
-            <Terminal class="h-5 w-5" />
-          </div>
-          <h2 class="text-lg font-semibold">Kittynode CLI</h2>
+    <div class="flex flex-col gap-6 px-6 py-6">
+      <div class="flex items-center gap-3">
+        <div class="rounded-md bg-muted p-2">
+          <Terminal class="h-5 w-5" />
         </div>
-        <p class="text-sm text-muted-foreground">
-          Manage your node infrastructure directly from the terminal.
-        </p>
+        <h2 class="text-lg font-semibold">Kittynode CLI</h2>
       </div>
-      <div
-        class="border-t border-t-border bg-muted/30 px-6 py-6 min-[900px]:border-t-0 min-[900px]:border-l min-[900px]:border-l-border"
-      >
+      <p class="text-sm text-muted-foreground">
+        Manage your node infrastructure directly from the terminal.
+      </p>
+      <div>
         <p
           class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Install with Cargo
+          Install via script
         </p>
-        <div
-          class="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-background/80 px-3 py-2 font-mono text-sm"
-        >
-          <span class="truncate pl-1">{cliInstallCommand}</span>
-          <CopyButton
-            aria-label="Copy install command"
-            text={cliInstallCommand}
-          />
+        <div class="mt-3 rounded-lg border bg-background/80 px-4 py-3 font-mono text-sm">
+          <div
+            class="flex flex-col gap-3 min-[640px]:flex-row min-[640px]:items-center min-[640px]:justify-between"
+          >
+            <div class="overflow-x-auto px-2 pt-1 pb-2">
+              <code class="block whitespace-nowrap leading-snug pr-8">
+                {cliInstallCommand}
+              </code>
+            </div>
+            <CopyButton
+              class="shrink-0 min-[640px]:self-center"
+              aria-label="Copy install command"
+              text={cliInstallCommand}
+            />
+          </div>
         </div>
-        <p class="mt-4 text-xs text-muted-foreground">
-          Prerequisite: Install Rust from <a
-            href="https://rustup.rs"
-            class="link">rustup.rs</a
-          >.
-        </p>
+        <!-- No additional prerequisites for installer script -->
       </div>
     </div>
   </div>
