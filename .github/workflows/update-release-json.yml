@@ -11,9 +11,6 @@ concurrency:
   group: update-release-json
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
   update-release-json:
     runs-on: ubuntu-latest
