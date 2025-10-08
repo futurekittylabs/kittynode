@@ -17,6 +17,8 @@ permissions:
 jobs:
   update-release-json:
     runs-on: ubuntu-latest
+    env:
+      MAYUSHII_SSH_SIGNING: ${{ secrets.MAYUSHII_SSH_SIGNING }}
     steps:
       - name: Determine component metadata
         id: meta
