@@ -295,6 +295,7 @@ async function initKittynode() {
             Download kittynode-cli
             <ArrowUpRight class="h-4 w-4" />
           </a>
+          
         {:else if currentStep === 2}
           <a
             class="link inline-flex items-center gap-1 text-base font-medium"
@@ -305,6 +306,7 @@ async function initKittynode() {
             Download Docker Desktop
             <ArrowUpRight class="h-4 w-4" />
           </a>
+          
         {/if}
       </div>
       <div class="flex justify-end gap-2">
