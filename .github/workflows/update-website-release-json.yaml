@@ -1,8 +1,12 @@
 name: Update website release.json
 
+# Note: We intentionally avoid `release: published` because releases created by GITHUB_TOKEN
+# do not trigger other workflows. Tag pushes are reliable and minimal.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - kittynode-app-*
+      - kittynode-cli-*
 
 concurrency:
   group: website-release-json
@@ -19,7 +23,7 @@ jobs:
         id: meta
         shell: bash
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.ref_name }}"
           if [[ "$TAG" == kittynode-app-* ]]; then
             echo "key=kittynode-app" >> "$GITHUB_OUTPUT"
             echo "version=${TAG#kittynode-app-}" >> "$GITHUB_OUTPUT"
