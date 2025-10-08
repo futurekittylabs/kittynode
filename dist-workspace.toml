@@ -21,4 +21,4 @@ install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = true
 # Post-announce jobs to run in CI
-post-announce-jobs = ["./update-website-release-json"]
+post-announce-jobs = ["./update-release-json"]

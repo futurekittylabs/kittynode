@@ -8,7 +8,7 @@ on:
         type: string
 
 concurrency:
-  group: website-release-json
+  group: update-release-json
   cancel-in-progress: false
 
 permissions:
