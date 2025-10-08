@@ -36,19 +36,17 @@ const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
 enum ValidatorNetwork {
     Hoodi,
     Sepolia,
-    Ephemery,
 }
 
 impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] {
-        ["hoodi", "sepolia", "ephemery"]
+    fn labels() -> [&'static str; 2] {
+        ["hoodi", "sepolia"]
     }
 
     fn from_index(index: usize) -> Option<Self> {
         match index {
             0 => Some(Self::Hoodi),
             1 => Some(Self::Sepolia),
-            2 => Some(Self::Ephemery),
             _ => None,
         }
     }
@@ -57,7 +55,6 @@ impl ValidatorNetwork {
         match self {
             Self::Hoodi => "hoodi",
             Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
         }
     }
 }
