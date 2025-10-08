@@ -9,7 +9,7 @@ runs:
         set -euo pipefail
         umask 077
         mkdir -p "${HOME}/.ssh"
-        printf '%s\n' "${MAYUSHII_SSH_SIGNING}" > "${HOME}/.ssh/mayushii_signing"
+        printf '%s' "${MAYUSHII_SSH_SIGNING}" > "${HOME}/.ssh/mayushii_signing"
         chmod 600 "${HOME}/.ssh/mayushii_signing"
         ssh-keygen -y -f "${HOME}/.ssh/mayushii_signing" > "${HOME}/.ssh/mayushii_signing.pub"
 
