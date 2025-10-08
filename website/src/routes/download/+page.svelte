@@ -15,14 +15,19 @@ import {
   CollapsibleContent,
 } from "$lib/components/ui/collapsible/index.js";
 import { CopyButton } from "$lib/components/ui/copy-button/index.js";
-import releaseInfo from "$lib/release.json";
+import appRelease from "$lib/app-release.json";
+import cliRelease from "$lib/cli-release.json";
 
-const { version, date: releaseDate } = releaseInfo["kittynode-app"];
+let linuxHelpOpen = false;
+
+const { version: appVersion, date: releaseDate } = appRelease;
+const { version: cliVersion } = cliRelease;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
-const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${version}`;
+const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
 const discordUrl = "https://discord.kittynode.com";
+const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/futurekittylabs/kittynode/releases/download/kittynode-cli-${cliVersion}/kittynode-cli-installer.sh | sh`;
 
 const downloads = [
   {
@@ -32,11 +37,11 @@ const downloads = [
     options: [
       {
         label: ".deb",
-        url: `${releaseUrl}/Kittynode_${version}_amd64.deb`,
+        url: `${releaseUrl}/Kittynode_${appVersion}_amd64.deb`,
       },
       {
         label: ".rpm",
-        url: `${releaseUrl}/Kittynode-${version}-1.x86_64.rpm`,
+        url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
       },
     ],
     layout: "stacked",
@@ -47,7 +52,7 @@ const downloads = [
     requirements: "macOS 10.15+ (Apple Silicon)",
     primary: {
       label: ".dmg",
-      url: `${releaseUrl}/Kittynode_${version}_aarch64.dmg`,
+      url: `${releaseUrl}/Kittynode_${appVersion}_aarch64.dmg`,
     },
     options: [
       {
@@ -62,20 +67,16 @@ const downloads = [
     requirements: "Windows 7+ (x86_64)",
     primary: {
       label: ".exe",
-      url: `${releaseUrl}/Kittynode_${version}_x64-setup.exe`,
+      url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup.exe`,
     },
     options: [
       {
         label: ".msi",
-        url: `${releaseUrl}/Kittynode_${version}_x64_en-US.msi`,
+        url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US.msi`,
       },
     ],
   },
 ];
-
-let linuxHelpOpen = false;
-const cliVersion = releaseInfo["kittynode-cli"].version;
-const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/futurekittylabs/kittynode/releases/download/kittynode-cli-${cliVersion}/kittynode-cli-installer.sh | sh`;
 </script>
 
 <div class="py-16">
@@ -83,7 +84,7 @@ const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://github.
   <div class="mb-8 text-center">
     <h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>
     <p class="text-sm text-muted-foreground mb-4">
-      Version {version} • {releaseDate}
+      Version {appVersion} • {releaseDate}
     </p>
     <a href={changelogUrl} class="link text-sm"> View changelog</a>
   </div>

@@ -1,7 +1,6 @@
 name: Release app
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - kittynode-app-*
@@ -127,3 +126,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           draft: false
+
+  update-release-json:
+    needs: publish-release
+    uses: ./.github/workflows/update-release-json.yml
+    secrets: inherit
