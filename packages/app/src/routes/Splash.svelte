@@ -13,7 +13,7 @@ import { AlertTriangle, ArrowUpRight } from "@lucide/svelte";
 let currentPlatform = $state("");
 let currentStep = $state(0);
 
-const totalSteps = 3;
+const totalSteps = 4;
 const isFirstStep = $derived(currentStep === 0);
 const isLastStep = $derived(currentStep === totalSteps - 1);
 const progressValue = $derived(
@@ -213,11 +213,30 @@ async function initKittynode() {
             <h2
               class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"
             >
-              Install Docker Desktop
+              Try Kittynode CLI
             </h2>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Kittynode isolates your node stack inside Docker. Install Docker
-              Desktop before you launch.
+              Install Ethereum on a dedicated machine using Kittynode CLI, and connect to your installation from anywhere with the Kittynode app!
+            </p>
+            <p class="text-base text-muted-foreground sm:text-lg">
+              This requires both machines to be in the same Tailscale network.
+            </p>
+          </div>
+        </div>
+      {:else if currentStep === 2}
+        <div class="flex h-full flex-col justify-center gap-6 text-left">
+          <div class="space-y-4">
+            <h2
+              class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"
+            >
+              Install Docker
+            </h2>
+            <p class="text-base text-muted-foreground sm:text-lg">
+              Kittynode isolates your node stack inside Docker, so you'll need it to install Ethereum. Install Docker on whatever machine(s) you
+              plan to run Ethereum on.
+            </p>
+            <p class="text-base text-muted-foreground sm:text-lg">
+              If using a remote dedicated machine, you only need to install Docker there.
             </p>
           </div>
         </div>
@@ -253,7 +272,6 @@ async function initKittynode() {
                 </a>.
               </p>
               <p>Thank you for giving Kittynode a try.</p>
-              <p>&mdash; dionysuz.eth</p>
             </div>
           </div>
         </div>
@@ -270,7 +288,17 @@ async function initKittynode() {
         {#if currentStep === 1}
           <a
             class="link inline-flex items-center gap-1 text-base font-medium"
-            href="https://www.docker.com/products/docker-desktop/"
+            href="https://kittynode.com/download"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Download kittynode-cli
+            <ArrowUpRight class="h-4 w-4" />
+          </a>
+        {:else if currentStep === 2}
+          <a
+            class="link inline-flex items-center gap-1 text-base font-medium"
+            href="https://www.docker.com/products/docker-desktop"
             target="_blank"
             rel="noreferrer noopener"
           >
