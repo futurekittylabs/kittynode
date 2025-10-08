@@ -470,7 +470,6 @@ pub fn run_updater() -> Result<()> {
     match Command::new("kittynode-cli-update").status() {
         Ok(status) => {
             if status.success() {
-                tracing::info!("update completed successfully");
                 Ok(())
             } else {
                 Err(eyre!(format!(

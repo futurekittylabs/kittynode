@@ -3,7 +3,7 @@ use rand::RngCore;
 use std::{fs, path::PathBuf};
 use tracing::info;
 
-pub(crate) fn kittynode_path() -> Result<PathBuf> {
+pub fn kittynode_path() -> Result<PathBuf> {
     home::home_dir()
         .map(|home| home.join(".kittynode"))
         .ok_or_else(|| eyre::eyre!("Failed to determine the .kittynode path"))
