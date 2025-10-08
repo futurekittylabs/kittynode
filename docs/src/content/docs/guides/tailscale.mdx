@@ -1,0 +1,106 @@
+---
+title: Use Tailscale
+description: Securely connect Kittynode over a private Tailscale network.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Tailscale creates a private, encrypted network between your devices using WireGuard. This guide shows the simplest way to install Tailscale on a server/CLI machine (your node) and on your desktop, then connect them so you can manage a remote Kittynode securely.
+
+## What you’ll do
+
+- Install Tailscale on the machine running `kittynode-cli` (your node)
+- Install Tailscale on your desktop (or phone)
+- Sign in to the same tailnet so both devices can see each other
+- Connect the Kittynode desktop app to the node over Tailscale
+
+## Install Tailscale
+
+<Tabs>
+
+  <TabItem label="Linux">
+
+  <Steps>
+
+  1. On the CLI/server machine (recommended for dedicated nodes), install Tailscale:
+
+      ```bash
+      curl -fsSL https://tailscale.com/install.sh | sh
+      ```
+
+  2. Bring the node online and sign in:
+
+      ```bash
+      sudo tailscale up
+      ```
+
+      On headless servers this prints a URL. Open it on any browser to authenticate.
+
+  3. Confirm it’s connected and copy its Tailscale IP:
+
+      ```bash
+      tailscale status
+      tailscale ip -4
+      ```
+
+  4. For a Linux desktop, you can also install via your distro’s package manager or from the downloads page: https://tailscale.com/download/linux
+
+  </Steps>
+
+  </TabItem>
+
+  <TabItem label="macOS">
+
+  - Install the Tailscale app (recommended for desktop): https://tailscale.com/download/macos
+  - Or with Homebrew: `brew install --cask tailscale`
+  - Sign in with the same account as the CLI machine.
+  - Verify devices in the app or admin panel: https://login.tailscale.com/admin/machines
+
+  </TabItem>
+
+  <TabItem label="Windows">
+
+  - Install the Tailscale app: https://tailscale.com/download/windows
+  - Sign in with the same account as the CLI machine.
+  - Verify devices in the app or admin panel: https://login.tailscale.com/admin/machines
+
+  </TabItem>
+
+</Tabs>
+
+## Connect both machines to the same tailnet
+
+- Use the same Tailscale account (or be invited to the same tailnet).
+- Each device gets a private 100.x.x.x address. On the node, copy it with `tailscale ip -4`.
+- For security, devices in your tailnet can only be accessed by other devices in the same tailnet by default.
+- If running Kittynode on a dedicated machine with the CLI, ensure your desktop and the node are both connected to this same tailnet.
+
+## Use with Kittynode
+
+<Steps>
+
+1. On the CLI machine (your node), start the web service:
+
+    ```bash
+    kittynode web start
+    ```
+
+    By default this binds on port 3000.
+
+2. Find the node’s Tailscale IP:
+
+    ```bash
+    tailscale ip -4
+    ```
+
+3. In the Kittynode desktop app, open Settings and set the Server URL to:
+
+    ```
+    http://<tailscale-ip>:3000
+    ```
+
+    Ensure both the desktop and the CLI machine stay connected to the same Tailscale network.
+
+</Steps>
+
+> Tip: If you enable Tailscale MagicDNS, you can use the device name instead of the IP.

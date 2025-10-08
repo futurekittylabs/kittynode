@@ -8,6 +8,7 @@ import starlightLinksValidator from "starlight-links-validator";
 export default defineConfig({
   redirects: {
     "/": "/guides/build-from-source",
+    "/guides/run-ethereum": "/guides/run-remotely",
   },
   adapter: cloudflare({
     imageService: "compile",
@@ -70,15 +71,10 @@ export default defineConfig({
         {
           label: "Guides",
           items: [
-            {
-              label: "Build from source",
-              slug: "guides/build-from-source",
-            },
-            {
-              label: "Run Ethereum",
-              slug: "guides/run-ethereum",
-              badge: "New",
-            },
+            { label: "Run remotely", slug: "guides/run-remotely" },
+            { label: "Install Docker", slug: "guides/install-docker" },
+            { label: "Use Tailscale", slug: "guides/tailscale" },
+            { label: "Build from source", slug: "guides/build-from-source" },
           ],
         },
         {

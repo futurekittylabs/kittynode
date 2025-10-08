@@ -1,0 +1,82 @@
+---
+title: Run Kittynode remotely
+description: Ideal setup — run Kittynode on a dedicated machine and manage it from your desktop over Tailscale.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+This guide covers the recommended setup: install Kittynode CLI on a dedicated machine, secure access with Tailscale, then connect from the Kittynode desktop app.
+
+## Overview
+
+- Dedicated machine runs your node with `kittynode-cli`
+- Your desktop app connects over a private Tailscale network
+- Docker provides isolation for node services
+
+## 1) Prepare the dedicated machine
+
+- Any modern Linux box works; Ubuntu is a common choice
+- Ensure basic tools are installed:
+
+  ```bash
+  sudo apt update && sudo apt install -y curl git
+  ```
+
+## 2) Install Docker on the node
+
+Follow: [/guides/install-docker](/guides/install-docker)
+
+## 3) Join both devices to the same tailnet
+
+Follow: [/guides/tailscale](/guides/tailscale)
+
+Both the dedicated machine and your desktop must be connected to the same Tailscale network for secure access.
+
+## 4) Install Kittynode CLI on the node
+
+- Recommended: Download from the official page: https://kittynode.com/download
+- Developers: You can also install from crates.io:
+
+  ```bash
+  cargo install kittynode-cli
+  ```
+
+## 5) Start the web service on the node
+
+<Steps>
+
+1. Start the local web API:
+
+    ```bash
+    kittynode web start
+    ```
+
+2. Copy the node’s Tailscale IP:
+
+    ```bash
+    tailscale ip -4
+    ```
+
+</Steps>
+
+## 6) Connect from the desktop app
+
+<Steps>
+
+1. Install and open the Kittynode desktop app.
+2. In Settings, set the Server URL to:
+
+    ```
+    http://<tailscale-ip>:3000
+    ```
+
+3. Save and verify the app shows “Connected to remote Kittynode”.
+
+</Steps>
+
+Tips
+
+- Enable MagicDNS in Tailscale to use the device name instead of the IP
+- Keep both devices online in the same tailnet to maintain connectivity
+- If you rotate devices, re-check the server URL in Settings
+
