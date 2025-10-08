@@ -2,11 +2,11 @@
 import { onMount } from "svelte";
 import { ArrowUpRight, Download } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
-import releaseInfo from "$lib/release.json";
+import appRelease from "$lib/app-release.json";
 
 type KnownOS = "linux" | "mac" | "windows" | "ios" | "android" | "unknown";
 
-const { version } = releaseInfo["kittynode-app"];
+const { version } = appRelease;
 const repoUrl = "https://github.com/futurekittylabs/kittynode";
 const releaseBaseUrl = `${repoUrl}/releases/download/kittynode-app-${version}`;
 
