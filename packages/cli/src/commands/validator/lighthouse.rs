@@ -3,7 +3,7 @@ use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use eth2_keystore::{KeystoreBuilder, keypair_from_secret};
+use eth2_keystore::{Keystore, KeystoreBuilder, keypair_from_secret};
 use eth2_network_config::Eth2NetworkConfig;
 use eth2_wallet::bip39::{Language, Mnemonic, Seed as Bip39Seed};
 use eth2_wallet::{KeyType, recover_validator_secret_from_mnemonic};
@@ -119,14 +119,7 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .join(format!("keystore-{index:04}-{}.json", keystore.uuid()));
     ensure_new_file(&keystore_path)?;
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&keystore_path)
-        .wrap_err_with(|| format!("failed to open {keystore_path:?}"))?;
-    keystore
-        .to_json_writer(&mut file)
-        .map_err(|error| eyre!("failed to serialize keystore: {error:?}"))?;
+    write_keystore(&keystore_path, &keystore)?;
 
     let withdrawal_credentials = if params.compounding {
         compounding_withdrawal_credentials(params.withdrawal_address, params.spec)
@@ -241,6 +234,23 @@ fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
         .wrap_err_with(|| format!("failed to serialize JSON to {path:?}"))
 }
 
+fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .wrap_err_with(|| format!("failed to open {path:?}"))?;
+
+    let mut json = serde_json::to_value(keystore)
+        .map_err(|error| eyre!("failed to convert keystore to JSON value: {error:?}"))?;
+    if let serde_json::Value::Object(ref mut map) = json {
+        map.retain(|key, value| !(key == "name" && value.is_null()));
+    }
+
+    serde_json::to_writer(&mut file, &json)
+        .wrap_err_with(|| format!("failed to serialize keystore JSON to {path:?}"))
+}
+
 fn to_hex(bytes: impl AsRef<[u8]>) -> String {
     hex_encode(bytes.as_ref())
 }
@@ -274,4 +284,103 @@ fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
         }
     }
     Err(eyre!("unable to find available filename for deposit data"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use eth2_keystore::Keystore;
+    use eyre::{Result, eyre};
+    use serde_json::Value;
+    use std::fs;
+    use tempfile::tempdir;
+
+    const MNEMONIC: &str = "upon pelican potato light kick symptom pioneer bridge wonder chief head citizen flip festival claw switch wear proud length zoo mercy foot repair ceiling";
+    const KEYSTORE_PASSWORD: &str = "blackcatsarenotevil";
+    const WITHDRAWAL_ADDRESS: &str = "0x48fe05daea0f8cc6958a72522db42b2edb3fda1a";
+
+    #[test]
+    fn generates_ethstaker_parity_outputs() -> Result<()> {
+        let output_dir = tempdir().wrap_err("failed to create temp dir")?;
+        let withdrawal_address = WITHDRAWAL_ADDRESS
+            .parse()
+            .wrap_err("failed to parse withdrawal address")?;
+        let outcome = generate_validator_files(KeygenConfig {
+            mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
+            validator_count: 1,
+            withdrawal_address,
+            network: "hoodi".to_string(),
+            deposit_gwei: 32_000_000_000,
+            compounding: true,
+            password: Zeroizing::new(KEYSTORE_PASSWORD.to_string()),
+            output_dir: output_dir.path().to_path_buf(),
+        })?;
+
+        let fixture_dir =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ethstaker");
+        let fixture_deposit = fixture_dir.join("deposit_data.json");
+        let fixture_keystore = fixture_dir.join("keystore.json");
+
+        let expected_deposits = read_json_array(&fixture_deposit)?;
+        let mut actual_deposits = read_json_array(&outcome.deposit_data_path)?;
+        scrub_deposit_entry(&mut actual_deposits);
+        let mut expected_deposits = expected_deposits;
+        scrub_deposit_entry(&mut expected_deposits);
+        assert_eq!(actual_deposits, expected_deposits);
+
+        assert_eq!(outcome.keystore_paths.len(), 1);
+        let keystore_path = outcome.keystore_paths.first().unwrap();
+        let actual_keystore = Keystore::from_json_file(keystore_path)
+            .map_err(|error| eyre!("failed to parse generated keystore: {error:?}"))?;
+        let expected_keystore = Keystore::from_json_file(&fixture_keystore)
+            .map_err(|error| eyre!("failed to parse ethstaker keystore: {error:?}"))?;
+
+        assert_eq!(
+            actual_keystore.path().as_deref(),
+            Some("m/12381/3600/0/0/0"),
+            "keystore derivation path should match ethstaker output"
+        );
+        assert_eq!(
+            actual_keystore.pubkey(),
+            expected_keystore.pubkey(),
+            "generated keystore pubkey should match ethstaker keystore"
+        );
+
+        verify_secret_key_parity(&actual_keystore, &expected_keystore)?;
+
+        Ok(())
+    }
+
+    fn read_json_array(path: &Path) -> Result<Vec<Value>> {
+        let file = fs::File::open(path).wrap_err_with(|| format!("failed to open {path:?}"))?;
+        serde_json::from_reader(file)
+            .wrap_err_with(|| format!("failed to parse JSON array from {path:?}"))
+    }
+
+    fn scrub_deposit_entry(entries: &mut [Value]) {
+        for entry in entries {
+            if let Value::Object(map) = entry {
+                map.remove("deposit_cli_version");
+            }
+        }
+    }
+
+    fn verify_secret_key_parity(actual: &Keystore, expected: &Keystore) -> Result<()> {
+        let actual_keypair = actual
+            .decrypt_keypair(KEYSTORE_PASSWORD.as_bytes())
+            .map_err(|error| eyre!("failed to decrypt generated keystore: {error:?}"))?;
+        let expected_keypair = expected
+            .decrypt_keypair(KEYSTORE_PASSWORD.as_bytes())
+            .map_err(|error| eyre!("failed to decrypt ethstaker keystore: {error:?}"))?;
+
+        if actual_keypair.pk != expected_keypair.pk {
+            return Err(eyre!("public keys derived from keystores do not match"));
+        }
+        let actual_secret = actual_keypair.sk.serialize();
+        let expected_secret = expected_keypair.sk.serialize();
+        if actual_secret.as_bytes() != expected_secret.as_bytes() {
+            return Err(eyre!("secret keys derived from keystores do not match"));
+        }
+        Ok(())
+    }
 }
