@@ -1,4 +1,10 @@
 {
-  "version": "0.82.0",
-  "date": "October 7, 2025"
+  "kittynode-app": {
+    "version": "0.82.0",
+    "date": "October 7, 2025"
+  },
+  "kittynode-cli": {
+    "version": "0.28.0",
+    "date": "October 7, 2025"
+  }
 }

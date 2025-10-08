@@ -1,0 +1,102 @@
+name: Update website release.json
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: website-release-json
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-release-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine component and version
+        id: meta
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          if [[ "$TAG" == kittynode-app-* ]]; then
+            echo "key=kittynode-app" >> "$GITHUB_OUTPUT"
+            echo "version=${TAG#kittynode-app-}" >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG" == kittynode-cli-* ]]; then
+            echo "key=kittynode-cli" >> "$GITHUB_OUTPUT"
+            echo "version=${TAG#kittynode-cli-}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unrecognized tag '$TAG'; skipping." >&2
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if not a known release
+        if: steps.meta.outputs.skip == 'true'
+        run: echo "Nothing to do for this release."
+
+      - name: Install jq
+        if: steps.meta.outputs.skip != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Checkout repository
+        if: steps.meta.outputs.skip != 'true'
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          token: ${{ secrets.RELEASE_BOT_PAT }}
+
+      - name: Update release.json
+        if: steps.meta.outputs.skip != 'true'
+        shell: bash
+        env:
+          KEY: ${{ steps.meta.outputs.key }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          DATE="$(date +"%B %-d, %Y")"
+          FILE="website/src/lib/release.json"
+          mkdir -p "$(dirname "$FILE")"
+
+          if [[ -f "$FILE" ]]; then
+            CONTENT=$(cat "$FILE")
+          else
+            CONTENT='{}'
+          fi
+
+          echo "$CONTENT" \
+          | jq --arg key "$KEY" --arg ver "$VERSION" --arg date "$DATE" \
+               '. as $in | .[$key] = {version: $ver, date: $date}' \
+          > "$FILE.tmp"
+
+          mv "$FILE.tmp" "$FILE"
+
+      - name: Commit and push changes
+        if: steps.meta.outputs.skip != 'true'
+        shell: bash
+        env:
+          KEY: ${{ steps.meta.outputs.key }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet website/src/lib/release.json; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git add website/src/lib/release.json
+          git commit -m "Update website release.json: ${KEY} ${VERSION}"
+
+          if ! git pull --rebase origin main; then
+            echo "Rebase failed; aborting to avoid pushing conflicting release metadata." >&2
+            git rebase --abort || true
+            exit 1
+          fi
+
+          git push
