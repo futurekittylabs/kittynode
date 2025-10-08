@@ -1,0 +1,42 @@
+name: Mayushii☆ Commit
+description: Configure Mayushii's git identity, sign, commit, and push
+runs:
+  using: composite
+  steps:
+    - name: Install signing key
+      shell: bash
+      run: |
+        set -euo pipefail
+        umask 077
+        mkdir -p "${HOME}/.ssh"
+        printf '%s\n' "${MAYUSHII_SSH_SIGNING}" > "${HOME}/.ssh/mayushii_signing"
+        chmod 600 "${HOME}/.ssh/mayushii_signing"
+        ssh-keygen -y -f "${HOME}/.ssh/mayushii_signing" > "${HOME}/.ssh/mayushii_signing.pub"
+
+    - name: Configure git identity
+      shell: bash
+      run: |
+        set -euo pipefail
+        git config user.name "mayushii-nyan"
+        git config user.email "236751316+mayushii-nyan@users.noreply.github.com"
+        git config gpg.format ssh
+        git config commit.gpgsign true
+        git config user.signingkey "${HOME}/.ssh/mayushii_signing.pub"
+
+    - name: Checkout repository
+      uses: actions/checkout@v5
+      with:
+        ref: main
+        token: ${{ secrets.MAYUSHII_PAT }}
+
+    - name: Commit and push changes
+      shell: bash
+      run: |
+        set -euo pipefail
+        touch kitty
+        git add .
+        if git commit -m "Mayushii☆ commit!"; then
+          git push origin main
+        else
+          echo "No commit created"
+        fi
