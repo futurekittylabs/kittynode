@@ -294,3 +294,12 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+
+  custom-update-website-release-json:
+    needs:
+      - plan
+      - announce
+    uses: ./.github/workflows/update-website-release-json.yml
+    with:
+      plan: ${{ needs.plan.outputs.val }}
+    secrets: inherit
