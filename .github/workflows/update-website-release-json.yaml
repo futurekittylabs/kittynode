@@ -1,12 +1,14 @@
 name: Update website release.json
 
-# Note: We intentionally avoid `release: published` because releases created by GITHUB_TOKEN
-# do not trigger other workflows. Tag pushes are reliable and minimal.
+# This is a reusable workflow.
+# - Called by cargo-dist (CLI) via post-announce job
+# - Called by release-app (desktop) at the end of a successful release
 on:
-  push:
-    tags:
-      - kittynode-app-*
-      - kittynode-cli-*
+  workflow_call:
+    inputs:
+      plan:
+        required: false
+        type: string
 
 concurrency:
   group: website-release-json

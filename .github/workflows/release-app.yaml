@@ -127,3 +127,11 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           draft: false
+
+  update-website-release-json:
+    name: Update website release.json
+    needs: publish-release
+    uses: futurekittylabs/kittynode/.github/workflows/update-website-release-json.yaml@main
+    permissions:
+      contents: write
+    secrets: inherit

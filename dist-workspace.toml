@@ -20,3 +20,4 @@ precise-builds = true
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = true
+post-announce-jobs = ["./update-website-release-json"]
