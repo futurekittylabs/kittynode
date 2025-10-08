@@ -13,6 +13,12 @@ runs:
         chmod 600 "${HOME}/.ssh/mayushii_signing"
         ssh-keygen -y -f "${HOME}/.ssh/mayushii_signing" > "${HOME}/.ssh/mayushii_signing.pub"
 
+    - name: Checkout repository
+      uses: actions/checkout@v5
+      with:
+        ref: main
+        token: ${{ secrets.MAYUSHII_PAT }}
+
     - name: Configure git identity
       shell: bash
       run: |
@@ -22,12 +28,6 @@ runs:
         git config gpg.format ssh
         git config commit.gpgsign true
         git config user.signingkey "${HOME}/.ssh/mayushii_signing"
-
-    - name: Checkout repository
-      uses: actions/checkout@v5
-      with:
-        ref: main
-        token: ${{ secrets.MAYUSHII_PAT }}
 
     - name: Commit and push changes
       shell: bash
