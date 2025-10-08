@@ -21,7 +21,7 @@ runs:
         git config user.email "236751316+mayushii-nyan@users.noreply.github.com"
         git config gpg.format ssh
         git config commit.gpgsign true
-        git config user.signingkey "${HOME}/.ssh/mayushii_signing.pub"
+        git config user.signingkey "${HOME}/.ssh/mayushii_signing"
 
     - name: Checkout repository
       uses: actions/checkout@v5
