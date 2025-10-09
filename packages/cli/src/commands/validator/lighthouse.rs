@@ -116,7 +116,7 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
     let builder = KeystoreBuilder::new(&keypair, params.password.as_bytes(), derivation_path)
         .map_err(|error| eyre!("Failed to prepare keystore {index}: {error:?}"))?;
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "fast-kdf"))]
     let builder = builder.kdf(fast_test_kdf());
 
     let keystore = builder
@@ -187,7 +187,7 @@ fn derive_validator_secret(seed: &[u8], index: u32) -> Result<(Vec<u8>, String)>
     Ok((secret, path_str))
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "fast-kdf"))]
 fn fast_test_kdf() -> eth2_keystore::json_keystore::Kdf {
     use eth2_keystore::json_keystore::{HexBytes, Kdf, Pbkdf2, Prf};
     use eth2_keystore::{DKLEN, SALT_SIZE};
@@ -283,6 +283,7 @@ fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
     let mut json = serde_json::to_value(keystore)
         .map_err(|error| eyre!("Failed to convert keystore to JSON value: {error:?}"))?;
     if let serde_json::Value::Object(ref mut map) = json {
+        // Remove null 'name' field for compatibility with ethstaker deposit tool format
         map.retain(|key, value| !(key == "name" && value.is_null()));
     }
 
@@ -436,6 +437,15 @@ mod tests {
             Kdf::Scrypt(_) => {}
             other => panic!("expected default KDF to be scrypt, got: {:?}", other),
         }
+    }
+
+    #[test]
+    fn compounding_withdrawal_credentials_uses_prefix_byte() -> Result<()> {
+        let spec = ChainSpec::mainnet();
+        let address: Address = WITHDRAWAL_ADDRESS.parse()?;
+        let creds = compounding_withdrawal_credentials(address, &spec);
+        assert_eq!(creds.as_slice()[0], spec.compounding_withdrawal_prefix_byte);
+        Ok(())
     }
 
     fn read_json_array(path: &Path) -> Result<Vec<Value>> {

@@ -120,8 +120,12 @@ pub async fn keygen() -> Result<()> {
     let validator_count_u64 = u64::from(validator_count);
     let total_deposit_gwei = parse_deposit_amount_gwei(&deposit_amount_input)?;
     if total_deposit_gwei % validator_count_u64 != 0 {
+        let per_val_floor = total_deposit_gwei / validator_count_u64;
+        let suggested_total_up = (per_val_floor + 1) * validator_count_u64;
+        let suggested_eth = suggested_total_up as f64 / 1_000_000_000.0;
         return Err(eyre!(
-            "Deposit amount must be evenly divisible across validators when expressed in gwei"
+            "Total deposit must be evenly divisible by {validator_count} validators. Try {:.9} ETH instead",
+            suggested_eth
         ));
     }
     let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
@@ -147,6 +151,13 @@ pub async fn keygen() -> Result<()> {
     let deposit_amount_per_validator_eth =
         deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
 
+    // Allow user to select output directory for keys.
+    let output_dir_input = Input::<String>::with_theme(&theme)
+        .with_prompt("Output directory for validator keys")
+        .default("./validator-keys".to_string())
+        .interact_text()?;
+    let output_dir = PathBuf::from(&output_dir_input);
+
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {}", network);
@@ -160,6 +171,7 @@ pub async fn keygen() -> Result<()> {
         "  Deposit per validator: {:.9} ETH",
         deposit_amount_per_validator_eth
     );
+    println!("  Output directory: {}", output_dir.display());
 
     let confirm_details = Confirm::with_theme(&theme)
         .with_prompt("Are these details correct?")
@@ -187,11 +199,11 @@ pub async fn keygen() -> Result<()> {
         .with_prompt("Enter a password to secure the keystore")
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
-    let password_for_confirmation = password.clone();
+    let password_ref = &password;
     let _ = Password::with_theme(&theme)
         .with_prompt("Re-enter the password to confirm")
-        .validate_with(move |value: &String| {
-            if value == &password_for_confirmation {
+        .validate_with(|value: &String| {
+            if value.as_str() == password_ref.as_str() {
                 Ok(())
             } else {
                 Err("Passwords do not match".to_string())
@@ -211,7 +223,7 @@ pub async fn keygen() -> Result<()> {
         deposit_gwei: deposit_amount_gwei_per_validator,
         compounding,
         password,
-        output_dir: PathBuf::from("./validator-keys"),
+        output_dir,
     })?;
 
     println!(
@@ -246,7 +258,13 @@ fn check_internet_connectivity() -> bool {
 }
 
 // TODO: Implement clipboard clearing
-fn clear_clipboard() {}
+fn clear_clipboard() {
+    // Best-effort clipboard clearing to avoid leaving sensitive data around.
+    // On platforms where setting an empty string is unsupported, ignore errors.
+    if let Ok(mut clipboard) = arboard::Clipboard::new() {
+        let _ = clipboard.set_text(String::new());
+    }
+}
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
     let mut stdout = stdout();
@@ -278,9 +296,7 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
     execute!(stdout, EnterAlternateScreen)?;
     let result = (|| -> Result<String> {
         execute!(stdout, Clear(ClearType::All), MoveTo(0, 0))?;
-        println!(
-            "Please re-enter your mnemonic to confirm. The clipboard will be cleared afterwards.\n"
-        );
+        println!("Please re-enter your mnemonic to confirm.\n");
         stdout.flush()?;
 
         Input::<String>::with_theme(theme)
