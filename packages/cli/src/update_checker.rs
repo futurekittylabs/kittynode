@@ -98,6 +98,7 @@ async fn write_cache(path: &PathBuf, version: String) {
         && let Err(e) = tokio::fs::create_dir_all(parent).await
     {
         error!("Failed to create cache directory: {}", e);
+        return;
     }
     match serde_json::to_string(&cache) {
         Ok(json) => {
@@ -145,7 +146,7 @@ pub async fn check_and_print_update() {
         }
         Ok(Err(e)) => {
             // API/network/parse error - log and don't cache
-            error!("{:#}", e);
+            error!("Failed to check for updates: {:#}", e);
         }
         Err(_) => {
             // Expected: network timeout is a common occurrence, show user-facing message
