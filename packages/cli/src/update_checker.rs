@@ -7,7 +7,7 @@
 //
 // Return types (Result<Option<String>>):
 // - Ok(Some(version)) → Found a CLI release, cache it
-// - Ok(None) → No CLI release found (valid response), cache it
+// - Ok(None) → No CLI release found (rare/broken state), don't cache, retry next time
 // - Err(e) → Network/API/parse error, don't cache, retry next time
 //
 // Error handling:
@@ -140,8 +140,8 @@ pub async fn check_and_print_update() {
             }
         }
         Ok(Ok(None)) => {
-            // Successfully checked but no CLI release found - this is valid, cache it
-            write_cache(&path, current.to_string()).await;
+            // No CLI release found (rare/broken state) - don't cache, retry next time
+            error!("No kittynode-cli release found in GitHub releases");
         }
         Ok(Err(e)) => {
             // API/network/parse error - log and don't cache
