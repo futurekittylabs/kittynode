@@ -82,7 +82,7 @@ const downloads = [
 <div class="py-16">
   <!-- Header -->
   <div class="mb-8 text-center">
-    <h1 class="text-3xl font-medium mb-2">Download Kittynode</h1>
+    <h1 class="text-3xl font-medium mb-2">Download Kittynode App</h1>
     <p class="text-sm text-muted-foreground mb-4">
       Version {appVersion} • {releaseDate}
     </p>
@@ -155,7 +155,7 @@ const downloads = [
         <div class="rounded-md bg-muted p-2">
           <Terminal class="h-5 w-5" />
         </div>
-        <h2 class="text-lg font-semibold">Kittynode CLI</h2>
+        <h2 class="text-xl font-semibold">Install Kittynode CLI</h2>
       </div>
       <p class="text-sm text-muted-foreground">
         Manage your node infrastructure directly from the terminal.
