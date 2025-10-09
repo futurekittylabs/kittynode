@@ -16,18 +16,16 @@ import {
 } from "$lib/components/ui/collapsible/index.js";
 import { CopyButton } from "$lib/components/ui/copy-button/index.js";
 import appRelease from "$lib/app-release.json";
-import cliRelease from "$lib/cli-release.json";
 
 let linuxHelpOpen = false;
 
 const { version: appVersion, date: releaseDate } = appRelease;
-const { version: cliVersion } = cliRelease;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
 const discordUrl = "https://discord.kittynode.com";
-const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/futurekittylabs/kittynode/releases/download/kittynode-cli-${cliVersion}/kittynode-cli-installer.sh | sh`;
+const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
 
 const downloads = [
   {
@@ -182,7 +180,6 @@ const downloads = [
             />
           </div>
         </div>
-        <!-- No additional prerequisites for installer script -->
       </div>
     </div>
   </div>
