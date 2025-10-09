@@ -24,17 +24,18 @@ tracing-subscriber = "0.3.20"
 tracing = "0.1.41"
 dialoguer = { version = "0.12.0", default-features = false, features = ["editor", "password"] }
 crossterm = "0.29.0"
-reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
 semver = "1.0.27"
 eth2_network_config = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "eth2_network_config" }
 eth2_keystore = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "eth2_keystore" }
-eth2_wallet = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "eth2_wallet" }
-types = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "types" }
+eth2_key_derivation = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "eth2_key_derivation" }
+types = { git = "https://github.com/sigp/lighthouse", tag = "v7.1.0", package = "types", default-features = false }
 tree_hash = "0.9.1"
 hex = "0.4"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 zeroize = "1.7"
+bip39 = { package = "tiny-bip39", version = "2" }
 
 [dev-dependencies]
 assert_cmd = "2.0.17"

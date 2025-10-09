@@ -1861,7 +1861,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2172,7 +2172,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2249,21 +2249,6 @@ dependencies = [
  "types",
  "url",
  "zip 0.6.6",
-]
-
-[[package]]
-name = "eth2_wallet"
-version = "0.1.0"
-source = "git+https://github.com/sigp/lighthouse?tag=v7.1.0#cfb1f7331064b758c6786e4e1dc15507af5ff5d1"
-dependencies = [
- "eth2_key_derivation",
- "eth2_keystore",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_repr",
- "tiny-bip39",
- "uuid 0.8.2",
 ]
 
 [[package]]
@@ -3790,19 +3775,20 @@ dependencies = [
  "clap",
  "crossterm",
  "dialoguer",
+ "eth2_key_derivation",
  "eth2_keystore",
  "eth2_network_config",
- "eth2_wallet",
  "eyre",
  "hex",
  "kittynode-core",
  "kittynode-web",
  "predicates",
- "reqwest 0.12.23",
+ "reqwest 0.11.27",
  "semver 1.0.27",
  "serde",
  "serde_json",
  "tempfile",
+ "tiny-bip39",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4448,7 +4434,7 @@ version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77e878c846a8abae00dd069496dbe8751b16ac1c3d6bd2a7283a938e8228f90d"
 dependencies = [
- "proc-macro-crate 3.4.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.106",
@@ -5002,6 +4988,16 @@ dependencies = [
  "hmac 0.12.1",
  "password-hash",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "pbkdf2"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
+dependencies = [
+ "digest 0.10.7",
+ "hmac 0.12.1",
 ]
 
 [[package]]
@@ -5989,7 +5985,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -7410,7 +7406,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -7530,14 +7526,12 @@ dependencies = [
 
 [[package]]
 name = "tiny-bip39"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62cc94d358b5a1e84a5cb9109f559aa3c4d634d2b1b4de3d0fa4adc7c78e2861"
+checksum = "a30fd743a02bf35236f6faf99adb03089bb77e91c998dac2c2ad76bb424f668c"
 dependencies = [
- "anyhow",
- "hmac 0.12.1",
  "once_cell",
- "pbkdf2 0.11.0",
+ "pbkdf2 0.12.2",
  "rand 0.8.5",
  "rustc-hash 1.1.0",
  "sha2 0.10.9",
@@ -8522,7 +8516,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]

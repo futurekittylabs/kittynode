@@ -7,13 +7,13 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 use self::lighthouse::{KeygenConfig, generate_validator_files};
+use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
-use eth2_wallet::bip39::{Language, Mnemonic, MnemonicType};
 use eyre::{Result, eyre};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -139,8 +139,24 @@ pub async fn keygen() -> Result<()> {
         ));
     }
     let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
-    if deposit_amount_gwei_per_validator > 32_000_000_000 {
-        return Err(eyre!("Per-validator deposit cannot exceed 32 ETH"));
+    // Enforce per-validator deposit rules
+    const THIRTY_TWO_ETH_GWEI: u64 = 32_000_000_000; // 32 ETH
+    const TWO_THOUSAND_FORTY_EIGHT_ETH_GWEI: u64 = 2_048_000_000_000; // 2048 ETH
+    if compounding {
+        if deposit_amount_gwei_per_validator < THIRTY_TWO_ETH_GWEI {
+            return Err(eyre!(
+                "Per-validator deposit must be at least 32 ETH for compounding validators"
+            ));
+        }
+        if deposit_amount_gwei_per_validator > TWO_THOUSAND_FORTY_EIGHT_ETH_GWEI {
+            return Err(eyre!(
+                "Per-validator deposit cannot exceed 2048 ETH for compounding validators"
+            ));
+        }
+    } else if deposit_amount_gwei_per_validator != THIRTY_TWO_ETH_GWEI {
+        return Err(eyre!(
+            "Per-validator deposit must be exactly 32 ETH for non-compounding validators"
+        ));
     }
     let deposit_amount_per_validator_eth =
         deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
