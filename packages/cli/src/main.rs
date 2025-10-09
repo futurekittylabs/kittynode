@@ -1,4 +1,5 @@
 mod commands;
+mod update_checker;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
@@ -395,7 +396,14 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .init();
+
+    // Skip update check if the user is running the update command
+    if std::env::args().nth(1).as_deref() != Some("update") {
+        update_checker::check_and_print_update().await;
+    }
+
     let cli = Cli::parse();
+
     cli.command.execute().await
 }
 
