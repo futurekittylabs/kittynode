@@ -162,15 +162,15 @@ const downloads = [
       </p>
       <div>
         <p
-          class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+          class="text-sm font-semibold text-muted-foreground"
         >
-          Install via script
+          Run the following in your terminal:
         </p>
         <div class="mt-3 rounded-lg border bg-background/80 px-4 py-3 font-mono text-sm">
           <div
-            class="flex flex-col gap-3 min-[640px]:flex-row min-[640px]:items-center min-[640px]:justify-between"
+            class="flex flex-nowrap items-start gap-3 min-[640px]:items-center min-[640px]:justify-between"
           >
-            <div class="overflow-x-auto px-2 pt-1 pb-2">
+            <div class="min-w-0 overflow-x-auto px-2 pt-1 pb-2">
               <code class="block whitespace-nowrap leading-snug pr-8">
                 {cliInstallCommand}
               </code>
