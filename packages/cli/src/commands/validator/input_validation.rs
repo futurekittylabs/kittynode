@@ -4,6 +4,7 @@ const MIN_VALIDATOR_COUNT: u16 = 1;
 const MAX_VALIDATOR_COUNT: u16 = 1024;
 const MIN_DEPOSIT: f64 = 1.0;
 const MAX_DEPOSIT: f64 = 32768.0;
+const GWEI_PER_ETH: u64 = 1_000_000_000;
 const MIN_PASSWORD_LEN: usize = 12;
 const MAX_PASSWORD_LEN: usize = 128;
 
@@ -65,6 +66,71 @@ pub fn parse_deposit_amount(input: &str) -> Result<f64> {
         ));
     }
     Ok(amount)
+}
+
+/// Parses an ETH amount into gwei using decimal string math to avoid floating point rounding.
+///
+/// Accepts at most 9 decimal places. Returns total gwei as `u64` and validates the
+/// amount is within the configured min/max ETH bounds.
+pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Err(eyre!(
+            "Deposit amount must be between {MIN_DEPOSIT} and {MAX_DEPOSIT} ETH"
+        ));
+    }
+    if trimmed.starts_with('-') {
+        return Err(eyre!("Deposit amount must be positive"));
+    }
+    let parts: Vec<&str> = trimmed.split('.').collect();
+    if parts.len() > 2 {
+        return Err(eyre!("Deposit amount must be a valid decimal number"));
+    }
+    let int_part = parts[0];
+    if int_part.is_empty() || !int_part.chars().all(|c| c.is_ascii_digit()) {
+        return Err(eyre!("Deposit amount must contain digits"));
+    }
+    let frac_part = if parts.len() == 2 { parts[1] } else { "" };
+    if !frac_part.chars().all(|c| c.is_ascii_digit()) {
+        return Err(eyre!("Deposit amount fractional part must be digits"));
+    }
+    if frac_part.len() > 9 {
+        return Err(eyre!("Deposit amount supports up to 9 decimal places"));
+    }
+
+    // Convert to gwei: gwei = int * 1e9 + frac_padded
+    let int_gwei: u128 = int_part
+        .parse::<u128>()
+        .map_err(|_| eyre!("Deposit amount is too large"))?
+        .saturating_mul(GWEI_PER_ETH as u128);
+    let mut frac_str = frac_part.to_string();
+    while frac_str.len() < 9 {
+        frac_str.push('0');
+    }
+    let frac_gwei: u128 = if frac_str.is_empty() {
+        0
+    } else {
+        frac_str
+            .parse::<u128>()
+            .map_err(|_| eyre!("Deposit amount is too precise"))?
+    };
+    let total_gwei_u128 = int_gwei
+        .checked_add(frac_gwei)
+        .ok_or_else(|| eyre!("Deposit amount overflows limit"))?;
+    let total_gwei: u64 = total_gwei_u128
+        .try_into()
+        .map_err(|_| eyre!("Deposit amount exceeds supported maximum"))?;
+
+    // Validate bounds using gwei to avoid float rounding.
+    let min_gwei = (MIN_DEPOSIT as u64) * GWEI_PER_ETH;
+    let max_gwei = (MAX_DEPOSIT as u64) * GWEI_PER_ETH;
+    if total_gwei < min_gwei || total_gwei > max_gwei {
+        return Err(eyre!(
+            "Deposit amount must be between {MIN_DEPOSIT} and {MAX_DEPOSIT} ETH"
+        ));
+    }
+
+    Ok(total_gwei)
 }
 
 pub fn validate_password(password: &str) -> Result<()> {

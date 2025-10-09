@@ -22,7 +22,8 @@ use types::Address;
 use zeroize::Zeroizing;
 
 use input_validation::{
-    normalize_withdrawal_address, parse_deposit_amount, parse_validator_count, validate_password,
+    normalize_withdrawal_address, parse_deposit_amount, parse_deposit_amount_gwei,
+    parse_validator_count, validate_password,
 };
 
 const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
@@ -117,7 +118,7 @@ pub async fn keygen() -> Result<()> {
         .interact_text()?;
     let deposit_amount_total_eth = parse_deposit_amount(&deposit_amount_input)?;
     let validator_count_u64 = u64::from(validator_count);
-    let total_deposit_gwei = (deposit_amount_total_eth * 1_000_000_000.0).round() as u64;
+    let total_deposit_gwei = parse_deposit_amount_gwei(&deposit_amount_input)?;
     if total_deposit_gwei % validator_count_u64 != 0 {
         return Err(eyre!(
             "Deposit amount must be evenly divisible across validators when expressed in gwei"
@@ -187,7 +188,7 @@ pub async fn keygen() -> Result<()> {
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
     let password_for_confirmation = password.clone();
-    let _password_confirmation = Password::with_theme(&theme)
+    let _ = Password::with_theme(&theme)
         .with_prompt("Re-enter the password to confirm")
         .validate_with(move |value: &String| {
             if value == &password_for_confirmation {

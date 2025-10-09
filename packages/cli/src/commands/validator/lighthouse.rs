@@ -27,6 +27,7 @@ struct GenerationParams<'a> {
     spec: &'a ChainSpec,
     output_dir: &'a Path,
     compounding: bool,
+    index_width: usize,
 }
 
 pub struct KeygenConfig {
@@ -58,7 +59,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     } = config;
 
     let mnemonic = Mnemonic::from_phrase(mnemonic_phrase.as_str(), Language::English)
-        .map_err(|error| eyre!("mnemonic phrase is invalid: {error}"))?;
+        .map_err(|error| eyre!("Mnemonic phrase is invalid: {error}"))?;
     let spec = load_chain_spec(&network)?;
 
     prepare_output_dir(&output_dir)?;
@@ -72,6 +73,10 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     println!("Generating {validator_count} validator(s)...");
     let _ = io::stdout().flush();
 
+    // Determine zero-padding width based on the maximum index (validator_count - 1).
+    let max_index = u32::from(validator_count.saturating_sub(1));
+    let index_width = digit_count(max_index);
+
     let params = GenerationParams {
         seed: seed.as_bytes(),
         password: &password,
@@ -80,6 +85,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
         spec: &spec,
         output_dir: &output_dir,
         compounding,
+        index_width,
     };
 
     for index in 0..validator_count {
@@ -92,7 +98,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
         deposits.push(deposit_entry);
     }
 
-    write_json(&deposit_data_path, &deposits).wrap_err("failed to write deposit data")?;
+    write_json(&deposit_data_path, &deposits).wrap_err("Failed to write deposit data")?;
 
     Ok(KeygenOutcome {
         keystore_paths,
@@ -102,24 +108,26 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 
 fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathBuf, DepositEntry)> {
     let (secret_bytes, derivation_path) = derive_validator_secret(params.seed, index as u32)
-        .map_err(|error| eyre!("failed to derive validator secret {index}: {error}"))?;
+        .map_err(|error| eyre!("Failed to derive validator secret {index}: {error}"))?;
     let keypair = keypair_from_secret(&secret_bytes)
-        .map_err(|error| eyre!("failed to instantiate keypair {index}: {error:?}"))?;
+        .map_err(|error| eyre!("Failed to instantiate keypair {index}: {error:?}"))?;
     // secret_bytes consumed
 
     let builder = KeystoreBuilder::new(&keypair, params.password.as_bytes(), derivation_path)
-        .map_err(|error| eyre!("failed to prepare keystore {index}: {error:?}"))?;
+        .map_err(|error| eyre!("Failed to prepare keystore {index}: {error:?}"))?;
 
     #[cfg(test)]
     let builder = builder.kdf(fast_test_kdf());
 
     let keystore = builder
         .build()
-        .map_err(|error| eyre!("failed to finalize keystore {index}: {error:?}"))?;
+        .map_err(|error| eyre!("Failed to finalize keystore {index}: {error:?}"))?;
 
-    let keystore_path = params
-        .output_dir
-        .join(format!("keystore-{index:04}-{}.json", keystore.uuid()));
+    let keystore_path = params.output_dir.join(format!(
+        "keystore-{index:0width$}-{}.json",
+        keystore.uuid(),
+        width = params.index_width
+    ));
     ensure_new_file(&keystore_path)?;
 
     write_keystore(&keystore_path, &keystore)?;
@@ -145,7 +153,7 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .spec
         .config_name
         .clone()
-        .context("network config name missing")?;
+        .context("Network config name missing")?;
 
     let DepositData {
         pubkey,
@@ -214,8 +222,8 @@ fn load_chain_spec(network: &str) -> Result<ChainSpec> {
     // deposit data and signatures for the wrong chain and could strand funds.
     let available = HARDCODED_NET_NAMES.join(", ");
     Err(eyre!(
-        "unsupported or unavailable network: {network}. Available in this Lighthouse build: {available}. \
-Please upgrade Lighthouse (and this CLI if needed) if your desired network is missing."
+        "Unsupported or unavailable network: {network}. Available in this Lighthouse build: {available}. \
+Please upgrade Lighthouse (and this CLI if needed) if your desired network is missing"
     ))
 }
 
@@ -223,28 +231,28 @@ fn build_spec(network: &str) -> Result<Option<ChainSpec>> {
     match Eth2NetworkConfig::constant(network) {
         Ok(Some(config)) => {
             Ok(Some(config.chain_spec::<MainnetEthSpec>().map_err(
-                |error| eyre!("failed to build chain spec for {network}: {error}"),
+                |error| eyre!("Failed to build chain spec for {network}: {error}"),
             )?))
         }
         Ok(None) => Ok(None),
-        Err(error) => Err(eyre!("failed to load network config {network}: {error}")),
+        Err(error) => Err(eyre!("Failed to load network config {network}: {error}")),
     }
 }
 
 fn prepare_output_dir(path: &Path) -> Result<()> {
     if path.exists() {
         if !path.is_dir() {
-            return Err(eyre!("{path:?} must be a directory"));
+            return Err(eyre!("Path must be a directory: {path:?}"));
         }
     } else {
-        fs::create_dir_all(path).wrap_err_with(|| format!("failed to create {path:?}"))?;
+        fs::create_dir_all(path).wrap_err_with(|| format!("Failed to create {path:?}"))?;
     }
     Ok(())
 }
 
 fn ensure_new_file(path: &Path) -> Result<()> {
     if path.exists() {
-        return Err(eyre!("refusing to overwrite existing file {path:?}"));
+        return Err(eyre!("Refusing to overwrite existing file {path:?}"));
     }
     Ok(())
 }
@@ -254,9 +262,9 @@ fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
         .write(true)
         .create_new(true)
         .open(path)
-        .wrap_err_with(|| format!("failed to open {path:?}"))?;
+        .wrap_err_with(|| format!("Failed to open {path:?}"))?;
     serde_json::to_writer(&mut file, value)
-        .wrap_err_with(|| format!("failed to serialize JSON to {path:?}"))
+        .wrap_err_with(|| format!("Failed to serialize JSON to {path:?}"))
 }
 
 fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
@@ -270,16 +278,16 @@ fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
     }
     let mut file = open_opts
         .open(path)
-        .wrap_err_with(|| format!("failed to open {path:?}"))?;
+        .wrap_err_with(|| format!("Failed to open {path:?}"))?;
 
     let mut json = serde_json::to_value(keystore)
-        .map_err(|error| eyre!("failed to convert keystore to JSON value: {error:?}"))?;
+        .map_err(|error| eyre!("Failed to convert keystore to JSON value: {error:?}"))?;
     if let serde_json::Value::Object(ref mut map) = json {
         map.retain(|key, value| !(key == "name" && value.is_null()));
     }
 
     serde_json::to_writer(&mut file, &json)
-        .wrap_err_with(|| format!("failed to serialize keystore JSON to {path:?}"))
+        .wrap_err_with(|| format!("Failed to serialize keystore JSON to {path:?}"))
 }
 
 fn to_hex(bytes: impl AsRef<[u8]>) -> String {
@@ -308,13 +316,23 @@ fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
     if !path.exists() {
         return Ok(path);
     }
-    for idx in 1..u32::MAX {
+    for idx in 1..=1000 {
         let attempt = candidate(Some(idx));
         if !attempt.exists() {
             return Ok(attempt);
         }
     }
-    Err(eyre!("unable to find available filename for deposit data"))
+    Err(eyre!("Unable to find available filename for deposit data"))
+}
+
+fn digit_count(n: u32) -> usize {
+    let mut d = 1usize;
+    let mut v = n;
+    while v >= 10 {
+        v /= 10;
+        d += 1;
+    }
+    d
 }
 
 #[cfg(test)]
