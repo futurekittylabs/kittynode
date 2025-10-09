@@ -5,7 +5,7 @@ license.workspace = true
 name = "kittynode-cli"
 readme.workspace = true
 repository.workspace = true
-version = "0.34.0"
+version = "0.35.0"
 
 [[bin]]
 name = "kittynode"
