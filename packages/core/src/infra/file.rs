@@ -3,10 +3,18 @@ use rand::RngCore;
 use std::{fs, path::PathBuf};
 use tracing::info;
 
-pub fn kittynode_path() -> Result<PathBuf> {
+fn config_subdir_path(dir_name: &str) -> Result<PathBuf> {
     home::home_dir()
-        .map(|home| home.join(".config").join("kittynode"))
-        .ok_or_else(|| eyre::eyre!("Failed to determine the ~/.config/kittynode path"))
+        .map(|home| home.join(".config").join(dir_name))
+        .ok_or_else(|| eyre::eyre!("Failed to determine the ~/.config/{} path", dir_name))
+}
+
+pub fn kittynode_path() -> Result<PathBuf> {
+    config_subdir_path("kittynode")
+}
+
+pub fn kittynode_cli_path() -> Result<PathBuf> {
+    config_subdir_path("kittynode-cli")
 }
 
 pub(crate) fn generate_jwt_secret_with_path(path: &PathBuf) -> Result<String> {

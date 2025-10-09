@@ -15,7 +15,7 @@
 // - error!() for unexpected errors (API failures, filesystem issues)
 
 use eyre::{Result, eyre};
-use kittynode_core::api::kittynode_path;
+use kittynode_core::api::kittynode_cli_path;
 use semver::Version;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -38,7 +38,7 @@ struct Release {
 }
 
 fn cache_path() -> Option<PathBuf> {
-    kittynode_path().ok().map(|path| path.join(CACHE_FILE))
+    kittynode_cli_path().ok().map(|path| path.join(CACHE_FILE))
 }
 
 fn now() -> u64 {
@@ -115,7 +115,7 @@ async fn write_cache(path: &PathBuf, version: String) {
 pub async fn check_and_print_update() {
     let current = env!("CARGO_PKG_VERSION");
     let Some(path) = cache_path() else {
-        error!("Failed to resolve kittynode cache path");
+        error!("Failed to resolve kittynode CLI cache path");
         return;
     };
 
