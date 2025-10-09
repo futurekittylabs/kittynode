@@ -127,7 +127,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           draft: false
 
-  update-release-json:
+  update-release-manifests:
     needs: publish-release
-    uses: ./.github/workflows/update-release-json.yml
+    uses: ./.github/workflows/update-release-manifests.yml
     secrets: inherit

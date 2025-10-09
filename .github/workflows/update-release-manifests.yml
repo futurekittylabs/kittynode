@@ -1,4 +1,4 @@
-name: Update website release.json
+name: Update release manifests
 
 on:
   workflow_call:
@@ -8,11 +8,11 @@ on:
         type: string
 
 concurrency:
-  group: update-release-json
+  group: update-release-manifests
   cancel-in-progress: false
 
 jobs:
-  update-release-json:
+  update-release-manifests:
     runs-on: ubuntu-latest
     steps:
       - name: Determine component metadata
@@ -120,7 +120,7 @@ jobs:
           fi
 
           git add "$TARGET_FILE"
-          git commit -m "Update website ${TARGET_FILE##*/}: ${{ steps.meta.outputs.version }}"
+          git commit -m "Update ${TARGET_FILE##*/}: ${{ steps.meta.outputs.version }}"
 
           git pull --rebase origin main
           git push
