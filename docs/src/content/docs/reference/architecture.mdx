@@ -27,7 +27,7 @@ Inside `kittynode-core` the folders map directly to responsibilities:
 
 - `application` orchestrates use cases such as installing packages, updating configuration, and managing capabilities.
 - `domain` defines the data types that move between layers as plain structs and enums.
-- `infra` talks to Docker through Bollard, manages files under `~/.kittynode`, and persists configuration.
+- `infra` talks to Docker through Bollard, manages files under `~/.config/kittynode`, and persists configuration.
 - `manifests` holds package definitions. Each manifest describes the containers, networks, and volumes needed for a stack like Ethereum.
 
 This split keeps privileged logic small and makes it straightforward to add new behaviours without touching every consumer.
@@ -64,7 +64,7 @@ Here are a few example capabilities related to remote access:
 - **Private onchain requests**: Kittynode can update local node infrastructure via listening to private requests submitted onchain.
 - **Local HTTPS server**: Kittynode can update local node infrastructure via requests that come from the same Wireguard network (but a different machine, such as a phone); these requests are authenticated by a passkey or JWT token.
 
-Capabilities and general configuration are stored under `~/.kittynode/config.toml`.
+Capabilities and general configuration are stored under `~/.config/kittynode/config.toml`.
 
 ## Package lifecycle
 

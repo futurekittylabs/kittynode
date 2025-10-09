@@ -52,7 +52,7 @@ mod tests {
 
     fn temp_base_dir() -> (tempfile::TempDir, PathBuf) {
         let temp_dir = tempdir().expect("failed to create temp dir");
-        let base_dir = temp_dir.path().join(".kittynode");
+        let base_dir = temp_dir.path().join(".config").join("kittynode");
         (temp_dir, base_dir)
     }
 
@@ -105,11 +105,11 @@ mod tests {
 
     #[test]
     fn config_file_path_constructs_correct_path() {
-        let base_dir = Path::new("/home/user/.kittynode");
+        let base_dir = Path::new("/home/user/.config/kittynode");
         let path = PackageConfigStore::config_file_path(base_dir, "ethereum");
         assert_eq!(
             path,
-            Path::new("/home/user/.kittynode/packages/ethereum/config.toml")
+            Path::new("/home/user/.config/kittynode/packages/ethereum/config.toml")
         );
     }
 

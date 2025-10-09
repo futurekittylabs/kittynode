@@ -205,7 +205,7 @@ async fn get_package_runtime_states(
 
 #[tauri::command]
 async fn delete_kittynode(client_state: State<'_, CoreClientManager>) -> Result<(), String> {
-    info!("Deleting .kittynode directory");
+    info!("Deleting ~/.config/kittynode directory");
     let client = client_state.client();
     client.delete_kittynode().await.map_err(|e| e.to_string())
 }

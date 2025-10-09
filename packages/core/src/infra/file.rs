@@ -5,8 +5,8 @@ use tracing::info;
 
 pub fn kittynode_path() -> Result<PathBuf> {
     home::home_dir()
-        .map(|home| home.join(".kittynode"))
-        .ok_or_else(|| eyre::eyre!("Failed to determine the .kittynode path"))
+        .map(|home| home.join(".config").join("kittynode"))
+        .ok_or_else(|| eyre::eyre!("Failed to determine the ~/.config/kittynode path"))
 }
 
 pub(crate) fn generate_jwt_secret_with_path(path: &PathBuf) -> Result<String> {

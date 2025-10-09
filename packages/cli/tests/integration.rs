@@ -135,7 +135,8 @@ impl WebServiceSandbox {
 
     fn state_path(&self) -> PathBuf {
         self.home
-            .join(".kittynode")
+            .join(".config")
+            .join("kittynode")
             .join("runtime")
             .join("kittynode-web.json")
     }
