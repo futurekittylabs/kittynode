@@ -3857,6 +3857,7 @@ dependencies = [
 name = "kittynode-cli"
 version = "0.35.0"
 dependencies = [
+ "alloy-primitives",
  "arboard",
  "assert_cmd",
  "clap",

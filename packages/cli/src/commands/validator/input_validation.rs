@@ -1,3 +1,5 @@
+use alloy_primitives::U256;
+use alloy_primitives::utils::parse_units;
 use eyre::{Result, eyre};
 
 const MIN_VALIDATOR_COUNT: u16 = 1;
@@ -79,49 +81,14 @@ pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
             "Deposit amount must be between {MIN_DEPOSIT} and {MAX_DEPOSIT} ETH"
         ));
     }
-    if trimmed.starts_with('-') {
-        return Err(eyre!("Deposit amount must be positive"));
-    }
-    let parts: Vec<&str> = trimmed.split('.').collect();
-    if parts.len() > 2 {
-        return Err(eyre!("Deposit amount must be a valid decimal number"));
-    }
-    let int_part = parts[0];
-    if int_part.is_empty() || !int_part.chars().all(|c| c.is_ascii_digit()) {
-        return Err(eyre!("Deposit amount must contain digits"));
-    }
-    let frac_part = if parts.len() == 2 { parts[1] } else { "" };
-    if !frac_part.chars().all(|c| c.is_ascii_digit()) {
-        return Err(eyre!("Deposit amount fractional part must be digits"));
-    }
-    if frac_part.len() > 9 {
-        return Err(eyre!("Deposit amount supports up to 9 decimal places"));
-    }
-
-    // Convert to gwei: gwei = int * 1e9 + frac_padded
-    let int_gwei: u128 = int_part
-        .parse::<u128>()
-        .map_err(|_| eyre!("Deposit amount is too large"))?
-        .saturating_mul(GWEI_PER_ETH as u128);
-    let mut frac_str = frac_part.to_string();
-    while frac_str.len() < 9 {
-        frac_str.push('0');
-    }
-    let frac_gwei: u128 = if frac_str.is_empty() {
-        0
-    } else {
-        frac_str
-            .parse::<u128>()
-            .map_err(|_| eyre!("Deposit amount is too precise"))?
-    };
-    let total_gwei_u128 = int_gwei
-        .checked_add(frac_gwei)
-        .ok_or_else(|| eyre!("Deposit amount overflows limit"))?;
-    let total_gwei: u64 = total_gwei_u128
+    // Use battle-tested parsing from alloy to convert decimal ETH to gwei (9 decimals).
+    let as_u256: U256 = parse_units(trimmed, 9)
+        .map_err(|_| eyre!("Deposit amount must be a valid decimal number"))?
+        .into();
+    let total_gwei: u64 = as_u256
         .try_into()
         .map_err(|_| eyre!("Deposit amount exceeds supported maximum"))?;
 
-    // Validate bounds using gwei to avoid float rounding.
     let min_gwei = (MIN_DEPOSIT as u64) * GWEI_PER_ETH;
     let max_gwei = (MAX_DEPOSIT as u64) * GWEI_PER_ETH;
     if total_gwei < min_gwei || total_gwei > max_gwei {
@@ -129,7 +96,6 @@ pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
             "Deposit amount must be between {MIN_DEPOSIT} and {MAX_DEPOSIT} ETH"
         ));
     }
-
     Ok(total_gwei)
 }
 
