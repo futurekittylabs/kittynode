@@ -82,7 +82,7 @@ const downloads = [
 <div class="py-16">
   <!-- Header -->
   <div class="mb-8 text-center">
-    <h1 class="text-3xl font-medium mb-2">Download Kittynode App</h1>
+    <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
     <p class="text-sm text-muted-foreground mb-4">
       Version {appVersion} • {releaseDate}
     </p>
