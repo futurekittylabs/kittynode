@@ -260,9 +260,15 @@ fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
 }
 
 fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
+    let mut open_opts = OpenOptions::new();
+    open_opts.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // Ensure keystore is created with owner-only read/write permissions.
+        open_opts.mode(0o600);
+    }
+    let mut file = open_opts
         .open(path)
         .wrap_err_with(|| format!("failed to open {path:?}"))?;
 
@@ -372,6 +378,36 @@ mod tests {
             "generated keystore pubkey should match ethstaker keystore"
         );
 
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn generated_keystore_has_owner_only_permissions() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let output_dir = tempdir().wrap_err("failed to create temp dir")?;
+        let withdrawal_address: Address = WITHDRAWAL_ADDRESS
+            .parse()
+            .wrap_err("failed to parse withdrawal address")?;
+        let outcome = generate_validator_files(KeygenConfig {
+            mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
+            validator_count: 1,
+            withdrawal_address,
+            network: "hoodi".to_string(),
+            deposit_gwei: 32_000_000_000,
+            compounding: true,
+            password: Zeroizing::new(KEYSTORE_PASSWORD.to_string()),
+            output_dir: output_dir.path().to_path_buf(),
+        })?;
+
+        let md = fs::metadata(&outcome.keystore_paths[0])
+            .wrap_err("failed to stat generated keystore")?;
+        let mode = md.permissions().mode() & 0o777;
+        assert_eq!(
+            mode, 0o600,
+            "keystore should be created with 0o600 permissions"
+        );
         Ok(())
     }
 
