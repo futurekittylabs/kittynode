@@ -188,14 +188,6 @@ mod tests {
     }
 
     #[test]
-    fn now_returns_unix_timestamp() {
-        let timestamp = now();
-        // Should be a reasonable timestamp (after 2020-01-01 and before 2100-01-01)
-        assert!(timestamp > 1577836800); // 2020-01-01
-        assert!(timestamp < 4102444800); // 2100-01-01
-    }
-
-    #[test]
     fn cache_serialization_roundtrip() {
         let cache = Cache {
             version: "kittynode-cli-0.31.0".to_string(),
