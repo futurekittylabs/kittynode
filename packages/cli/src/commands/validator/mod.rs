@@ -1,7 +1,6 @@
 mod input_validation;
 mod lighthouse;
 
-use std::fmt;
 use std::io::{Write, stdout};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
@@ -14,6 +13,7 @@ use crossterm::{
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
+use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -32,37 +32,15 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
 ];
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
 
-#[derive(Clone, Copy, Debug)]
-enum ValidatorNetwork {
-    Hoodi,
-    Sepolia,
-}
-
-impl ValidatorNetwork {
-    fn labels() -> [&'static str; 2] {
-        ["hoodi", "sepolia"]
-    }
-
-    fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Self::Hoodi),
-            1 => Some(Self::Sepolia),
-            _ => None,
-        }
-    }
-
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Hoodi => "hoodi",
-            Self::Sepolia => "sepolia",
-        }
-    }
-}
-
-impl fmt::Display for ValidatorNetwork {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
+fn desired_supported_networks() -> Vec<&'static str> {
+    // Our keygen flow currently targets Ethereum-family networks that use the mainnet spec
+    // (e.g., sepolia, holesky, hoodi). Keep the UI list constrained and filter by availability.
+    const DESIRED: &[&str] = &["hoodi", "sepolia"];
+    DESIRED
+        .iter()
+        .copied()
+        .filter(|n| HARDCODED_NET_NAMES.contains(n))
+        .collect()
 }
 
 #[allow(clippy::manual_is_multiple_of)]
@@ -97,13 +75,20 @@ pub async fn keygen() -> Result<()> {
         .interact_text()?;
     let validator_count = parse_validator_count(&validator_count_input)?;
 
-    let network_labels = ValidatorNetwork::labels();
+    let network_labels = desired_supported_networks();
+    if network_labels.is_empty() {
+        return Err(eyre!(
+            "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)."
+        ));
+    }
     let network_index = Select::with_theme(&theme)
         .with_prompt("Select the network")
         .default(0)
-        .items(network_labels)
+        .items(&network_labels)
         .interact()?;
-    let network = ValidatorNetwork::from_index(network_index)
+    let network = network_labels
+        .get(network_index)
+        .copied()
         .ok_or_else(|| eyre!("Invalid network selection"))?;
 
     let withdrawal_address_input = Input::<String>::with_theme(&theme)
@@ -163,7 +148,7 @@ pub async fn keygen() -> Result<()> {
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
-    println!("  Network: {network}");
+    println!("  Network: {}", network);
     println!("  Withdrawal address: {withdrawal_address}");
     println!(
         "  0x02 compounding validators: {}",
@@ -221,7 +206,7 @@ pub async fn keygen() -> Result<()> {
         mnemonic_phrase,
         validator_count,
         withdrawal_address,
-        network: network.as_str().to_string(),
+        network: network.to_string(),
         deposit_gwei: deposit_amount_gwei_per_validator,
         compounding,
         password,

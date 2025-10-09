@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bip39::{Language, Mnemonic, Seed as Bip39Seed};
 use eth2_key_derivation::DerivedKey;
 use eth2_keystore::{Keystore, KeystoreBuilder, keypair_from_secret};
-use eth2_network_config::Eth2NetworkConfig;
+use eth2_network_config::{Eth2NetworkConfig, HARDCODED_NET_NAMES};
 use eyre::{ContextCompat, Result, WrapErr, eyre};
 use hex::encode as hex_encode;
 use serde::Serialize;
@@ -210,14 +210,13 @@ fn load_chain_spec(network: &str) -> Result<ChainSpec> {
         return Ok(spec);
     }
 
-    if network.eq_ignore_ascii_case("hoodi")
-        && let Some(spec) = build_spec("holesky")?
-    {
-        println!("⚠️ Hoodi configuration not bundled in Lighthouse crates; using holesky spec");
-        return Ok(spec);
-    }
-
-    Err(eyre!("unsupported network selection: {network}"))
+    // Do not silently fall back to a different network. This would produce
+    // deposit data and signatures for the wrong chain and could strand funds.
+    let available = HARDCODED_NET_NAMES.join(", ");
+    Err(eyre!(
+        "unsupported or unavailable network: {network}. Available in this Lighthouse build: {available}. \
+Please upgrade Lighthouse (and this CLI if needed) if your desired network is missing."
+    ))
 }
 
 fn build_spec(network: &str) -> Result<Option<ChainSpec>> {
