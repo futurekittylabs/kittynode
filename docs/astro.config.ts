@@ -3,6 +3,7 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightImageZoom from "starlight-image-zoom";
 import starlightLinksValidator from "starlight-links-validator";
+import starlightLlmsTxt from "starlight-llms-txt";
 
 // https://astro.build/config
 export default defineConfig({
@@ -15,7 +16,11 @@ export default defineConfig({
   site: "https://docs.kittynode.com",
   integrations: [
     starlight({
-      plugins: [starlightLinksValidator(), starlightImageZoom()],
+      plugins: [
+        starlightLinksValidator(),
+        starlightImageZoom(),
+        starlightLlmsTxt(),
+      ],
       title: "Kittynode Docs",
       editLink: {
         baseUrl: "https://github.com/futurekittylabs/kittynode/edit/main/docs/",
