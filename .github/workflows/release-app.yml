@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Determine previous app tag
         id: previous_app_tag
