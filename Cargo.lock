@@ -3871,7 +3871,7 @@ dependencies = [
  "kittynode-core",
  "kittynode-web",
  "predicates",
- "reqwest 0.11.27",
+ "reqwest 0.12.23",
  "semver 1.0.27",
  "serde",
  "serde_json",
