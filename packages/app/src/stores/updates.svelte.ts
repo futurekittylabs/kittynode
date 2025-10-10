@@ -8,7 +8,7 @@ import { coreClient, type LatestManifest } from "$lib/client";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const LATEST_MANIFEST_URL =
-  "https://github.com/futurekittylabs/kittynode/releases/latest/download/latest.json";
+  "https://raw.githubusercontent.com/futurekittylabs/kittynode/main/website/src/lib/app-release.json";
 
 let currentUpdate = $state<Update | null>(null);
 let dismissedTime = $state<number | null>(null);

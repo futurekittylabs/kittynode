@@ -17,9 +17,25 @@ import {
 import { CopyButton } from "$lib/components/ui/copy-button/index.js";
 import appRelease from "$lib/app-release.json";
 
+const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
+function formatReleaseDate(pubDate: string | undefined): string {
+  if (!pubDate) return "";
+  const parsed = new Date(pubDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return releaseDateFormatter.format(parsed);
+}
+
 let linuxHelpOpen = false;
 
-const { version: appVersion, date: releaseDate } = appRelease;
+const { version: appVersion, pub_date: appPubDate } = appRelease;
+const releaseDate = formatReleaseDate(appPubDate);
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
@@ -82,7 +98,10 @@ const downloads = [
   <div class="mb-8 text-center">
     <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
     <p class="text-sm text-muted-foreground mb-4">
-      Version {appVersion} • {releaseDate}
+      Version {appVersion}
+      {#if releaseDate}
+        • {releaseDate}
+      {/if}
     </p>
     <a href={changelogUrl} class="link text-sm"> View changelog</a>
   </div>

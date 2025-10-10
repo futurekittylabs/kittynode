@@ -48,37 +48,55 @@ jobs:
           ref: main
           token: ${{ secrets.MAYUSHII_PAT }}
 
+      - name: Download desktop updater manifest
+        if: steps.meta.outputs.component == 'kittynode-app'
+        id: download_manifest
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.MAYUSHII_PAT }}
+        run: |
+          set -euo pipefail
+          MANIFEST_FILE="$RUNNER_TEMP/app-latest.json"
+          gh release download "$TAG" --pattern latest.json --output "$MANIFEST_FILE" --clobber
+          echo "path=$MANIFEST_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Update release metadata
         shell: bash
+        env:
+          MANIFEST_FILE: ${{ steps.download_manifest.outputs.path }}
         run: |
           set -euo pipefail
           DATE="$(date +"%B %-d, %Y")"
           case "${{ steps.meta.outputs.component }}" in
             kittynode-app)
               FILE="website/src/lib/app-release.json"
+              mkdir -p "$(dirname "$FILE")"
+              if [[ -z "${MANIFEST_FILE:-}" || ! -f "$MANIFEST_FILE" ]]; then
+                echo "Missing downloaded manifest for app release" >&2
+                exit 1
+              fi
+              cp "$MANIFEST_FILE" "$FILE"
               ;;
             kittynode-cli)
               FILE="website/src/lib/cli-release.json"
+              mkdir -p "$(dirname "$FILE")"
+              if [[ -f "$FILE" ]]; then
+                CONTENT=$(cat "$FILE")
+              else
+                CONTENT='{}'
+              fi
+              echo "$CONTENT" \
+              | jq --arg ver "${{ steps.meta.outputs.version }}" --arg date "$DATE" \
+                   '. as $in | .version = $ver | .date = $date' \
+              > "$FILE.tmp"
+              mv "$FILE.tmp" "$FILE"
               ;;
             *)
               echo "Unexpected component ${{ steps.meta.outputs.component }}" >&2
               exit 1
               ;;
           esac
-          mkdir -p "$(dirname "$FILE")"
-
-          if [[ -f "$FILE" ]]; then
-            CONTENT=$(cat "$FILE")
-          else
-            CONTENT='{}'
-          fi
-
-          echo "$CONTENT" \
-          | jq --arg ver "${{ steps.meta.outputs.version }}" --arg date "$DATE" \
-               '. as $in | .version = $ver | .date = $date' \
-          > "$FILE.tmp"
-
-          mv "$FILE.tmp" "$FILE"
 
       - name: Install signing key
         shell: bash
