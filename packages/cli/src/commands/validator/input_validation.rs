@@ -53,17 +53,6 @@ pub fn normalize_withdrawal_address(input: &str) -> Result<String> {
     Ok(format!("0x{}", body.to_ascii_lowercase()))
 }
 
-pub fn parse_deposit_amount(input: &str) -> Result<f64> {
-    let trimmed = input.trim();
-    let amount: f64 = trimmed
-        .parse()
-        .map_err(|_| eyre!("Deposit amount must be a valid decimal number"))?;
-    if !amount.is_finite() {
-        return Err(eyre!("Deposit amount must be a finite number"));
-    }
-    Ok(amount)
-}
-
 /// Parses an ETH amount into gwei using decimal string math to avoid floating point rounding.
 ///
 /// Accepts at most 9 decimal places. Returns total gwei as `u64` and validates the
@@ -145,17 +134,6 @@ mod tests {
     #[test]
     fn normalize_withdrawal_address_rejects_invalid_chars() {
         assert!(normalize_withdrawal_address("0xZZzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz").is_err());
-    }
-
-    #[test]
-    fn parse_deposit_amount_accepts_decimal() {
-        let amount = parse_deposit_amount("32.5").unwrap();
-        assert!((amount - 32.5).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn parse_deposit_amount_rejects_non_numeric() {
-        assert!(parse_deposit_amount("abc").is_err());
     }
 
     #[test]

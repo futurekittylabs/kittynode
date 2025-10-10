@@ -62,16 +62,13 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     } = config;
 
     let mnemonic = Mnemonic::from_phrase(mnemonic_phrase.as_str(), Language::English)
-        .map_err(|error| eyre!("Mnemonic phrase is invalid: {error}"))?;
+        .wrap_err("Mnemonic phrase is invalid")?;
     let spec = load_chain_spec(&network)?;
 
     prepare_output_dir(&output_dir)?;
 
     // Use a single timestamp to pair deposit_data and keystore filenames
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|error| eyre!("System time is invalid: {error}"))?
-        .as_secs();
+    let timestamp = secs_since_unix_epoch(SystemTime::now())?;
     // Choose a unique deposit_data filename and capture any suffix to pair with keystore names.
     let (deposit_data_path, suffix) = next_available_deposit_path(&output_dir, timestamp)?;
 
@@ -116,9 +113,10 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathBuf, DepositEntry)> {
     let (secret_bytes, derivation_path) = derive_validator_secret(params.seed, index as u32)
         .map_err(|error| eyre!("Failed to derive validator secret {index}: {error}"))?;
+    let secret_bytes = Zeroizing::new(secret_bytes);
     let keypair = keypair_from_secret(&secret_bytes)
         .map_err(|error| eyre!("Failed to instantiate keypair {index}: {error:?}"))?;
-    // secret_bytes consumed
+    drop(secret_bytes);
 
     let builder = KeystoreBuilder::new(&keypair, params.password.as_bytes(), derivation_path)
         .map_err(|error| eyre!("Failed to prepare keystore {index}: {error:?}"))?;
@@ -200,6 +198,13 @@ fn derive_validator_secret(seed: &[u8], index: u32) -> Result<(Vec<u8>, String)>
     let secret = dest.secret().to_vec();
     let path_str = format!("m/12381/3600/{index}/0/0");
     Ok((secret, path_str))
+}
+
+fn secs_since_unix_epoch(now: SystemTime) -> Result<u64> {
+    Ok(now
+        .duration_since(UNIX_EPOCH)
+        .wrap_err("System time is invalid")?
+        .as_secs())
 }
 
 #[cfg(test)]
@@ -369,6 +374,7 @@ mod tests {
     use eyre::{Result, eyre};
     use serde_json::Value;
     use std::fs;
+    use std::time::Duration;
     use tempfile::tempdir;
 
     const MNEMONIC: &str = "upon pelican potato light kick symptom pioneer bridge wonder chief head citizen flip festival claw switch wear proud length zoo mercy foot repair ceiling";
@@ -490,4 +496,46 @@ mod tests {
     // Note: We intentionally avoid keystore decryption here to keep the test fast.
     // Pubkey equality combined with deposit data parity exercises the same derivation path
     // and signing behavior without expensive scrypt decrypts.
+
+    #[test]
+    fn selects_next_available_deposit_path_with_suffix() -> Result<()> {
+        let tmp = tempdir().wrap_err("failed to create temp dir")?;
+        let dir = tmp.path();
+        let ts = 1_696_969_696u64;
+        let base = dir.join(format!("deposit_data-{}.json", ts));
+        fs::write(&base, b"{}").wrap_err("failed to create base deposit file")?;
+
+        let (path, suffix) = next_available_deposit_path(dir, ts)?;
+        assert_eq!(
+            path,
+            dir.join(format!("deposit_data-{}-1.json", ts)),
+            "should choose -1 when base exists"
+        );
+        assert_eq!(suffix, Some(1));
+        Ok(())
+    }
+
+    #[test]
+    fn errors_after_1000_deposit_filename_collisions() -> Result<()> {
+        let tmp = tempdir().wrap_err("failed to create temp dir")?;
+        let dir = tmp.path();
+        let ts = 1_700_000_000u64;
+        // Create base plus 1..=1000 suffixed files
+        fs::write(dir.join(format!("deposit_data-{}.json", ts)), b"{}")
+            .wrap_err("failed to create base deposit file")?;
+        for i in 1..=1000u32 {
+            fs::write(dir.join(format!("deposit_data-{}-{}.json", ts, i)), b"{}")
+                .wrap_err("failed to create suffixed deposit file")?;
+        }
+
+        let result = next_available_deposit_path(dir, ts);
+        assert!(result.is_err(), "should error after 1000 attempts");
+        Ok(())
+    }
+
+    #[test]
+    fn secs_since_unix_epoch_errors_for_pre_epoch_time() {
+        let t = UNIX_EPOCH - Duration::from_secs(1);
+        assert!(secs_since_unix_epoch(t).is_err());
+    }
 }

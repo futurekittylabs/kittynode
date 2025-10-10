@@ -24,8 +24,8 @@ use types::Address;
 use zeroize::Zeroizing;
 
 use input_validation::{
-    normalize_withdrawal_address, parse_deposit_amount, parse_deposit_amount_gwei,
-    parse_validator_count, validate_password,
+    normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
+    validate_password,
 };
 
 const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
@@ -95,7 +95,7 @@ pub async fn keygen() -> Result<()> {
     let network_labels = desired_supported_networks();
     if network_labels.is_empty() {
         return Err(eyre!(
-            "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)."
+            "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)"
         ));
     }
     let network_index = Select::with_theme(&theme)
@@ -127,7 +127,7 @@ pub async fn keygen() -> Result<()> {
         .with_prompt("How much ETH do you want to deposit to these validators?")
         .default("32".to_string())
         .validate_with(|text: &String| {
-            parse_deposit_amount(text)
+            parse_deposit_amount_gwei(text)
                 .map(|_| ())
                 .map_err(|error| error.to_string())
         })
