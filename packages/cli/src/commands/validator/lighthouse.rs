@@ -27,7 +27,10 @@ struct GenerationParams<'a> {
     spec: &'a ChainSpec,
     output_dir: &'a Path,
     compounding: bool,
-    index_width: usize,
+    // Shared unix timestamp (seconds) used to pair filenames
+    timestamp: u64,
+    // Optional suffix paired with deposit filename when collisions occur
+    suffix: Option<u32>,
 }
 
 pub struct KeygenConfig {
@@ -63,7 +66,14 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     let spec = load_chain_spec(&network)?;
 
     prepare_output_dir(&output_dir)?;
-    let deposit_data_path = next_available_deposit_path(&output_dir)?;
+
+    // Use a single timestamp to pair deposit_data and keystore filenames
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| eyre!("System time is invalid: {error}"))?
+        .as_secs();
+    // Choose a unique deposit_data filename and capture any suffix to pair with keystore names.
+    let (deposit_data_path, suffix) = next_available_deposit_path(&output_dir, timestamp)?;
 
     let seed = Bip39Seed::new(&mnemonic, "");
 
@@ -73,10 +83,6 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     println!("Generating {validator_count} validator(s)...");
     let _ = io::stdout().flush();
 
-    // Determine zero-padding width based on the maximum index (validator_count - 1).
-    let max_index = u32::from(validator_count.saturating_sub(1));
-    let index_width = digit_count(max_index);
-
     let params = GenerationParams {
         seed: seed.as_bytes(),
         password: &password,
@@ -85,7 +91,8 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
         spec: &spec,
         output_dir: &output_dir,
         compounding,
-        index_width,
+        timestamp,
+        suffix,
     };
 
     for index in 0..validator_count {
@@ -123,11 +130,13 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .build()
         .map_err(|error| eyre!("Failed to finalize keystore {index}: {error:?}"))?;
 
-    let keystore_path = params.output_dir.join(format!(
-        "keystore-{index:0width$}-{}.json",
-        keystore.uuid(),
-        width = params.index_width
-    ));
+    // Match ethstaker deposit-cli filename scheme and pair suffix with deposit_data when needed:
+    // keystore-m_12381_3600_{index}_0_0-{timestamp}[-{suffix}].json
+    let keystore_filename = match params.suffix {
+        Some(n) => format!("keystore-m_12381_3600_{}_0_0-{}-{}.json", index, params.timestamp, n),
+        None => format!("keystore-m_12381_3600_{}_0_0-{}.json", index, params.timestamp),
+    };
+    let keystore_path = params.output_dir.join(keystore_filename);
     ensure_new_file(&keystore_path)?;
 
     write_keystore(&keystore_path, &keystore)?;
@@ -244,8 +253,29 @@ fn prepare_output_dir(path: &Path) -> Result<()> {
         if !path.is_dir() {
             return Err(eyre!("Path must be a directory: {path:?}"));
         }
+        // Enforce secure permissions on existing directories as well (Unix only).
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(path)
+                .wrap_err_with(|| format!("Failed to stat {path:?}"))?
+                .permissions();
+            perms.set_mode(0o700);
+            fs::set_permissions(path, perms)
+                .wrap_err_with(|| format!("Failed to set permissions on {path:?}"))?;
+        }
     } else {
         fs::create_dir_all(path).wrap_err_with(|| format!("Failed to create {path:?}"))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(path)
+                .wrap_err_with(|| format!("Failed to stat {path:?}"))?
+                .permissions();
+            perms.set_mode(0o700);
+            fs::set_permissions(path, perms)
+                .wrap_err_with(|| format!("Failed to set permissions on {path:?}"))?;
+        }
     }
     Ok(())
 }
@@ -302,11 +332,7 @@ fn compounding_withdrawal_credentials(address: Address, spec: &ChainSpec) -> Has
     Hash256::from_slice(&credentials)
 }
 
-fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+fn next_available_deposit_path(output_dir: &Path, timestamp: u64) -> Result<(PathBuf, Option<u32>)> {
     let candidate = |suffix: Option<u32>| -> PathBuf {
         match suffix {
             Some(n) => output_dir.join(format!("deposit_data-{}-{}.json", timestamp, n)),
@@ -315,26 +341,17 @@ fn next_available_deposit_path(output_dir: &Path) -> Result<PathBuf> {
     };
     let path = candidate(None);
     if !path.exists() {
-        return Ok(path);
+        return Ok((path, None));
     }
     for idx in 1..=1000 {
         let attempt = candidate(Some(idx));
         if !attempt.exists() {
-            return Ok(attempt);
+            return Ok((attempt, Some(idx)));
         }
     }
     Err(eyre!("Unable to find available filename for deposit data"))
 }
 
-fn digit_count(n: u32) -> usize {
-    let mut d = 1usize;
-    let mut v = n;
-    while v >= 10 {
-        v /= 10;
-        d += 1;
-    }
-    d
-}
 
 #[cfg(test)]
 mod tests {
@@ -352,7 +369,7 @@ mod tests {
 
     #[test]
     fn generates_ethstaker_parity_outputs() -> Result<()> {
-        let output_dir = tempdir().wrap_err("failed to create temp dir")?;
+        let tmp = tempdir().wrap_err("failed to create temp dir")?;
         let withdrawal_address = WITHDRAWAL_ADDRESS
             .parse()
             .wrap_err("failed to parse withdrawal address")?;
@@ -364,7 +381,7 @@ mod tests {
             deposit_gwei: 32_000_000_000,
             compounding: true,
             password: Zeroizing::new(KEYSTORE_PASSWORD.to_string()),
-            output_dir: output_dir.path().to_path_buf(),
+            output_dir: tmp.path().join("keys"),
         })?;
 
         let fixture_dir =
@@ -405,7 +422,7 @@ mod tests {
     fn generated_keystore_has_owner_only_permissions() -> Result<()> {
         use std::os::unix::fs::PermissionsExt;
 
-        let output_dir = tempdir().wrap_err("failed to create temp dir")?;
+        let tmp = tempdir().wrap_err("failed to create temp dir")?;
         let withdrawal_address: Address = WITHDRAWAL_ADDRESS
             .parse()
             .wrap_err("failed to parse withdrawal address")?;
@@ -417,7 +434,7 @@ mod tests {
             deposit_gwei: 32_000_000_000,
             compounding: true,
             password: Zeroizing::new(KEYSTORE_PASSWORD.to_string()),
-            output_dir: output_dir.path().to_path_buf(),
+            output_dir: tmp.path().join("keys"),
         })?;
 
         let md = fs::metadata(&outcome.keystore_paths[0])

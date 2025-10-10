@@ -46,7 +46,6 @@ fn desired_supported_networks() -> Vec<&'static str> {
         .collect()
 }
 
-#[allow(clippy::manual_is_multiple_of)]
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
 
@@ -133,17 +132,12 @@ pub async fn keygen() -> Result<()> {
                 .map_err(|error| error.to_string())
         })
         .interact_text()?;
-    let deposit_amount_total_eth = parse_deposit_amount(&deposit_amount_input)?;
     let validator_count_u64 = u64::from(validator_count);
     let total_deposit_gwei = parse_deposit_amount_gwei(&deposit_amount_input)?;
     if total_deposit_gwei % validator_count_u64 != 0 {
         let per_val_floor = total_deposit_gwei / validator_count_u64;
         let suggested_total_up = (per_val_floor + 1) * validator_count_u64;
-        let suggested_total_up_wei = U256::from(suggested_total_up) * Unit::GWEI.wei();
-        let suggested_eth = format_units(suggested_total_up_wei, "ether").unwrap_or_else(|_| {
-            // Fallback to 9-decimal float formatting if formatting fails unexpectedly
-            format!("{:.9}", suggested_total_up as f64 / 1_000_000_000.0)
-        });
+        let suggested_eth = format_eth_trimmed_from_gwei(suggested_total_up);
         return Err(eyre!(
             "Total deposit must be evenly divisible by {validator_count} validators. Try {suggested_eth} ETH instead"
         ));
@@ -168,33 +162,26 @@ pub async fn keygen() -> Result<()> {
             "Per-validator deposit must be exactly 32 ETH for non-compounding validators"
         ));
     }
-    let per_validator_wei = U256::from(deposit_amount_gwei_per_validator) * Unit::GWEI.wei();
-    let deposit_amount_per_validator_eth_str = format_units(per_validator_wei, "ether")
-        .unwrap_or_else(|_| {
-            format!(
-                "{:.9}",
-                deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0
-            )
-        });
+    let deposit_amount_per_validator_eth_str =
+        format_eth_trimmed_from_gwei(deposit_amount_gwei_per_validator);
 
     // Allow user to select output directory for keys.
     let output_dir_input = Input::<String>::with_theme(&theme)
         .with_prompt("Output directory for validator keys")
         .default("./validator-keys".to_string())
         .interact_text()?;
-    let output_dir = PathBuf::from(&output_dir_input);
+    let output_dir = PathBuf::from(output_dir_input.trim());
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {}", network);
-    println!("  Withdrawal address: {withdrawal_address}");
+    let withdrawal_address_display = withdrawal_address_input.trim();
+    println!("  Withdrawal address: {}", withdrawal_address_display);
     println!(
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
     );
-    let total_deposit_wei = U256::from(total_deposit_gwei) * Unit::GWEI.wei();
-    let total_deposit_eth_str = format_units(total_deposit_wei, "ether")
-        .unwrap_or_else(|_| format!("{deposit_amount_total_eth}"));
+    let total_deposit_eth_str = format_eth_trimmed_from_gwei(total_deposit_gwei);
     println!("  Total deposit: {} ETH", total_deposit_eth_str);
     println!(
         "  Deposit per validator: {} ETH",
@@ -270,6 +257,22 @@ pub async fn keygen() -> Result<()> {
     println!("Store the password safely—it is not saved anywhere else.");
 
     Ok(())
+}
+
+fn format_eth_trimmed_from_gwei(gwei: u64) -> String {
+    // Defer conversion to alloy; trim only for display.
+    let wei = U256::from(gwei) * Unit::GWEI.wei();
+    match format_units(wei, "ether") {
+        Ok(s) => {
+            if s.contains('.') {
+                let s = s.trim_end_matches('0').trim_end_matches('.');
+                s.to_string()
+            } else {
+                s
+            }
+        }
+        Err(_) => gwei.to_string(),
+    }
 }
 
 fn check_internet_connectivity() -> bool {
@@ -357,6 +360,7 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
 fn normalize_mnemonic(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
+
 
 #[cfg(test)]
 mod tests {
