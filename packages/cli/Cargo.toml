@@ -27,20 +27,11 @@ dialoguer = { version = "0.12.0", default-features = false, features = ["editor"
 crossterm = "0.29.0"
 reqwest = { version = "0.12.23", default-features = false, features = ["rustls-tls", "json"] }
 semver = "1.0.27"
-eth2_network_config = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_network_config" }
-eth2_keystore = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_keystore" }
-eth2_key_derivation = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_key_derivation" }
-types = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "types", default-features = false }
-tree_hash = "0.9.1"
-hex = "0.4"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 zeroize = "1.7"
 bip39 = { package = "tiny-bip39", version = "2" }
 arboard = "3"
-alloy-primitives = "0.8.25"
-k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
-bip32 = { version = "0.5.2", default-features = false, features = ["bip39", "secp256k1"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.17"

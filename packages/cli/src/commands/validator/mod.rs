@@ -1,48 +1,33 @@
-mod input_validation;
-mod lighthouse;
-
 use std::io::{Write, stdout};
-use std::net::{TcpStream, ToSocketAddrs};
-use std::time::Duration;
 
-use self::lighthouse::{KeygenConfig, generate_validator_files};
-use alloy_primitives::U256;
-use alloy_primitives::utils::{Unit, format_units, keccak256};
-use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
-use bip39::{Language, Mnemonic, MnemonicType, Seed as Bip39Seed};
+use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
-use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
-use k256::ecdsa::SigningKey;
 use std::path::PathBuf;
-use std::str::FromStr;
-use tracing::{debug, error};
-use types::Address;
+use tracing::error;
 use zeroize::Zeroizing;
 
-use input_validation::{
-    normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
+#[cfg(target_os = "linux")]
+use kittynode_core::api::validator::swap_active;
+use kittynode_core::api::validator::{
+    ValidatorKeygenRequest, ValidatorProgress, available_networks, check_internet_connectivity,
+    format_eth_from_gwei, generate_validator_files_with_progress, normalize_withdrawal_address,
+    parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
     validate_password,
 };
 
-const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
-    ("one.one.one.one", 443),
-    ("8.8.8.8", 53),
-    ("www.google.com", 80),
-];
-const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
-
 fn desired_supported_networks() -> Vec<&'static str> {
     const DESIRED: &[&str] = &["hoodi", "sepolia"];
+    let available = available_networks();
     DESIRED
         .iter()
         .copied()
-        .filter(|n| HARDCODED_NET_NAMES.contains(n))
+        .filter(|network| available.iter().any(|candidate| candidate == network))
         .collect()
 }
 
@@ -178,7 +163,7 @@ pub async fn keygen() -> Result<()> {
     let validator_count_u64 = u64::from(validator_count);
     let total_deposit_gwei = deposit_amount_gwei_per_validator * validator_count_u64;
     let deposit_amount_per_validator_eth_str =
-        format_eth_trimmed_from_gwei(deposit_amount_gwei_per_validator);
+        format_eth_from_gwei(deposit_amount_gwei_per_validator);
 
     // Allow user to select output directory for keys.
     let output_dir_input = Input::<String>::with_theme(&theme)
@@ -198,7 +183,7 @@ pub async fn keygen() -> Result<()> {
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
     );
-    let total_deposit_eth_str = format_eth_trimmed_from_gwei(total_deposit_gwei);
+    let total_deposit_eth_str = format_eth_from_gwei(total_deposit_gwei);
     println!("  Total deposit: {} ETH", total_deposit_eth_str);
     println!(
         "  Deposit per validator: {} ETH",
@@ -248,16 +233,23 @@ pub async fn keygen() -> Result<()> {
             withdrawal_address
         );
     }
-    let outcome = generate_validator_files(KeygenConfig {
-        mnemonic_phrase,
-        validator_count,
-        withdrawal_address,
-        network: network.to_string(),
-        deposit_gwei: deposit_amount_gwei_per_validator,
-        compounding,
-        password,
-        output_dir,
-    })?;
+    println!("Generating {validator_count} validator(s)...");
+
+    let outcome = generate_validator_files_with_progress(
+        ValidatorKeygenRequest {
+            mnemonic_phrase,
+            validator_count,
+            withdrawal_address,
+            network: network.to_string(),
+            deposit_gwei: deposit_amount_gwei_per_validator,
+            compounding,
+            password,
+            output_dir,
+        },
+        |progress: ValidatorProgress| {
+            println!("  → Validator {} of {}", progress.current, progress.total);
+        },
+    )?;
 
     println!(
         "✔ Generated {} validator keystore(s):",
@@ -275,47 +267,6 @@ pub async fn keygen() -> Result<()> {
 
     Ok(())
 }
-
-fn format_eth_trimmed_from_gwei(gwei: u64) -> String {
-    // Defer conversion to alloy; trim only for display.
-    let wei = U256::from(gwei) * Unit::GWEI.wei();
-    match format_units(wei, "ether") {
-        Ok(s) => {
-            if s.contains('.') {
-                let s = s.trim_end_matches('0').trim_end_matches('.');
-                s.to_string()
-            } else {
-                s
-            }
-        }
-        Err(_) => gwei.to_string(),
-    }
-}
-
-fn check_internet_connectivity() -> bool {
-    CONNECTIVITY_PROBES
-        .iter()
-        .any(|(host, port)| match (*host, *port).to_socket_addrs() {
-            Ok(mut addrs) => {
-                addrs.any(|addr| TcpStream::connect_timeout(&addr, CONNECTIVITY_TIMEOUT).is_ok())
-            }
-            Err(error) => {
-                debug!("DNS resolution failed for {host}:{port}: {error}");
-                false
-            }
-        })
-}
-
-#[cfg(target_os = "linux")]
-fn swap_active() -> bool {
-    if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
-        let mut lines = s.lines();
-        let _ = lines.next(); // header
-        return lines.any(|l| !l.trim().is_empty());
-    }
-    false
-}
-
 fn clear_clipboard() -> Result<()> {
     let mut clipboard = arboard::Clipboard::new()
         .map_err(|error| eyre!("Failed to open system clipboard: {error}"))?;
@@ -323,43 +274,6 @@ fn clear_clipboard() -> Result<()> {
         .set_text(String::new())
         .map_err(|error| eyre!("Failed to clear clipboard contents: {error}"))?;
     Ok(())
-}
-
-fn resolve_withdrawal_address(user: Option<&str>, mnemonic: &str) -> Result<Address> {
-    match user {
-        Some(value) => Address::from_str(value)
-            .map_err(|error| eyre!("Failed to parse withdrawal address: {error}")),
-        None => default_withdrawal_address(mnemonic),
-    }
-}
-
-fn default_withdrawal_address(mnemonic: &str) -> Result<Address> {
-    let mnemonic = Mnemonic::from_phrase(mnemonic, Language::English)
-        .map_err(|error| eyre!("Mnemonic phrase is invalid: {error}"))?;
-    let seed = Bip39Seed::new(&mnemonic, "");
-    derive_execution_address(seed.as_bytes())
-        .map_err(|error| eyre!("Failed to derive withdrawal address from mnemonic: {error}"))
-}
-
-fn derive_execution_address(seed: &[u8]) -> Result<Address> {
-    // Expect a 64-byte BIP-39 seed
-    let seed_array: [u8; 64] = seed
-        .try_into()
-        .map_err(|_| eyre!("Invalid BIP-39 seed length"))?;
-
-    let seed = Bip32Seed::new(seed_array);
-    let path: DerivationPath = "m/44'/60'/0'/0/0"
-        .parse()
-        .map_err(|error| eyre!("Invalid derivation path: {error}"))?;
-
-    let xprv = XPrv::derive_from_path(&seed, &path)
-        .map_err(|error| eyre!("BIP-32 derivation failed: {error}"))?;
-
-    let signing_key = SigningKey::from(&xprv);
-    let public_key = signing_key.verifying_key();
-    let uncompressed = public_key.to_encoded_point(false);
-    let hash = keccak256(&uncompressed.as_bytes()[1..]);
-    Ok(Address::from_slice(&hash[12..]))
 }
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
@@ -407,72 +321,4 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
 
 fn normalize_mnemonic(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{default_withdrawal_address, normalize_mnemonic, resolve_withdrawal_address};
-    use eyre::Result;
-    use std::str::FromStr;
-    use types::Address;
-
-    #[test]
-    fn normalize_mnemonic_collapses_whitespace() {
-        assert_eq!(
-            normalize_mnemonic("word1  word2\n\tword3"),
-            "word1 word2 word3"
-        );
-    }
-
-    #[test]
-    fn resolve_withdrawal_address_prefers_user_value() -> Result<()> {
-        let expected = Address::from_str("0x48fe05daea0f8cc6958a72522db42b2edb3fda1a")?;
-        let resolved = resolve_withdrawal_address(
-            Some("0x48fe05daea0f8cc6958a72522db42b2edb3fda1a"),
-            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-        )?;
-        assert_eq!(resolved, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn resolve_withdrawal_address_defaults_to_first_account() -> Result<()> {
-        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94")?;
-        let resolved = resolve_withdrawal_address(
-            None,
-            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-        )?;
-        assert_eq!(resolved, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn default_withdrawal_address_derives_first_account() -> Result<()> {
-        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94")?;
-        let derived = default_withdrawal_address(
-            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-        )?;
-        assert_eq!(derived, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn default_withdrawal_address_known_vector_legal_winner() -> Result<()> {
-        let expected = Address::from_str("0x58a57ed9d8d624cbd12e2c467d34787555bb1b25")?;
-        let derived = default_withdrawal_address(
-            "legal winner thank year wave sausage worth useful legal winner thank yellow",
-        )?;
-        assert_eq!(derived, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn default_withdrawal_address_known_vector_test_junk() -> Result<()> {
-        let expected = Address::from_str("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")?;
-        let derived = default_withdrawal_address(
-            "test test test test test test test test test test test junk",
-        )?;
-        assert_eq!(derived, expected);
-        Ok(())
-    }
 }
