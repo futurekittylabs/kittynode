@@ -39,6 +39,9 @@ zeroize = "1.7"
 bip39 = { package = "tiny-bip39", version = "2" }
 arboard = "3"
 alloy-primitives = "0.8.25"
+hmac = "0.12"
+k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
+sha2 = "0.10"
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
