@@ -76,7 +76,8 @@ jobs:
                 echo "Missing downloaded manifest for app release" >&2
                 exit 1
               fi
-              cp "$MANIFEST_FILE" "$FILE"
+              jq . "$MANIFEST_FILE" > "$FILE.tmp"
+              mv "$FILE.tmp" "$FILE"
               ;;
             kittynode-cli)
               FILE="website/src/lib/cli-release.json"
