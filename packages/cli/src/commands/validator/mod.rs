@@ -49,42 +49,53 @@ fn desired_supported_networks() -> Vec<&'static str> {
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
 
-    // Security check: warn if system swap is active
-    if swap_active() {
-        println!(
-            "Warning: System swap detected. Sensitive key material can be written to disk via swap and persist"
+    // Pre-check warnings block
+    let mut warnings: Vec<String> = Vec::new();
+
+    // Internet connectivity warning
+    if check_internet_connectivity() {
+        warnings.push(
+            "Internet connectivity detected. You should never generate keys on a device that's ever been connected to the internet.".to_string(),
         );
-        let proceed = Confirm::with_theme(&theme)
-            .with_prompt("Proceed despite swap being active?")
-            .default(false)
-            .interact()?;
-        if !proceed {
-            println!("Aborting validator key generation.");
-            return Ok(());
+    }
+
+    // Swap detection or limitation
+    #[cfg(target_os = "linux")]
+    {
+        if swap_active() {
+            warnings.push(
+                "System swap detected. Sensitive key material can be written to disk via swap and persist.".to_string(),
+            );
         }
     }
     #[cfg(not(target_os = "linux"))]
     {
-        println!(
-            "Warning: Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys."
+        warnings.push(
+            "Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys.".to_string(),
         );
     }
 
-    let has_internet = check_internet_connectivity();
-    if has_internet {
-        println!(
-            "Warning: Internet connectivity detected. You should never generate keys on a device that's ever been connected to the internet."
+    // Non-Unix permission enforcement limitation
+    #[cfg(not(unix))]
+    {
+        warnings.push(
+            "This platform does not support enforcing POSIX file permissions for keystores. Ensure the output directory is protected.".to_string(),
         );
+    }
+
+    if !warnings.is_empty() {
+        println!("WARNING:");
+        for w in &warnings {
+            println!(" - {}", w);
+        }
         let proceed = Confirm::with_theme(&theme)
-            .with_prompt("Proceed despite being connected to the internet?")
+            .with_prompt("Proceed despite the above warnings?")
             .default(false)
             .interact()?;
         if !proceed {
             println!("Aborting validator key generation.");
             return Ok(());
         }
-    } else {
-        println!("No internet connectivity detected.");
     }
 
     let validator_count_input = Input::<String>::with_theme(&theme)

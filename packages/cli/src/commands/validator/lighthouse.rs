@@ -67,14 +67,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 
     prepare_output_dir(&output_dir)?;
 
-    // On non-Unix platforms, we cannot tighten POSIX filesystem permissions
-    // for the output directory or keystore files. Inform the user once.
-    #[cfg(not(unix))]
-    {
-        println!(
-            "Warning: This platform does not support enforcing POSIX file permissions for keystores. Ensure the output directory is protected."
-        );
-    }
+    // POSIX permission notice is emitted from the CLI pre-check to avoid duplicate output.
 
     // Use a single timestamp to pair deposit_data and keystore filenames
     let timestamp = secs_since_unix_epoch(SystemTime::now())?;
