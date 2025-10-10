@@ -27,6 +27,7 @@ async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
 
     let response = HTTP_CLIENT
         .get(&url)
+        .header(reqwest::header::CACHE_CONTROL, "no-cache")
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -330,7 +331,13 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_shell::init());
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    let builder = {
+        let updater_plugin = tauri_plugin_updater::Builder::new()
+            .header("Cache-Control", "no-cache")
+            .map_err(|e| eyre::eyre!("failed to configure updater header: {e}"))?
+            .build();
+        builder.plugin(updater_plugin)
+    };
 
     builder
         .setup(|app| {

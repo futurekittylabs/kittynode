@@ -23,6 +23,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine previous app tag
+        id: previous_app_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="${{ github.ref_name }}"
+          prev=""
+          while IFS= read -r tag; do
+            if [ "$tag" = "$current" ]; then
+              break
+            fi
+            prev="$tag"
+          done < <(git tag --list 'kittynode-app-*' --sort=v:refname)
+          echo "tag=$prev" >> "$GITHUB_OUTPUT"
 
       - name: Verify version match
         shell: bash
@@ -64,6 +81,7 @@ jobs:
         with:
           draft: true
           generate_release_notes: true
+          previous_tag_name: ${{ steps.previous_app_tag.outputs.tag }}
 
       - name: Write App Store Connect API key (macOS)
         if: matrix.platform == 'macos-latest'
