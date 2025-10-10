@@ -296,21 +296,14 @@ fn check_internet_connectivity() -> bool {
         })
 }
 
+#[cfg(target_os = "linux")]
 fn swap_active() -> bool {
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
-            let mut lines = s.lines();
-            let _ = lines.next(); // header
-            return lines.any(|l| !l.trim().is_empty());
-        }
-        false
+    if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
+        let mut lines = s.lines();
+        let _ = lines.next(); // header
+        return lines.any(|l| !l.trim().is_empty());
     }
-    #[cfg(not(target_os = "linux"))]
-    {
-        // Non-Linux platforms: detection isn't reliable; do not gate.
-        false
-    }
+    false
 }
 
 fn clear_clipboard() {
