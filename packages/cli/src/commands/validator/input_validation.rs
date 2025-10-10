@@ -55,8 +55,8 @@ pub fn normalize_withdrawal_address(input: &str) -> Result<String> {
 
 /// Parses an ETH amount into gwei using decimal string math to avoid floating point rounding.
 ///
-/// Accepts at most 9 decimal places. Returns total gwei as `u64` and validates the
-/// amount is within the configured min/max ETH bounds.
+/// Accepts at most 9 decimal places and returns total gwei as `u64`.
+/// Range validation (e.g., 1–32 ETH per validator) is enforced by callers.
 pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
     let trimmed = input.trim();
     if trimmed.is_empty() {

@@ -140,45 +140,34 @@ pub async fn keygen() -> Result<()> {
         .default(true)
         .interact()?;
 
-    let deposit_amount_input = Input::<String>::with_theme(&theme)
-        .with_prompt("How much ETH do you want to deposit to these validators?")
-        .default("32".to_string())
-        .validate_with(|text: &String| {
-            parse_deposit_amount_gwei(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
-        })
-        .interact_text()?;
+    // Deposit per validator (ETH). Only prompt when using compounding validators to match deposit-cli UX.
+    let deposit_amount_gwei_per_validator: u64 = if compounding {
+        let input = Input::<String>::with_theme(&theme)
+            .with_prompt("Deposit per validator (ETH)")
+            .default("32".to_string())
+            .validate_with(|text: &String| {
+                const MIN_DEPOSIT_GWEI: u64 = 1_000_000_000; // 1 ETH
+                const MAX_DEPOSIT_GWEI: u64 = 2_048_000_000_000; // 2048 ETH
+                match parse_deposit_amount_gwei(text) {
+                    Ok(gwei) => {
+                        if gwei < MIN_DEPOSIT_GWEI {
+                            Err("Per-validator deposit must be at least 1 ETH".to_string())
+                        } else if gwei > MAX_DEPOSIT_GWEI {
+                            Err("Per-validator deposit cannot exceed 2048 ETH".to_string())
+                        } else {
+                            Ok(())
+                        }
+                    }
+                    Err(error) => Err(error.to_string()),
+                }
+            })
+            .interact_text()?;
+        parse_deposit_amount_gwei(&input)?
+    } else {
+        32_000_000_000 // exactly 32 ETH for non-compounding
+    };
     let validator_count_u64 = u64::from(validator_count);
-    let total_deposit_gwei = parse_deposit_amount_gwei(&deposit_amount_input)?;
-    if total_deposit_gwei % validator_count_u64 != 0 {
-        let per_val_floor = total_deposit_gwei / validator_count_u64;
-        let suggested_total_up = (per_val_floor + 1) * validator_count_u64;
-        let suggested_eth = format_eth_trimmed_from_gwei(suggested_total_up);
-        return Err(eyre!(
-            "Total deposit must be evenly divisible by {validator_count} validators. Try {suggested_eth} ETH instead"
-        ));
-    }
-    let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
-    // Enforce per-validator deposit rules
-    const THIRTY_TWO_ETH_GWEI: u64 = 32_000_000_000; // 32 ETH
-    const TWO_THOUSAND_FORTY_EIGHT_ETH_GWEI: u64 = 2_048_000_000_000; // 2048 ETH
-    if compounding {
-        if deposit_amount_gwei_per_validator < THIRTY_TWO_ETH_GWEI {
-            return Err(eyre!(
-                "Per-validator deposit must be at least 32 ETH for compounding validators"
-            ));
-        }
-        if deposit_amount_gwei_per_validator > TWO_THOUSAND_FORTY_EIGHT_ETH_GWEI {
-            return Err(eyre!(
-                "Per-validator deposit cannot exceed 2048 ETH for compounding validators"
-            ));
-        }
-    } else if deposit_amount_gwei_per_validator != THIRTY_TWO_ETH_GWEI {
-        return Err(eyre!(
-            "Per-validator deposit must be exactly 32 ETH for non-compounding validators"
-        ));
-    }
+    let total_deposit_gwei = deposit_amount_gwei_per_validator * validator_count_u64;
     let deposit_amount_per_validator_eth_str =
         format_eth_trimmed_from_gwei(deposit_amount_gwei_per_validator);
 

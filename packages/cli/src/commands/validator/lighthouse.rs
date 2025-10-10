@@ -540,4 +540,40 @@ mod tests {
         let t = UNIX_EPOCH - Duration::from_secs(1);
         assert!(secs_since_unix_epoch(t).is_err());
     }
+
+    #[test]
+    fn compounding_amount_is_applied_per_validator() -> Result<()> {
+        let tmp = tempdir().wrap_err("failed to create temp dir")?;
+        let withdrawal_address: Address = WITHDRAWAL_ADDRESS
+            .parse()
+            .wrap_err("failed to parse withdrawal address")?;
+
+        // Request 2 validators with 33 ETH per validator (in gwei) using compounding
+        let per_validator_gwei = 33_000_000_000u64;
+        let outcome = generate_validator_files(KeygenConfig {
+            mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
+            validator_count: 2,
+            withdrawal_address,
+            network: "hoodi".to_string(),
+            deposit_gwei: per_validator_gwei,
+            compounding: true,
+            password: Zeroizing::new(KEYSTORE_PASSWORD.to_string()),
+            output_dir: tmp.path().join("keys"),
+        })?;
+
+        let deposits = read_json_array(&outcome.deposit_data_path)?;
+        assert_eq!(deposits.len(), 2, "should create 2 deposit entries");
+        for entry in deposits {
+            let amount = entry
+                .get("amount")
+                .and_then(|v| v.as_u64())
+                .ok_or_else(|| eyre!("deposit entry missing amount as u64"))?;
+            assert_eq!(
+                amount, per_validator_gwei,
+                "each validator should receive the entered per-validator amount"
+            );
+        }
+
+        Ok(())
+    }
 }
