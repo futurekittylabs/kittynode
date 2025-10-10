@@ -50,6 +50,21 @@ fn desired_supported_networks() -> Vec<&'static str> {
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
 
+    // Security check: warn if system swap is active
+    if swap_active() {
+        println!(
+            "Warning: System swap detected. Sensitive key material can be written to disk via swap and persist"
+        );
+        let proceed = Confirm::with_theme(&theme)
+            .with_prompt("Proceed despite swap being active?")
+            .default(false)
+            .interact()?;
+        if !proceed {
+            println!("Aborting validator key generation.");
+            return Ok(());
+        }
+    }
+
     let has_internet = check_internet_connectivity();
     if has_internet {
         println!(
@@ -271,7 +286,23 @@ fn check_internet_connectivity() -> bool {
         })
 }
 
-// TODO: Implement clipboard clearing
+fn swap_active() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
+            let mut lines = s.lines();
+            let _ = lines.next(); // header
+            return lines.any(|l| !l.trim().is_empty());
+        }
+        false
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Non-Linux platforms: detection isn't reliable; do not gate.
+        false
+    }
+}
+
 fn clear_clipboard() {
     // Best-effort clipboard clearing to avoid leaving sensitive data around.
     // On platforms where setting an empty string is unsupported, ignore errors.
