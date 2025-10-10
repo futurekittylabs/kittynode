@@ -208,7 +208,7 @@ pub async fn keygen() -> Result<()> {
 
     display_mnemonic_securely(mnemonic_phrase.as_str())?;
     let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic_phrase.as_str())?;
-    clear_clipboard();
+    clear_clipboard()?;
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
         return Ok(());
@@ -293,12 +293,14 @@ fn swap_active() -> bool {
     false
 }
 
-fn clear_clipboard() {
-    // Best-effort clipboard clearing to avoid leaving sensitive data around.
-    // On platforms where setting an empty string is unsupported, ignore errors.
-    if let Ok(mut clipboard) = arboard::Clipboard::new() {
-        let _ = clipboard.set_text(String::new());
-    }
+fn clear_clipboard() -> Result<()> {
+    // Always propagate clipboard failures so users know when sensitive data may remain.
+    let mut clipboard = arboard::Clipboard::new()
+        .map_err(|error| eyre!("Failed to open system clipboard: {error}"))?;
+    clipboard
+        .set_text(String::new())
+        .map_err(|error| eyre!("Failed to clear clipboard contents: {error}"))?;
+    Ok(())
 }
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
