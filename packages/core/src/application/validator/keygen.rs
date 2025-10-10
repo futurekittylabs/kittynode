@@ -1,14 +1,17 @@
 use std::fs::{self, OpenOptions};
-use std::io::{self, Write as _};
+use std::net::{TcpStream, ToSocketAddrs};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::str::FromStr;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
 use bip39::{Language, Mnemonic, Seed as Bip39Seed};
 use eth2_key_derivation::DerivedKey;
 use eth2_keystore::{Keystore, KeystoreBuilder, keypair_from_secret};
 use eth2_network_config::{Eth2NetworkConfig, HARDCODED_NET_NAMES};
 use eyre::{ContextCompat, Result, WrapErr, eyre};
 use hex::encode as hex_encode;
+use k256::ecdsa::SigningKey;
 use serde::Serialize;
 use tree_hash::TreeHash;
 use types::{
@@ -17,23 +20,64 @@ use types::{
 };
 use zeroize::Zeroizing;
 
+const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
+    ("one.one.one.one", 443),
+    ("8.8.8.8", 53),
+    ("www.google.com", 80),
+];
+const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
 const DEPOSIT_CLI_VERSION: &str = "1.2.0";
 
-struct GenerationParams<'a> {
-    seed: &'a [u8],
-    password: &'a Zeroizing<String>,
-    deposit_gwei: u64,
-    withdrawal_address: Address,
-    spec: &'a ChainSpec,
-    output_dir: &'a Path,
-    compounding: bool,
-    // Shared unix timestamp (seconds) used to pair filenames
-    timestamp: u64,
-    // Optional suffix paired with deposit filename when collisions occur
-    suffix: Option<u32>,
+/// Returns the list of Lighthouse networks supported by this build.
+pub fn available_networks() -> Vec<&'static str> {
+    HARDCODED_NET_NAMES.to_vec()
 }
 
-pub struct KeygenConfig {
+/// Performs a basic DNS + TCP connectivity check against a fixed set of probes.
+pub fn check_internet_connectivity() -> bool {
+    CONNECTIVITY_PROBES
+        .iter()
+        .any(|(host, port)| match (*host, *port).to_socket_addrs() {
+            Ok(mut addrs) => {
+                addrs.any(|addr| TcpStream::connect_timeout(&addr, CONNECTIVITY_TIMEOUT).is_ok())
+            }
+            Err(error) => {
+                tracing::debug!("DNS resolution failed for {host}:{port}: {error}");
+                false
+            }
+        })
+}
+
+#[cfg(target_os = "linux")]
+pub fn swap_active() -> bool {
+    if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
+        let mut lines = s.lines();
+        let _ = lines.next();
+        return lines.any(|l| !l.trim().is_empty());
+    }
+    false
+}
+
+/// Formats gwei values as ETH strings trimmed for display.
+pub fn format_eth_from_gwei(gwei: u64) -> String {
+    use alloy_primitives::U256;
+    use alloy_primitives::utils::{Unit, format_units};
+
+    let wei = U256::from(gwei) * Unit::GWEI.wei();
+    match format_units(wei, "ether") {
+        Ok(s) => {
+            if s.contains('.') {
+                let trimmed = s.trim_end_matches('0').trim_end_matches('.');
+                trimmed.to_string()
+            } else {
+                s
+            }
+        }
+        Err(_) => gwei.to_string(),
+    }
+}
+
+pub struct ValidatorKeygenRequest {
     pub mnemonic_phrase: Zeroizing<String>,
     pub validator_count: u16,
     pub withdrawal_address: Address,
@@ -44,13 +88,26 @@ pub struct KeygenConfig {
     pub output_dir: PathBuf,
 }
 
-pub struct KeygenOutcome {
+pub struct ValidatorKeygenOutcome {
     pub keystore_paths: Vec<PathBuf>,
     pub deposit_data_path: PathBuf,
 }
 
-pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
-    let KeygenConfig {
+#[derive(Clone, Copy)]
+pub struct ValidatorProgress {
+    pub current: u16,
+    pub total: u16,
+}
+
+pub fn generate_validator_files(request: ValidatorKeygenRequest) -> Result<ValidatorKeygenOutcome> {
+    generate_validator_files_with_progress(request, |_progress| {})
+}
+
+pub fn generate_validator_files_with_progress(
+    request: ValidatorKeygenRequest,
+    mut on_progress: impl FnMut(ValidatorProgress),
+) -> Result<ValidatorKeygenOutcome> {
+    let ValidatorKeygenRequest {
         mnemonic_phrase,
         validator_count,
         withdrawal_address,
@@ -59,7 +116,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
         compounding,
         password,
         output_dir,
-    } = config;
+    } = request;
 
     let mnemonic = Mnemonic::from_phrase(mnemonic_phrase.as_str(), Language::English)
         .wrap_err("Mnemonic phrase is invalid")?;
@@ -67,18 +124,13 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 
     prepare_output_dir(&output_dir)?;
 
-    // Use a single timestamp to pair deposit_data and keystore filenames
     let timestamp = secs_since_unix_epoch(SystemTime::now())?;
-    // Choose a unique deposit_data filename and capture any suffix to pair with keystore names.
     let (deposit_data_path, suffix) = next_available_deposit_path(&output_dir, timestamp)?;
 
     let seed = Bip39Seed::new(&mnemonic, "");
 
     let mut keystore_paths = Vec::with_capacity(validator_count as usize);
     let mut deposits = Vec::with_capacity(validator_count as usize);
-
-    println!("Generating {validator_count} validator(s)...");
-    let _ = io::stdout().flush();
 
     let params = GenerationParams {
         seed: seed.as_bytes(),
@@ -93,21 +145,71 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     };
 
     for index in 0..validator_count {
-        println!("  → Validator {} of {}", index + 1, validator_count);
-        let _ = io::stdout().flush();
-
         let (keystore_path, deposit_entry) = produce_materials(index, &params)?;
-
         keystore_paths.push(keystore_path);
         deposits.push(deposit_entry);
+        on_progress(ValidatorProgress {
+            current: index + 1,
+            total: validator_count,
+        });
     }
 
     write_json(&deposit_data_path, &deposits).wrap_err("Failed to write deposit data")?;
 
-    Ok(KeygenOutcome {
+    Ok(ValidatorKeygenOutcome {
         keystore_paths,
         deposit_data_path,
     })
+}
+
+pub fn resolve_withdrawal_address(user: Option<&str>, mnemonic: &str) -> Result<Address> {
+    match user {
+        Some(value) => Address::from_str(value)
+            .map_err(|error| eyre!("Failed to parse withdrawal address: {error}")),
+        None => default_withdrawal_address(mnemonic),
+    }
+}
+
+pub fn default_withdrawal_address(mnemonic: &str) -> Result<Address> {
+    let mnemonic = Mnemonic::from_phrase(mnemonic, Language::English)
+        .map_err(|error| eyre!("Mnemonic phrase is invalid: {error}"))?;
+    let seed = Bip39Seed::new(&mnemonic, "");
+    derive_execution_address(seed.as_bytes())
+        .map_err(|error| eyre!("Failed to derive withdrawal address from mnemonic: {error}"))
+}
+
+pub fn derive_execution_address(seed: &[u8]) -> Result<Address> {
+    use alloy_primitives::utils::keccak256;
+
+    let seed_array: [u8; 64] = seed
+        .try_into()
+        .map_err(|_| eyre!("Invalid BIP-39 seed length"))?;
+
+    let seed = Bip32Seed::new(seed_array);
+    let path: DerivationPath = "m/44'/60'/0'/0/0"
+        .parse()
+        .map_err(|error| eyre!("Invalid derivation path: {error}"))?;
+
+    let xprv = XPrv::derive_from_path(&seed, &path)
+        .map_err(|error| eyre!("BIP-32 derivation failed: {error}"))?;
+
+    let signing_key = SigningKey::from(&xprv);
+    let public_key = signing_key.verifying_key();
+    let uncompressed = public_key.to_encoded_point(false);
+    let hash = keccak256(&uncompressed.as_bytes()[1..]);
+    Ok(Address::from_slice(&hash[12..]))
+}
+
+struct GenerationParams<'a> {
+    seed: &'a [u8],
+    password: &'a Zeroizing<String>,
+    deposit_gwei: u64,
+    withdrawal_address: Address,
+    spec: &'a ChainSpec,
+    output_dir: &'a Path,
+    compounding: bool,
+    timestamp: u64,
+    suffix: Option<u32>,
 }
 
 fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathBuf, DepositEntry)> {
@@ -128,8 +230,6 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .build()
         .map_err(|error| eyre!("Failed to finalize keystore {index}: {error:?}"))?;
 
-    // Match ethstaker deposit-cli filename scheme and pair suffix with deposit_data when needed:
-    // keystore-m_12381_3600_{index}_0_0-{timestamp}[-{suffix}].json
     let keystore_filename = match params.suffix {
         Some(n) => format!(
             "keystore-m_12381_3600_{}_0_0-{}-{}.json",
@@ -191,7 +291,6 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
 }
 
 fn derive_validator_secret(seed: &[u8], index: u32) -> Result<(Vec<u8>, String)> {
-    // EIP-2334 path m/12381/3600/{index}/0/0 for validator signing key
     let master = DerivedKey::from_seed(seed).map_err(|_| eyre!("empty seed provided"))?;
     let nodes = [12381u32, 3600, index, 0, 0];
     let dest = nodes.into_iter().fold(master, |dk, i| dk.child(i));
@@ -211,7 +310,6 @@ fn secs_since_unix_epoch(now: SystemTime) -> Result<u64> {
 fn fast_test_kdf() -> eth2_keystore::json_keystore::Kdf {
     use eth2_keystore::json_keystore::{HexBytes, Kdf, Pbkdf2, Prf};
     use eth2_keystore::{DKLEN, SALT_SIZE};
-    // Fast, test-only PBKDF2 parameters to avoid scrypt cost in debug tests.
     Kdf::Pbkdf2(Pbkdf2 {
         dklen: DKLEN,
         c: 4096,
@@ -238,12 +336,10 @@ fn load_chain_spec(network: &str) -> Result<ChainSpec> {
         return Ok(spec);
     }
 
-    // Do not silently fall back to a different network. This would produce
-    // deposit data and signatures for the wrong chain and could strand funds.
     let available = HARDCODED_NET_NAMES.join(", ");
     Err(eyre!(
         "Unsupported or unavailable network: {network}. Available in this Lighthouse build: {available}. \
-Please upgrade Lighthouse (and this CLI if needed) if your desired network is missing"
+Please upgrade Lighthouse (and Kittynode CLI if needed) if your desired network is missing"
     ))
 }
 
@@ -264,7 +360,6 @@ fn prepare_output_dir(path: &Path) -> Result<()> {
         if !path.is_dir() {
             return Err(eyre!("Path must be a directory: {path:?}"));
         }
-        // Enforce secure permissions on existing directories as well (Unix only).
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -314,7 +409,6 @@ fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        // Ensure keystore is created with owner-only read/write permissions.
         open_opts.mode(0o600);
     }
     let mut file = open_opts
@@ -324,7 +418,6 @@ fn write_keystore(path: &Path, keystore: &Keystore) -> Result<()> {
     let mut json = serde_json::to_value(keystore)
         .map_err(|error| eyre!("Failed to convert keystore to JSON value: {error:?}"))?;
     if let serde_json::Value::Object(ref mut map) = json {
-        // Remove null 'name' field for compatibility with ethstaker deposit tool format
         map.retain(|key, value| !(key == "name" && value.is_null()));
     }
 
@@ -369,11 +462,13 @@ fn next_available_deposit_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloy_primitives::Address as AlloyAddress;
     use eth2_keystore::json_keystore::Kdf;
     use eth2_keystore::{Keystore, default_kdf};
     use eyre::{Result, eyre};
     use serde_json::Value;
     use std::fs;
+    use std::str::FromStr;
     use std::time::Duration;
     use tempfile::tempdir;
 
@@ -387,7 +482,7 @@ mod tests {
         let withdrawal_address = WITHDRAWAL_ADDRESS
             .parse()
             .wrap_err("failed to parse withdrawal address")?;
-        let outcome = generate_validator_files(KeygenConfig {
+        let outcome = generate_validator_files(ValidatorKeygenRequest {
             mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
             validator_count: 1,
             withdrawal_address,
@@ -440,7 +535,7 @@ mod tests {
         let withdrawal_address: Address = WITHDRAWAL_ADDRESS
             .parse()
             .wrap_err("failed to parse withdrawal address")?;
-        let outcome = generate_validator_files(KeygenConfig {
+        let outcome = generate_validator_files(ValidatorKeygenRequest {
             mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
             validator_count: 1,
             withdrawal_address,
@@ -479,24 +574,6 @@ mod tests {
         Ok(())
     }
 
-    fn read_json_array(path: &Path) -> Result<Vec<Value>> {
-        let file = fs::File::open(path).wrap_err_with(|| format!("failed to open {path:?}"))?;
-        serde_json::from_reader(file)
-            .wrap_err_with(|| format!("failed to parse JSON array from {path:?}"))
-    }
-
-    fn scrub_deposit_entry(entries: &mut [Value]) {
-        for entry in entries {
-            if let Value::Object(map) = entry {
-                map.remove("deposit_cli_version");
-            }
-        }
-    }
-
-    // Note: We intentionally avoid keystore decryption here to keep the test fast.
-    // Pubkey equality combined with deposit data parity exercises the same derivation path
-    // and signing behavior without expensive scrypt decrypts.
-
     #[test]
     fn selects_next_available_deposit_path_with_suffix() -> Result<()> {
         let tmp = tempdir().wrap_err("failed to create temp dir")?;
@@ -520,7 +597,6 @@ mod tests {
         let tmp = tempdir().wrap_err("failed to create temp dir")?;
         let dir = tmp.path();
         let ts = 1_700_000_000u64;
-        // Create base plus 1..=1000 suffixed files
         fs::write(dir.join(format!("deposit_data-{}.json", ts)), b"{}")
             .wrap_err("failed to create base deposit file")?;
         for i in 1..=1000u32 {
@@ -546,9 +622,8 @@ mod tests {
             .parse()
             .wrap_err("failed to parse withdrawal address")?;
 
-        // Request 2 validators with 33 ETH per validator (in gwei) using compounding
         let per_validator_gwei = 33_000_000_000u64;
-        let outcome = generate_validator_files(KeygenConfig {
+        let outcome = generate_validator_files(ValidatorKeygenRequest {
             mnemonic_phrase: Zeroizing::new(MNEMONIC.to_string()),
             validator_count: 2,
             withdrawal_address,
@@ -573,5 +648,92 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn resolve_withdrawal_address_prefers_user_value() -> Result<()> {
+        let user = "0x48fe05daea0f8cc6958a72522db42b2edb3fda1a";
+        let expected = Address::from_str(user)?;
+        let resolved = resolve_withdrawal_address(
+            Some(user),
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(resolved, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn resolve_withdrawal_address_defaults_to_first_account() -> Result<()> {
+        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
+        let resolved = resolve_withdrawal_address(
+            None,
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(resolved, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_derives_first_account() -> Result<()> {
+        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
+        let derived = default_withdrawal_address(
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_legal_winner() -> Result<()> {
+        let expected = Address::from_str("0x58a57ed9d8d624cbd12e2c467d34787555bb1b25").unwrap();
+        let derived = default_withdrawal_address(
+            "legal winner thank year wave sausage worth useful legal winner thank yellow",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_test_junk() -> Result<()> {
+        let expected = Address::from_str("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266").unwrap();
+        let derived = default_withdrawal_address(
+            "test test test test test test test test test test test junk",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn format_eth_from_gwei_trims_zeroes() {
+        assert_eq!(format_eth_from_gwei(32_000_000_000), "32");
+        assert_eq!(format_eth_from_gwei(1_500_000_000), "1.5");
+    }
+
+    #[test]
+    fn derive_execution_address_matches_known_vector() -> Result<()> {
+        let mnemonic = Mnemonic::from_phrase(
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+            Language::English,
+        )?;
+        let seed = Bip39Seed::new(&mnemonic, "");
+        let address = derive_execution_address(seed.as_bytes())?;
+        let expected =
+            AlloyAddress::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
+        assert_eq!(address, Address::from(expected));
+        Ok(())
+    }
+
+    fn read_json_array(path: &Path) -> Result<Vec<Value>> {
+        let file = fs::File::open(path).wrap_err_with(|| format!("failed to open {path:?}"))?;
+        serde_json::from_reader(file)
+            .wrap_err_with(|| format!("failed to parse JSON array from {path:?}"))
+    }
+
+    fn scrub_deposit_entry(entries: &mut [Value]) {
+        for entry in entries {
+            if let Value::Object(map) = entry {
+                map.remove("deposit_cli_version");
+            }
+        }
     }
 }
