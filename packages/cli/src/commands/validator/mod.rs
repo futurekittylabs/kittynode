@@ -7,8 +7,9 @@ use std::time::Duration;
 
 use self::lighthouse::{KeygenConfig, generate_validator_files};
 use alloy_primitives::U256;
-use alloy_primitives::utils::{Unit, format_units};
-use bip39::{Language, Mnemonic, MnemonicType};
+use alloy_primitives::utils::{Unit, format_units, keccak256};
+use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
+use bip39::{Language, Mnemonic, MnemonicType, Seed as Bip39Seed};
 use crossterm::{
     cursor::MoveTo,
     execute,
@@ -17,6 +18,7 @@ use crossterm::{
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
 use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
+use k256::ecdsa::SigningKey;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, error};
@@ -123,15 +125,24 @@ pub async fn keygen() -> Result<()> {
         .copied()
         .ok_or_else(|| eyre!("Invalid network selection"))?;
 
-    let withdrawal_address_input = Input::<String>::with_theme(&theme)
-        .with_prompt("Enter the withdrawal address")
-        .validate_with(|text: &String| {
-            normalize_withdrawal_address(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
-        })
-        .interact_text()?;
-    let withdrawal_address = normalize_withdrawal_address(&withdrawal_address_input)?;
+    let add_withdrawal_address = Confirm::with_theme(&theme)
+        .with_prompt("Add a withdrawal address (y/n)")
+        .default(true)
+        .interact()?;
+    let (withdrawal_address_display, withdrawal_address_normalized) = if add_withdrawal_address {
+        let input = Input::<String>::with_theme(&theme)
+            .with_prompt("Enter the withdrawal address")
+            .validate_with(|text: &String| {
+                normalize_withdrawal_address(text)
+                    .map(|_| ())
+                    .map_err(|error| error.to_string())
+            })
+            .interact_text()?;
+        let normalized = normalize_withdrawal_address(&input)?;
+        (Some(input.trim().to_string()), Some(normalized))
+    } else {
+        (None, None)
+    };
 
     let compounding = Confirm::with_theme(&theme)
         .with_prompt("Use 0x02 compounding validators?")
@@ -179,8 +190,10 @@ pub async fn keygen() -> Result<()> {
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
     println!("  Network: {}", network);
-    let withdrawal_address_display = withdrawal_address_input.trim();
-    println!("  Withdrawal address: {}", withdrawal_address_display);
+    let withdrawal_summary = withdrawal_address_display
+        .as_deref()
+        .unwrap_or("First generated Ethereum address");
+    println!("  Withdrawal address: {}", withdrawal_summary);
     println!(
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
@@ -225,8 +238,16 @@ pub async fn keygen() -> Result<()> {
 
     let password = Zeroizing::new(password);
 
-    let withdrawal_address = Address::from_str(&withdrawal_address)
-        .map_err(|error| eyre!("Failed to parse withdrawal address: {error}"))?;
+    let withdrawal_address = resolve_withdrawal_address(
+        withdrawal_address_normalized.as_deref(),
+        mnemonic_phrase.as_str(),
+    )?;
+    if withdrawal_address_normalized.is_none() {
+        println!(
+            "Using withdrawal address derived from mnemonic: {:#x}",
+            withdrawal_address
+        );
+    }
     let outcome = generate_validator_files(KeygenConfig {
         mnemonic_phrase,
         validator_count,
@@ -304,6 +325,43 @@ fn clear_clipboard() -> Result<()> {
     Ok(())
 }
 
+fn resolve_withdrawal_address(user: Option<&str>, mnemonic: &str) -> Result<Address> {
+    match user {
+        Some(value) => Address::from_str(value)
+            .map_err(|error| eyre!("Failed to parse withdrawal address: {error}")),
+        None => default_withdrawal_address(mnemonic),
+    }
+}
+
+fn default_withdrawal_address(mnemonic: &str) -> Result<Address> {
+    let mnemonic = Mnemonic::from_phrase(mnemonic, Language::English)
+        .map_err(|error| eyre!("Mnemonic phrase is invalid: {error}"))?;
+    let seed = Bip39Seed::new(&mnemonic, "");
+    derive_execution_address(seed.as_bytes())
+        .map_err(|error| eyre!("Failed to derive withdrawal address from mnemonic: {error}"))
+}
+
+fn derive_execution_address(seed: &[u8]) -> Result<Address> {
+    // Expect a 64-byte BIP-39 seed
+    let seed_array: [u8; 64] = seed
+        .try_into()
+        .map_err(|_| eyre!("Invalid BIP-39 seed length"))?;
+
+    let seed = Bip32Seed::new(seed_array);
+    let path: DerivationPath = "m/44'/60'/0'/0/0"
+        .parse()
+        .map_err(|error| eyre!("Invalid derivation path: {error}"))?;
+
+    let xprv = XPrv::derive_from_path(&seed, &path)
+        .map_err(|error| eyre!("BIP-32 derivation failed: {error}"))?;
+
+    let signing_key = SigningKey::from(&xprv);
+    let public_key = signing_key.verifying_key();
+    let uncompressed = public_key.to_encoded_point(false);
+    let hash = keccak256(&uncompressed.as_bytes()[1..]);
+    Ok(Address::from_slice(&hash[12..]))
+}
+
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -353,7 +411,10 @@ fn normalize_mnemonic(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_mnemonic;
+    use super::{default_withdrawal_address, normalize_mnemonic, resolve_withdrawal_address};
+    use eyre::Result;
+    use std::str::FromStr;
+    use types::Address;
 
     #[test]
     fn normalize_mnemonic_collapses_whitespace() {
@@ -361,5 +422,57 @@ mod tests {
             normalize_mnemonic("word1  word2\n\tword3"),
             "word1 word2 word3"
         );
+    }
+
+    #[test]
+    fn resolve_withdrawal_address_prefers_user_value() -> Result<()> {
+        let expected = Address::from_str("0x48fe05daea0f8cc6958a72522db42b2edb3fda1a")?;
+        let resolved = resolve_withdrawal_address(
+            Some("0x48fe05daea0f8cc6958a72522db42b2edb3fda1a"),
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(resolved, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn resolve_withdrawal_address_defaults_to_first_account() -> Result<()> {
+        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94")?;
+        let resolved = resolve_withdrawal_address(
+            None,
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(resolved, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_derives_first_account() -> Result<()> {
+        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94")?;
+        let derived = default_withdrawal_address(
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_legal_winner() -> Result<()> {
+        let expected = Address::from_str("0x58a57ed9d8d624cbd12e2c467d34787555bb1b25")?;
+        let derived = default_withdrawal_address(
+            "legal winner thank year wave sausage worth useful legal winner thank yellow",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_test_junk() -> Result<()> {
+        let expected = Address::from_str("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")?;
+        let derived = default_withdrawal_address(
+            "test test test test test test test test test test test junk",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
     }
 }
