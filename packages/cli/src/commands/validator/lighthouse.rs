@@ -116,7 +116,7 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
     let builder = KeystoreBuilder::new(&keypair, params.password.as_bytes(), derivation_path)
         .map_err(|error| eyre!("Failed to prepare keystore {index}: {error:?}"))?;
 
-    #[cfg(any(test, feature = "fast-kdf"))]
+    #[cfg(test)]
     let builder = builder.kdf(fast_test_kdf());
 
     let keystore = builder
@@ -187,7 +187,7 @@ fn derive_validator_secret(seed: &[u8], index: u32) -> Result<(Vec<u8>, String)>
     Ok((secret, path_str))
 }
 
-#[cfg(any(test, feature = "fast-kdf"))]
+#[cfg(test)]
 fn fast_test_kdf() -> eth2_keystore::json_keystore::Kdf {
     use eth2_keystore::json_keystore::{HexBytes, Kdf, Pbkdf2, Prf};
     use eth2_keystore::{DKLEN, SALT_SIZE};
