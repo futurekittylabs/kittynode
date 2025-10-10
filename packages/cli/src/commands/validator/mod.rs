@@ -66,7 +66,7 @@ pub async fn keygen() -> Result<()> {
     #[cfg(not(target_os = "linux"))]
     {
         println!(
-            "Warning: Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys"
+            "Warning: Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys."
         );
     }
 

@@ -72,7 +72,7 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
     #[cfg(not(unix))]
     {
         println!(
-            "Warning: This platform does not support enforcing POSIX file permissions for keystores. Ensure the output directory is protected"
+            "Warning: This platform does not support enforcing POSIX file permissions for keystores. Ensure the output directory is protected."
         );
     }
 
