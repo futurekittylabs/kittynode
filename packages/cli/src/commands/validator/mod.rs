@@ -213,18 +213,8 @@ pub async fn keygen() -> Result<()> {
 
     let password = Password::with_theme(&theme)
         .with_prompt("Enter a password to secure the keystore")
+        .with_confirmation("Re-enter the password to confirm", "Passwords do not match")
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
-        .interact()?;
-    let password_ref = &password;
-    let _ = Password::with_theme(&theme)
-        .with_prompt("Re-enter the password to confirm")
-        .validate_with(|value: &String| {
-            if value.as_str() == password_ref.as_str() {
-                Ok(())
-            } else {
-                Err("Passwords do not match".to_string())
-            }
-        })
         .interact()?;
 
     let password = Zeroizing::new(password);
