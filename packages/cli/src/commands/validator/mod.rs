@@ -6,6 +6,8 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 use self::lighthouse::{KeygenConfig, generate_validator_files};
+use alloy_primitives::U256;
+use alloy_primitives::utils::{Unit, format_units};
 use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
     cursor::MoveTo,
@@ -122,10 +124,13 @@ pub async fn keygen() -> Result<()> {
     if total_deposit_gwei % validator_count_u64 != 0 {
         let per_val_floor = total_deposit_gwei / validator_count_u64;
         let suggested_total_up = (per_val_floor + 1) * validator_count_u64;
-        let suggested_eth = suggested_total_up as f64 / 1_000_000_000.0;
+        let suggested_total_up_wei = U256::from(suggested_total_up) * Unit::GWEI.wei();
+        let suggested_eth = format_units(suggested_total_up_wei, "ether").unwrap_or_else(|_| {
+            // Fallback to 9-decimal float formatting if formatting fails unexpectedly
+            format!("{:.9}", suggested_total_up as f64 / 1_000_000_000.0)
+        });
         return Err(eyre!(
-            "Total deposit must be evenly divisible by {validator_count} validators. Try {:.9} ETH instead",
-            suggested_eth
+            "Total deposit must be evenly divisible by {validator_count} validators. Try {suggested_eth} ETH instead"
         ));
     }
     let deposit_amount_gwei_per_validator = total_deposit_gwei / validator_count_u64;
@@ -148,8 +153,14 @@ pub async fn keygen() -> Result<()> {
             "Per-validator deposit must be exactly 32 ETH for non-compounding validators"
         ));
     }
-    let deposit_amount_per_validator_eth =
-        deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0;
+    let per_validator_wei = U256::from(deposit_amount_gwei_per_validator) * Unit::GWEI.wei();
+    let deposit_amount_per_validator_eth_str = format_units(per_validator_wei, "ether")
+        .unwrap_or_else(|_| {
+            format!(
+                "{:.9}",
+                deposit_amount_gwei_per_validator as f64 / 1_000_000_000.0
+            )
+        });
 
     // Allow user to select output directory for keys.
     let output_dir_input = Input::<String>::with_theme(&theme)
@@ -166,10 +177,13 @@ pub async fn keygen() -> Result<()> {
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
     );
-    println!("  Total deposit: {deposit_amount_total_eth} ETH");
+    let total_deposit_wei = U256::from(total_deposit_gwei) * Unit::GWEI.wei();
+    let total_deposit_eth_str = format_units(total_deposit_wei, "ether")
+        .unwrap_or_else(|_| format!("{deposit_amount_total_eth}"));
+    println!("  Total deposit: {} ETH", total_deposit_eth_str);
     println!(
-        "  Deposit per validator: {:.9} ETH",
-        deposit_amount_per_validator_eth
+        "  Deposit per validator: {} ETH",
+        deposit_amount_per_validator_eth_str
     );
     println!("  Output directory: {}", output_dir.display());
 
