@@ -19,7 +19,7 @@ use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
 use std::path::PathBuf;
 use std::str::FromStr;
-use tracing::debug;
+use tracing::{debug, error};
 use types::Address;
 use zeroize::Zeroizing;
 
@@ -208,7 +208,9 @@ pub async fn keygen() -> Result<()> {
 
     display_mnemonic_securely(mnemonic_phrase.as_str())?;
     let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic_phrase.as_str())?;
-    clear_clipboard()?;
+    if let Err(error) = clear_clipboard() {
+        error!("Failed to clear system clipboard, mnemonic may remain in clipboard: {error}");
+    }
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
         return Ok(());
@@ -294,7 +296,6 @@ fn swap_active() -> bool {
 }
 
 fn clear_clipboard() -> Result<()> {
-    // Always propagate clipboard failures so users know when sensitive data may remain.
     let mut clipboard = arboard::Clipboard::new()
         .map_err(|error| eyre!("Failed to open system clipboard: {error}"))?;
     clipboard
