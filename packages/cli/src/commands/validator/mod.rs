@@ -1,21 +1,31 @@
 mod input_validation;
+mod lighthouse;
 
-use std::fmt;
 use std::io::{Write, stdout};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
+use self::lighthouse::{KeygenConfig, generate_validator_files};
+use alloy_primitives::U256;
+use alloy_primitives::utils::{Unit, format_units};
+use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
+use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
-use tracing::debug;
+use std::path::PathBuf;
+use std::str::FromStr;
+use tracing::{debug, error};
+use types::Address;
+use zeroize::Zeroizing;
 
 use input_validation::{
-    normalize_withdrawal_address, parse_deposit_amount, parse_validator_count, validate_password,
+    normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
+    validate_password,
 };
 
 const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
@@ -24,63 +34,66 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
     ("www.google.com", 80),
 ];
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
-// TODO(part 2): Replace with generated BIP-39 mnemonic
-const PLACEHOLDER_MNEMONIC: &str = "absorb adjust bridge coral exit fresh garment hockey invite jelly kitten lamp mango noon obey pepper quantum rocket solution theory umbrella velvet whale zebra";
 
-#[derive(Clone, Copy, Debug)]
-enum ValidatorNetwork {
-    Hoodi,
-    Sepolia,
-    Ephemery,
-}
-
-impl ValidatorNetwork {
-    fn labels() -> [&'static str; 3] {
-        ["hoodi", "sepolia", "ephemery"]
-    }
-
-    fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Self::Hoodi),
-            1 => Some(Self::Sepolia),
-            2 => Some(Self::Ephemery),
-            _ => None,
-        }
-    }
-
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Hoodi => "hoodi",
-            Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
-        }
-    }
-}
-
-impl fmt::Display for ValidatorNetwork {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
+fn desired_supported_networks() -> Vec<&'static str> {
+    const DESIRED: &[&str] = &["hoodi", "sepolia"];
+    DESIRED
+        .iter()
+        .copied()
+        .filter(|n| HARDCODED_NET_NAMES.contains(n))
+        .collect()
 }
 
 pub async fn keygen() -> Result<()> {
     let theme = ColorfulTheme::default();
 
-    let has_internet = check_internet_connectivity();
-    if has_internet {
-        println!(
-            "Warning: Internet connectivity detected. You should never generate keys on a device that's ever been connected to the internet."
+    // Pre-check warnings block
+    let mut warnings: Vec<String> = Vec::new();
+
+    // Internet connectivity warning
+    if check_internet_connectivity() {
+        warnings.push(
+            "Internet connectivity detected. You should never generate keys on a device that's ever been connected to the internet.".to_string(),
         );
+    }
+
+    // Swap detection or limitation
+    #[cfg(target_os = "linux")]
+    {
+        if swap_active() {
+            warnings.push(
+                "System swap detected. Sensitive key material can be written to disk via swap and persist.".to_string(),
+            );
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        warnings.push(
+            "Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys.".to_string(),
+        );
+    }
+
+    // Non-Unix permission enforcement limitation
+    #[cfg(not(unix))]
+    {
+        warnings.push(
+            "This platform does not support enforcing POSIX file permissions for keystores. Ensure the output directory is protected.".to_string(),
+        );
+    }
+
+    if !warnings.is_empty() {
+        println!("WARNING:");
+        for w in &warnings {
+            println!(" - {}", w);
+        }
         let proceed = Confirm::with_theme(&theme)
-            .with_prompt("Proceed despite being connected to the internet?")
+            .with_prompt("Proceed despite the above warnings?")
             .default(false)
             .interact()?;
         if !proceed {
             println!("Aborting validator key generation.");
             return Ok(());
         }
-    } else {
-        println!("No internet connectivity detected.");
     }
 
     let validator_count_input = Input::<String>::with_theme(&theme)
@@ -94,13 +107,20 @@ pub async fn keygen() -> Result<()> {
         .interact_text()?;
     let validator_count = parse_validator_count(&validator_count_input)?;
 
-    let network_labels = ValidatorNetwork::labels();
+    let network_labels = desired_supported_networks();
+    if network_labels.is_empty() {
+        return Err(eyre!(
+            "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)"
+        ));
+    }
     let network_index = Select::with_theme(&theme)
         .with_prompt("Select the network")
         .default(0)
-        .items(network_labels)
+        .items(&network_labels)
         .interact()?;
-    let network = ValidatorNetwork::from_index(network_index)
+    let network = network_labels
+        .get(network_index)
+        .copied()
         .ok_or_else(|| eyre!("Invalid network selection"))?;
 
     let withdrawal_address_input = Input::<String>::with_theme(&theme)
@@ -118,26 +138,60 @@ pub async fn keygen() -> Result<()> {
         .default(true)
         .interact()?;
 
-    let deposit_amount_input = Input::<String>::with_theme(&theme)
-        .with_prompt("How much ETH do you want to deposit to these validators?")
-        .default("32".to_string())
-        .validate_with(|text: &String| {
-            parse_deposit_amount(text)
-                .map(|_| ())
-                .map_err(|error| error.to_string())
-        })
+    // Deposit per validator (ETH). Only prompt when using compounding validators to match deposit-cli UX.
+    let deposit_amount_gwei_per_validator: u64 = if compounding {
+        let input = Input::<String>::with_theme(&theme)
+            .with_prompt("Deposit per validator (ETH)")
+            .default("32".to_string())
+            .validate_with(|text: &String| {
+                const MIN_DEPOSIT_GWEI: u64 = 1_000_000_000; // 1 ETH
+                const MAX_DEPOSIT_GWEI: u64 = 2_048_000_000_000; // 2048 ETH per deposit entry
+                match parse_deposit_amount_gwei(text) {
+                    Ok(gwei) => {
+                        if gwei < MIN_DEPOSIT_GWEI {
+                            Err("Per-validator deposit must be at least 1 ETH".to_string())
+                        } else if gwei > MAX_DEPOSIT_GWEI {
+                            Err("Per-validator deposit cannot exceed 2048 ETH".to_string())
+                        } else {
+                            Ok(())
+                        }
+                    }
+                    Err(error) => Err(error.to_string()),
+                }
+            })
+            .interact_text()?;
+        parse_deposit_amount_gwei(&input)?
+    } else {
+        32_000_000_000 // exactly 32 ETH for non-compounding
+    };
+    let validator_count_u64 = u64::from(validator_count);
+    let total_deposit_gwei = deposit_amount_gwei_per_validator * validator_count_u64;
+    let deposit_amount_per_validator_eth_str =
+        format_eth_trimmed_from_gwei(deposit_amount_gwei_per_validator);
+
+    // Allow user to select output directory for keys.
+    let output_dir_input = Input::<String>::with_theme(&theme)
+        .with_prompt("Output directory for validator keys")
+        .default("./validator-keys".to_string())
         .interact_text()?;
-    let deposit_amount = parse_deposit_amount(&deposit_amount_input)?;
+    let output_dir = PathBuf::from(output_dir_input.trim());
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
-    println!("  Network: {network}");
-    println!("  Withdrawal address: {withdrawal_address}");
+    println!("  Network: {}", network);
+    let withdrawal_address_display = withdrawal_address_input.trim();
+    println!("  Withdrawal address: {}", withdrawal_address_display);
     println!(
         "  0x02 compounding validators: {}",
         if compounding { "yes" } else { "no" }
     );
-    println!("  Deposit amount: {deposit_amount} ETH");
+    let total_deposit_eth_str = format_eth_trimmed_from_gwei(total_deposit_gwei);
+    println!("  Total deposit: {} ETH", total_deposit_eth_str);
+    println!(
+        "  Deposit per validator: {} ETH",
+        deposit_amount_per_validator_eth_str
+    );
+    println!("  Output directory: {}", output_dir.display());
 
     let confirm_details = Confirm::with_theme(&theme)
         .with_prompt("Are these details correct?")
@@ -148,9 +202,15 @@ pub async fn keygen() -> Result<()> {
         return Ok(());
     }
 
-    display_mnemonic_securely(PLACEHOLDER_MNEMONIC)?;
-    let mnemonic_verified = validate_mnemonic_once(&theme, PLACEHOLDER_MNEMONIC)?;
-    clear_clipboard();
+    let mnemonic = Mnemonic::new(MnemonicType::Words24, Language::English);
+    let mnemonic_phrase = Zeroizing::new(mnemonic.to_string());
+    drop(mnemonic);
+
+    display_mnemonic_securely(mnemonic_phrase.as_str())?;
+    let mnemonic_verified = validate_mnemonic_once(&theme, mnemonic_phrase.as_str())?;
+    if let Err(error) = clear_clipboard() {
+        error!("Failed to clear system clipboard, mnemonic may remain in clipboard: {error}");
+    }
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
         return Ok(());
@@ -159,27 +219,56 @@ pub async fn keygen() -> Result<()> {
 
     let password = Password::with_theme(&theme)
         .with_prompt("Enter a password to secure the keystore")
+        .with_confirmation("Re-enter the password to confirm", "Passwords do not match")
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
-    let password_for_confirmation = password.clone();
-    let password_confirmation = Password::with_theme(&theme)
-        .with_prompt("Re-enter the password to confirm")
-        .validate_with(move |value: &String| {
-            if value == &password_for_confirmation {
-                Ok(())
-            } else {
-                Err("Passwords do not match".to_string())
-            }
-        })
-        .interact()?;
 
-    // TODO(part 2): Replace with zeroize-based clearing
-    drop(password_confirmation);
-    drop(password);
+    let password = Zeroizing::new(password);
 
-    println!("Validation complete. Key and deposit file generation will be implemented in part 2.");
+    let withdrawal_address = Address::from_str(&withdrawal_address)
+        .map_err(|error| eyre!("Failed to parse withdrawal address: {error}"))?;
+    let outcome = generate_validator_files(KeygenConfig {
+        mnemonic_phrase,
+        validator_count,
+        withdrawal_address,
+        network: network.to_string(),
+        deposit_gwei: deposit_amount_gwei_per_validator,
+        compounding,
+        password,
+        output_dir,
+    })?;
+
+    println!(
+        "✔ Generated {} validator keystore(s):",
+        outcome.keystore_paths.len()
+    );
+    for path in &outcome.keystore_paths {
+        println!("   {}", path.display());
+    }
+    println!(
+        "✔ Deposit data written to {}",
+        outcome.deposit_data_path.display()
+    );
+
+    println!("Store the password safely—it is not saved anywhere else.");
 
     Ok(())
+}
+
+fn format_eth_trimmed_from_gwei(gwei: u64) -> String {
+    // Defer conversion to alloy; trim only for display.
+    let wei = U256::from(gwei) * Unit::GWEI.wei();
+    match format_units(wei, "ether") {
+        Ok(s) => {
+            if s.contains('.') {
+                let s = s.trim_end_matches('0').trim_end_matches('.');
+                s.to_string()
+            } else {
+                s
+            }
+        }
+        Err(_) => gwei.to_string(),
+    }
 }
 
 fn check_internet_connectivity() -> bool {
@@ -196,8 +285,24 @@ fn check_internet_connectivity() -> bool {
         })
 }
 
-// TODO: Implement clipboard clearing
-fn clear_clipboard() {}
+#[cfg(target_os = "linux")]
+fn swap_active() -> bool {
+    if let Ok(s) = std::fs::read_to_string("/proc/swaps") {
+        let mut lines = s.lines();
+        let _ = lines.next(); // header
+        return lines.any(|l| !l.trim().is_empty());
+    }
+    false
+}
+
+fn clear_clipboard() -> Result<()> {
+    let mut clipboard = arboard::Clipboard::new()
+        .map_err(|error| eyre!("Failed to open system clipboard: {error}"))?;
+    clipboard
+        .set_text(String::new())
+        .map_err(|error| eyre!("Failed to clear clipboard contents: {error}"))?;
+    Ok(())
+}
 
 fn display_mnemonic_securely(mnemonic: &str) -> Result<()> {
     let mut stdout = stdout();
@@ -229,9 +334,7 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
     execute!(stdout, EnterAlternateScreen)?;
     let result = (|| -> Result<String> {
         execute!(stdout, Clear(ClearType::All), MoveTo(0, 0))?;
-        println!(
-            "Please re-enter your mnemonic to confirm. The clipboard will be cleared afterwards.\n"
-        );
+        println!("Please re-enter your mnemonic to confirm.\n");
         stdout.flush()?;
 
         Input::<String>::with_theme(theme)

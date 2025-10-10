@@ -1,9 +1,11 @@
+use alloy_primitives::U256;
+use alloy_primitives::utils::parse_units;
 use eyre::{Result, eyre};
 
-const MIN_VALIDATOR_COUNT: u16 = 1;
-const MAX_VALIDATOR_COUNT: u16 = 1024;
-const MIN_DEPOSIT: f64 = 1.0;
-const MAX_DEPOSIT: f64 = 32768.0;
+pub const MIN_VALIDATOR_COUNT: u16 = 1;
+// Temporary cap at 32; will expand later
+pub const MAX_VALIDATOR_COUNT: u16 = 32;
+
 const MIN_PASSWORD_LEN: usize = 12;
 const MAX_PASSWORD_LEN: usize = 128;
 
@@ -51,20 +53,22 @@ pub fn normalize_withdrawal_address(input: &str) -> Result<String> {
     Ok(format!("0x{}", body.to_ascii_lowercase()))
 }
 
-pub fn parse_deposit_amount(input: &str) -> Result<f64> {
+/// Parses an ETH amount into gwei using decimal string math to avoid floating point rounding.
+///
+/// Accepts at most 9 decimal places and returns total gwei as `u64`.
+/// Range validation (e.g., 1–32 ETH per validator) is enforced by callers.
+pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
     let trimmed = input.trim();
-    let amount: f64 = trimmed.parse().map_err(|_| {
-        eyre!("Deposit amount must be a number between {MIN_DEPOSIT} and {MAX_DEPOSIT}")
-    })?;
-    if !amount.is_finite() {
-        return Err(eyre!("Deposit amount must be a finite number"));
+    if trimmed.is_empty() {
+        return Err(eyre!("Deposit amount is required"));
     }
-    if !(MIN_DEPOSIT..=MAX_DEPOSIT).contains(&amount) {
-        return Err(eyre!(
-            "Deposit amount must be between {MIN_DEPOSIT} and {MAX_DEPOSIT} ETH"
-        ));
-    }
-    Ok(amount)
+    let as_u256: U256 = parse_units(trimmed, 9)
+        .map_err(|_| eyre!("Deposit amount must be a valid decimal number"))?
+        .into();
+    let total_gwei: u64 = as_u256
+        .try_into()
+        .map_err(|_| eyre!("Deposit amount exceeds supported maximum"))?;
+    Ok(total_gwei)
 }
 
 pub fn validate_password(password: &str) -> Result<()> {
@@ -89,7 +93,7 @@ mod tests {
     #[test]
     fn validator_count_within_bounds() {
         assert_eq!(parse_validator_count("1").unwrap(), 1);
-        assert_eq!(parse_validator_count("1024").unwrap(), 1024);
+        assert_eq!(parse_validator_count("32").unwrap(), 32);
     }
 
     #[test]
@@ -99,7 +103,7 @@ mod tests {
 
     #[test]
     fn validator_count_above_max_errors() {
-        assert!(parse_validator_count("1025").is_err());
+        assert!(parse_validator_count("33").is_err());
     }
 
     #[test]
@@ -129,27 +133,6 @@ mod tests {
     #[test]
     fn normalize_withdrawal_address_rejects_invalid_chars() {
         assert!(normalize_withdrawal_address("0xZZzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz").is_err());
-    }
-
-    #[test]
-    fn parse_deposit_amount_accepts_decimal() {
-        let amount = parse_deposit_amount("32.5").unwrap();
-        assert!((amount - 32.5).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn parse_deposit_amount_rejects_small() {
-        assert!(parse_deposit_amount("0.5").is_err());
-    }
-
-    #[test]
-    fn parse_deposit_amount_rejects_large() {
-        assert!(parse_deposit_amount("32768.1").is_err());
-    }
-
-    #[test]
-    fn parse_deposit_amount_rejects_non_numeric() {
-        assert!(parse_deposit_amount("abc").is_err());
     }
 
     #[test]
