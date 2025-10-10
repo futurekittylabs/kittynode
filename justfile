@@ -75,6 +75,7 @@ lint-rs-pedantic:
 release:
   #!/usr/bin/env bash
   set -euxo pipefail
+  git pull --rebase origin main
   cargo set-version --bump minor
   git add $(git ls-files "*/Cargo.toml") Cargo.toml Cargo.lock
   verApp="$(cargo pkgid -p kittynode-tauri | cut -d@ -f2)"
@@ -88,6 +89,7 @@ release:
 release-cli:
   #!/usr/bin/env bash
   set -euxo pipefail
+  git pull --rebase origin main
   cargo set-version --bump minor -p kittynode-cli
   git add $(git ls-files "*/Cargo.toml") Cargo.toml Cargo.lock
   verCli="$(cargo pkgid -p kittynode-cli | cut -d@ -f2)"
