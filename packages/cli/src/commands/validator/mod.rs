@@ -17,12 +17,8 @@ use crossterm::{
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
 use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
-use hmac::{Hmac, Mac};
-use k256::{
-    FieldBytes, Scalar, SecretKey,
-    elliptic_curve::{PrimeField, sec1::ToEncodedPoint},
-};
-use sha2::Sha512;
+use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
+use k256::ecdsa::SigningKey;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, error};
@@ -346,72 +342,21 @@ fn default_withdrawal_address(mnemonic: &str) -> Result<Address> {
 }
 
 fn derive_execution_address(seed: &[u8]) -> Result<Address> {
-    type HmacSha512 = Hmac<Sha512>;
-    const HARDENED_OFFSET: u32 = 1 << 31;
-    const DERIVATION_PATH: [u32; 5] = [
-        44 | HARDENED_OFFSET,
-        60 | HARDENED_OFFSET,
-        HARDENED_OFFSET,
-        0,
-        0,
-    ];
+    // Expect a 64-byte BIP-39 seed
+    let seed_array: [u8; 64] = seed
+        .try_into()
+        .map_err(|_| eyre!("Invalid BIP-39 seed length"))?;
 
-    let mut master_hmac = HmacSha512::new_from_slice(b"Bitcoin seed")
-        .map_err(|error| eyre!("Failed to initialize master key derivation: {error}"))?;
-    master_hmac.update(seed);
-    let output = master_hmac.finalize().into_bytes();
+    let seed = Bip32Seed::new(seed_array);
+    let path: DerivationPath = "m/44'/60'/0'/0/0"
+        .parse()
+        .map_err(|error| eyre!("Invalid derivation path: {error}"))?;
 
-    let mut secret_bytes = FieldBytes::default();
-    secret_bytes.copy_from_slice(&output[..32]);
-    let mut chain_code = [0u8; 32];
-    chain_code.copy_from_slice(&output[32..]);
-    let mut secret_key = SecretKey::from_bytes(&secret_bytes)
-        .map_err(|error| eyre!("Invalid master private key: {error}"))?;
+    let xprv = XPrv::derive_from_path(&seed, &path)
+        .map_err(|error| eyre!("BIP-32 derivation failed: {error}"))?;
 
-    for index in DERIVATION_PATH {
-        let hardened = (index & HARDENED_OFFSET) != 0;
-        let mut data = Vec::with_capacity(1 + 33 + 4);
-        if hardened {
-            data.push(0);
-            data.extend_from_slice(secret_key.to_bytes().as_slice());
-        } else {
-            let compressed = secret_key.public_key().to_encoded_point(true);
-            data.extend_from_slice(compressed.as_bytes());
-        }
-        data.extend_from_slice(&index.to_be_bytes());
-
-        let mut hmac = HmacSha512::new_from_slice(&chain_code)
-            .map_err(|error| eyre!("Failed to initialize child key derivation: {error}"))?;
-        hmac.update(&data);
-        let digest = hmac.finalize().into_bytes();
-
-        let mut il = FieldBytes::default();
-        il.copy_from_slice(&digest[..32]);
-        let mut ir = [0u8; 32];
-        ir.copy_from_slice(&digest[32..]);
-
-        let tweak = Scalar::from_repr(il)
-            .into_option()
-            .ok_or_else(|| eyre!("Derived scalar is out of range"))?;
-        if tweak.is_zero().into() {
-            return Err(eyre!("Derived scalar is zero"));
-        }
-
-        let parent_scalar = Scalar::from_repr(secret_key.to_bytes())
-            .into_option()
-            .ok_or_else(|| eyre!("Parent scalar is out of range"))?;
-        let child_scalar = tweak + parent_scalar;
-        if child_scalar.is_zero().into() {
-            return Err(eyre!("Child scalar is zero"));
-        }
-
-        let child_bytes = child_scalar.to_bytes();
-        secret_key = SecretKey::from_bytes(&child_bytes)
-            .map_err(|error| eyre!("Failed to construct child private key: {error}"))?;
-        chain_code = ir;
-    }
-
-    let public_key = secret_key.public_key();
+    let signing_key = SigningKey::from(&xprv);
+    let public_key = signing_key.verifying_key();
     let uncompressed = public_key.to_encoded_point(false);
     let hash = keccak256(&uncompressed.as_bytes()[1..]);
     Ok(Address::from_slice(&hash[12..]))
@@ -506,6 +451,26 @@ mod tests {
         let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94")?;
         let derived = default_withdrawal_address(
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_legal_winner() -> Result<()> {
+        let expected = Address::from_str("0x58a57ed9d8d624cbd12e2c467d34787555bb1b25")?;
+        let derived = default_withdrawal_address(
+            "legal winner thank year wave sausage worth useful legal winner thank yellow",
+        )?;
+        assert_eq!(derived, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn default_withdrawal_address_known_vector_test_junk() -> Result<()> {
+        let expected = Address::from_str("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")?;
+        let derived = default_withdrawal_address(
+            "test test test test test test test test test test test junk",
         )?;
         assert_eq!(derived, expected);
         Ok(())
