@@ -145,13 +145,13 @@ pub async fn keygen() -> Result<()> {
             .default("32".to_string())
             .validate_with(|text: &String| {
                 const MIN_DEPOSIT_GWEI: u64 = 1_000_000_000; // 1 ETH
-                const MAX_DEPOSIT_GWEI: u64 = 32_000_000_000; // 32 ETH per deposit entry
+                const MAX_DEPOSIT_GWEI: u64 = 2_048_000_000_000; // 2048 ETH per deposit entry
                 match parse_deposit_amount_gwei(text) {
                     Ok(gwei) => {
                         if gwei < MIN_DEPOSIT_GWEI {
                             Err("Per-validator deposit must be at least 1 ETH".to_string())
                         } else if gwei > MAX_DEPOSIT_GWEI {
-                            Err("Per-validator deposit cannot exceed 32 ETH".to_string())
+                            Err("Per-validator deposit cannot exceed 2048 ETH".to_string())
                         } else {
                             Ok(())
                         }
