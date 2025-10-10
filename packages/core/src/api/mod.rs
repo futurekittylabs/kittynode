@@ -34,3 +34,4 @@ pub use crate::domain::web_service::DEFAULT_WEB_PORT;
 pub use crate::infra::file::{kittynode_cli_path, kittynode_path};
 
 pub mod types;
+pub mod validator;

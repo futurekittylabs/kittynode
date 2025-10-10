@@ -234,7 +234,6 @@ pub async fn keygen() -> Result<()> {
         );
     }
     println!("Generating {validator_count} validator(s)...");
-    let _ = stdout().flush();
 
     let outcome = generate_validator_files_with_progress(
         ValidatorKeygenRequest {
@@ -249,7 +248,6 @@ pub async fn keygen() -> Result<()> {
         },
         |progress: ValidatorProgress| {
             println!("  → Validator {} of {}", progress.current, progress.total);
-            let _ = stdout().flush();
         },
     )?;
 

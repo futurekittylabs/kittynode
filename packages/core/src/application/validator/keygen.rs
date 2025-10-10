@@ -4,6 +4,10 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use alloy_primitives::{
+    U256,
+    utils::{Unit, format_units, keccak256},
+};
 use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
 use bip39::{Language, Mnemonic, Seed as Bip39Seed};
 use eth2_key_derivation::DerivedKey;
@@ -58,11 +62,8 @@ pub fn swap_active() -> bool {
     false
 }
 
-/// Formats gwei values as ETH strings trimmed for display.
+/// Converts the given gwei amount into an ETH string trimmed for display.
 pub fn format_eth_from_gwei(gwei: u64) -> String {
-    use alloy_primitives::U256;
-    use alloy_primitives::utils::{Unit, format_units};
-
     let wei = U256::from(gwei) * Unit::GWEI.wei();
     match format_units(wei, "ether") {
         Ok(s) => {
@@ -99,10 +100,23 @@ pub struct ValidatorProgress {
     pub total: u16,
 }
 
+/// Generates validator keystore and deposit data using the supplied request.
+///
+/// This is a convenience wrapper around [`generate_validator_files_with_progress`] that ignores
+/// progress updates.
 pub fn generate_validator_files(request: ValidatorKeygenRequest) -> Result<ValidatorKeygenOutcome> {
     generate_validator_files_with_progress(request, |_progress| {})
 }
 
+/// Generates validator keystores and deposit data while reporting per-validator progress.
+///
+/// # Arguments
+/// * `request` - Configuration describing how the material should be produced.
+/// * `on_progress` - Callback invoked after each validator is generated.
+///
+/// # Errors
+/// Returns an [`eyre::Report`] when mnemonic validation fails, when output files already exist,
+/// or if any filesystem or signing operation cannot be completed.
 pub fn generate_validator_files_with_progress(
     request: ValidatorKeygenRequest,
     mut on_progress: impl FnMut(ValidatorProgress),
@@ -162,6 +176,7 @@ pub fn generate_validator_files_with_progress(
     })
 }
 
+/// Resolves the withdrawal address, falling back to the derived address when none is provided.
 pub fn resolve_withdrawal_address(user: Option<&str>, mnemonic: &str) -> Result<Address> {
     match user {
         Some(value) => Address::from_str(value)
@@ -178,9 +193,8 @@ pub fn default_withdrawal_address(mnemonic: &str) -> Result<Address> {
         .map_err(|error| eyre!("Failed to derive withdrawal address from mnemonic: {error}"))
 }
 
+/// Derives the first execution-layer address (m/44'/60'/0'/0/0) from a 64-byte BIP-39 seed.
 pub fn derive_execution_address(seed: &[u8]) -> Result<Address> {
-    use alloy_primitives::utils::keccak256;
-
     let seed_array: [u8; 64] = seed
         .try_into()
         .map_err(|_| eyre!("Invalid BIP-39 seed length"))?;
