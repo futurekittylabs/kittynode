@@ -1,12 +1,12 @@
 [package]
-description.workspace = true
-edition.workspace = true
-license.workspace = true
 name = "kittynode-tauri"
-publish = false
+version = "0.86.0"
+edition.workspace = true
+description.workspace = true
 readme.workspace = true
 repository.workspace = true
-version = "0.86.0"
+license.workspace = true
+publish.workspace = true
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]

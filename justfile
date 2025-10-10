@@ -82,9 +82,6 @@ release:
   git commit -m "Release kittynode-app-${verApp}, kittynode-cli-${verCli}"
   git tag "kittynode-app-${verApp}" -m "Release kittynode-app-${verApp}"
   git tag "kittynode-cli-${verCli}" -m "Release kittynode-cli-${verCli}"
-  cargo publish -p kittynode-core --dry-run && cargo publish -p kittynode-core
-  cargo publish -p kittynode-web --dry-run && cargo publish -p kittynode-web --locked
-  cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
   git push origin HEAD "kittynode-app-${verApp}" "kittynode-cli-${verCli}"
 
 # release cli
@@ -96,7 +93,6 @@ release-cli:
   verCli="$(cargo pkgid -p kittynode-cli | cut -d@ -f2)"
   git commit -m "Release kittynode-cli-${verCli}"
   git tag "kittynode-cli-${verCli}" -m "Release kittynode-cli-${verCli}"
-  cargo publish -p kittynode-cli --dry-run && cargo publish -p kittynode-cli --locked
   git push origin HEAD "kittynode-cli-${verCli}"
 
 # set up the project

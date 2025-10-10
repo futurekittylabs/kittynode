@@ -1,11 +1,12 @@
 [package]
-description.workspace = true
-edition.workspace = true
-license.workspace = true
 name = "kittynode-core"
+version = "0.30.0"
+edition.workspace = true
+description.workspace = true
 readme.workspace = true
 repository.workspace = true
-version = "0.30.0"
+license.workspace = true
+publish.workspace = true
 
 [dependencies]
 url = "2.5.7"

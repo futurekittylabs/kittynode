@@ -1,11 +1,12 @@
 [package]
-description.workspace = true
-edition.workspace = true
-license.workspace = true
 name = "kittynode-cli"
+version = "0.38.0"
+edition.workspace = true
+description.workspace = true
 readme.workspace = true
 repository.workspace = true
-version = "0.38.0"
+license.workspace = true
+publish.workspace = true
 
 [[bin]]
 name = "kittynode"

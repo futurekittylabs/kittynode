@@ -8,11 +8,12 @@ members = [
 resolver = "2"
 
 [workspace.package]
-description = "Control center for world computer operators."
-license = "MIT"
 edition = "2024"
-repository = "https://github.com/futurekittylabs/kittynode"
+description = "Control center for world computer operators."
 readme = "README.md"
+repository = "https://github.com/futurekittylabs/kittynode"
+license = "MIT"
+publish = false
 
 # The profile that 'dist' will build with
 [profile.dist]
