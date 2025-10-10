@@ -3,6 +3,7 @@ use alloy_primitives::utils::parse_units;
 use eyre::{Result, eyre};
 
 pub const MIN_VALIDATOR_COUNT: u16 = 1;
+// Temporary cap at 32; will expand later
 pub const MAX_VALIDATOR_COUNT: u16 = 32;
 
 const MIN_PASSWORD_LEN: usize = 12;
