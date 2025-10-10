@@ -133,8 +133,14 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
     // Match ethstaker deposit-cli filename scheme and pair suffix with deposit_data when needed:
     // keystore-m_12381_3600_{index}_0_0-{timestamp}[-{suffix}].json
     let keystore_filename = match params.suffix {
-        Some(n) => format!("keystore-m_12381_3600_{}_0_0-{}-{}.json", index, params.timestamp, n),
-        None => format!("keystore-m_12381_3600_{}_0_0-{}.json", index, params.timestamp),
+        Some(n) => format!(
+            "keystore-m_12381_3600_{}_0_0-{}-{}.json",
+            index, params.timestamp, n
+        ),
+        None => format!(
+            "keystore-m_12381_3600_{}_0_0-{}.json",
+            index, params.timestamp
+        ),
     };
     let keystore_path = params.output_dir.join(keystore_filename);
     ensure_new_file(&keystore_path)?;
@@ -332,7 +338,10 @@ fn compounding_withdrawal_credentials(address: Address, spec: &ChainSpec) -> Has
     Hash256::from_slice(&credentials)
 }
 
-fn next_available_deposit_path(output_dir: &Path, timestamp: u64) -> Result<(PathBuf, Option<u32>)> {
+fn next_available_deposit_path(
+    output_dir: &Path,
+    timestamp: u64,
+) -> Result<(PathBuf, Option<u32>)> {
     let candidate = |suffix: Option<u32>| -> PathBuf {
         match suffix {
             Some(n) => output_dir.join(format!("deposit_data-{}-{}.json", timestamp, n)),
@@ -351,7 +360,6 @@ fn next_available_deposit_path(output_dir: &Path, timestamp: u64) -> Result<(Pat
     }
     Err(eyre!("Unable to find available filename for deposit data"))
 }
-
 
 #[cfg(test)]
 mod tests {
