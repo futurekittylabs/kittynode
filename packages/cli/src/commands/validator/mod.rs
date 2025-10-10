@@ -8,6 +8,7 @@ use std::time::Duration;
 use self::lighthouse::{KeygenConfig, generate_validator_files};
 use alloy_primitives::U256;
 use alloy_primitives::utils::{Unit, format_units, keccak256};
+use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
 use bip39::{Language, Mnemonic, MnemonicType, Seed as Bip39Seed};
 use crossterm::{
     cursor::MoveTo,
@@ -17,7 +18,6 @@ use crossterm::{
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
 use eth2_network_config::HARDCODED_NET_NAMES;
 use eyre::{Result, eyre};
-use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
 use k256::ecdsa::SigningKey;
 use std::path::PathBuf;
 use std::str::FromStr;
