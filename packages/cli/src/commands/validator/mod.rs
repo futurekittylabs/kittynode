@@ -63,6 +63,12 @@ pub async fn keygen() -> Result<()> {
             return Ok(());
         }
     }
+    #[cfg(not(target_os = "linux"))]
+    {
+        println!(
+            "Warning: Swap detection is unavailable on this platform. Ensure swap or pagefile is disabled before generating keys"
+        );
+    }
 
     let has_internet = check_internet_connectivity();
     if has_internet {
