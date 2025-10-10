@@ -62,7 +62,6 @@ pub fn parse_deposit_amount_gwei(input: &str) -> Result<u64> {
     if trimmed.is_empty() {
         return Err(eyre!("Deposit amount is required"));
     }
-    // Use battle-tested parsing from alloy to convert decimal ETH to gwei (9 decimals).
     let as_u256: U256 = parse_units(trimmed, 9)
         .map_err(|_| eyre!("Deposit amount must be a valid decimal number"))?
         .into();

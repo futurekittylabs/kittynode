@@ -36,8 +36,6 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
 
 fn desired_supported_networks() -> Vec<&'static str> {
-    // Our keygen flow currently targets Ethereum-family networks that use the mainnet spec
-    // (e.g., sepolia, holesky, hoodi). Keep the UI list constrained and filter by availability.
     const DESIRED: &[&str] = &["hoodi", "sepolia"];
     DESIRED
         .iter()

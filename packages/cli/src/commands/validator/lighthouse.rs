@@ -67,8 +67,6 @@ pub fn generate_validator_files(config: KeygenConfig) -> Result<KeygenOutcome> {
 
     prepare_output_dir(&output_dir)?;
 
-    // POSIX permission notice is emitted from the CLI pre-check to avoid duplicate output.
-
     // Use a single timestamp to pair deposit_data and keystore filenames
     let timestamp = secs_since_unix_epoch(SystemTime::now())?;
     // Choose a unique deposit_data filename and capture any suffix to pair with keystore names.
