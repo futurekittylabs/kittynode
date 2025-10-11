@@ -204,6 +204,8 @@ enum ContainerCommands {
 enum ValidatorCommands {
     #[command(name = "keygen", about = "Generate Ethereum validator keys")]
     Keygen,
+    #[command(name = "start", about = "Launch the validator setup workflow")]
+    Start,
 }
 
 #[derive(Subcommand)]
@@ -358,7 +360,8 @@ impl ContainerCommands {
 impl ValidatorCommands {
     async fn execute(self) -> Result<()> {
         match self {
-            ValidatorCommands::Keygen => commands::validator::keygen().await,
+            ValidatorCommands::Keygen => commands::validator::keygen().await.map(|_| ()),
+            ValidatorCommands::Start => commands::validator::start().await,
         }
     }
 }
