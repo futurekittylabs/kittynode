@@ -293,6 +293,11 @@ pub(crate) async fn pull_and_start_container(
     container: &Container,
     network_name: &str,
 ) -> Result<()> {
+    let exposed_ports: HashMap<String, HashMap<(), ()>> = container
+        .port_bindings
+        .keys()
+        .map(|key| (key.to_string(), HashMap::new()))
+        .collect();
     let options = Some(
         CreateImageOptionsBuilder::default()
             .from_image(container.image.as_str())
@@ -330,6 +335,7 @@ pub(crate) async fn pull_and_start_container(
     let config = ContainerCreateBody {
         image: Some(container.image.to_string()),
         cmd: Some(container.cmd.clone()),
+        exposed_ports: Some(exposed_ports),
         host_config: Some(host_config),
         ..Default::default()
     };
