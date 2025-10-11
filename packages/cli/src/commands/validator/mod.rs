@@ -1,24 +1,47 @@
-use std::io::{Write, stdout};
+use std::{
+    collections::HashMap,
+    fs,
+    io::{self, Write, stdout},
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+    time::{Duration, Instant},
+};
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
     cursor::MoveTo,
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
-    terminal::{Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+        enable_raw_mode,
+    },
 };
 use dialoguer::{Confirm, Input, Password, Select, theme::ColorfulTheme};
-use eyre::{Result, eyre};
-use std::path::PathBuf;
+use eyre::{Report, Result, eyre};
+use ratatui::{
+    Frame, Terminal,
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Paragraph, Wrap},
+};
+use tokio::runtime::Handle;
 use tracing::error;
 use zeroize::Zeroizing;
 
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
-use kittynode_core::api::validator::{
-    ValidatorKeygenRequest, ValidatorProgress, available_networks, check_internet_connectivity,
-    format_eth_from_gwei, generate_validator_files_with_progress, normalize_withdrawal_address,
-    parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
-    validate_password,
+use kittynode_core::api::{
+    self,
+    types::PackageConfig,
+    validator::{
+        ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress, available_networks,
+        check_internet_connectivity, format_eth_from_gwei, generate_validator_files_with_progress,
+        normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
+        resolve_withdrawal_address, validate_password,
+    },
 };
 
 fn desired_supported_networks() -> Vec<&'static str> {
@@ -31,7 +54,13 @@ fn desired_supported_networks() -> Vec<&'static str> {
         .collect()
 }
 
-pub async fn keygen() -> Result<()> {
+pub struct KeygenSummary {
+    pub deposit_data_path: PathBuf,
+    pub output_dir: PathBuf,
+    pub fee_recipient: String,
+}
+
+pub async fn keygen() -> Result<Option<KeygenSummary>> {
     let theme = ColorfulTheme::default();
 
     // Pre-check warnings block
@@ -79,7 +108,7 @@ pub async fn keygen() -> Result<()> {
             .interact()?;
         if !proceed {
             println!("Aborting validator key generation.");
-            return Ok(());
+            return Ok(None);
         }
     }
 
@@ -171,6 +200,7 @@ pub async fn keygen() -> Result<()> {
         .default("./validator-keys".to_string())
         .interact_text()?;
     let output_dir = PathBuf::from(output_dir_input.trim());
+    let output_dir_clone = output_dir.clone();
 
     println!("Validator key generation summary:");
     println!("  Validators: {validator_count}");
@@ -197,7 +227,7 @@ pub async fn keygen() -> Result<()> {
         .interact()?;
     if !confirm_details {
         println!("Aborting validator key generation.");
-        return Ok(());
+        return Ok(None);
     }
 
     let mnemonic = Mnemonic::new(MnemonicType::Words24, Language::English);
@@ -211,7 +241,7 @@ pub async fn keygen() -> Result<()> {
     }
     if !mnemonic_verified {
         println!("✘ Mnemonic verification failed. Aborting validator key generation.");
-        return Ok(());
+        return Ok(None);
     }
     println!("Mnemonic successfully verified!");
 
@@ -227,6 +257,7 @@ pub async fn keygen() -> Result<()> {
         withdrawal_address_normalized.as_deref(),
         mnemonic_phrase.as_str(),
     )?;
+    let fee_recipient = format!("{:#x}", withdrawal_address);
     if withdrawal_address_normalized.is_none() {
         println!(
             "Using withdrawal address derived from mnemonic: {:#x}",
@@ -251,21 +282,514 @@ pub async fn keygen() -> Result<()> {
         },
     )?;
 
+    let ValidatorKeygenOutcome {
+        keystore_paths,
+        deposit_data_path,
+    } = outcome;
+
     println!(
         "✔ Generated {} validator keystore(s):",
-        outcome.keystore_paths.len()
+        keystore_paths.len()
     );
-    for path in &outcome.keystore_paths {
+    for path in &keystore_paths {
         println!("   {}", path.display());
     }
-    println!(
-        "✔ Deposit data written to {}",
-        outcome.deposit_data_path.display()
-    );
+    println!("✔ Deposit data written to {}", deposit_data_path.display());
 
     println!("Store the password safely—it is not saved anywhere else.");
 
+    Ok(Some(KeygenSummary {
+        deposit_data_path,
+        output_dir: output_dir_clone,
+        fee_recipient,
+    }))
+}
+
+const DOCKER_DOCS_URL: &str = "https://docs.docker.com/get-docker/";
+const NETWORK_OPTIONS: [&str; 2] = ["hoodi", "sepolia"];
+const EXECUTION_OPTIONS: [&str; 1] = ["reth (only option, others coming soon)"];
+const CONSENSUS_OPTIONS: [&str; 1] = ["lighthouse (only option, others coming soon)"];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Step {
+    Docker,
+    Network,
+    Execution,
+    Consensus,
+    Keygen,
+    Summary,
+    Launch,
+    Deposit,
+    Done,
+}
+
+struct StartState {
+    step: Step,
+    docker_running: bool,
+    network_index: usize,
+    execution_index: usize,
+    consensus_index: usize,
+    keygen_summary: Option<KeygenSummary>,
+    status: Option<String>,
+    aborted: bool,
+}
+
+impl StartState {
+    fn new() -> Self {
+        Self {
+            step: Step::Docker,
+            docker_running: false,
+            network_index: 0,
+            execution_index: 0,
+            consensus_index: 0,
+            keygen_summary: None,
+            status: None,
+            aborted: false,
+        }
+    }
+
+    fn network(&self) -> &'static str {
+        NETWORK_OPTIONS[self.network_index]
+    }
+}
+
+pub async fn start() -> Result<()> {
+    tokio::task::block_in_place(run_start_blocking)
+}
+
+fn run_start_blocking() -> Result<()> {
+    let handle = Handle::current();
+    let mut stdout = stdout();
+    enable_raw_mode()?;
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+    terminal.hide_cursor()?;
+    let mut state = StartState::new();
+    let mut last_docker_check = Instant::now() - Duration::from_secs(2);
+
+    loop {
+        if state.step == Step::Docker && last_docker_check.elapsed() >= Duration::from_secs(1) {
+            state.docker_running = handle.block_on(api::is_docker_running());
+            last_docker_check = Instant::now();
+            if state.docker_running {
+                state.status = Some("Docker is running. Continuing setup.".to_string());
+                state.step = Step::Network;
+            } else {
+                state.status = Some(format!(
+                    "Docker is not running. Install or start it: {DOCKER_DOCS_URL}"
+                ));
+            }
+        }
+
+        terminal.draw(|frame| render(frame, &state))?;
+
+        if state.aborted || state.step == Step::Done {
+            break;
+        }
+
+        if event::poll(Duration::from_millis(120))?
+            && let Event::Key(key) = event::read()?
+        {
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
+            if matches!(key.code, KeyCode::Char('q')) {
+                state.aborted = true;
+                break;
+            }
+            handle_event(key, &mut state, &handle, &mut terminal)?;
+        }
+    }
+
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
     Ok(())
+}
+
+fn handle_event(
+    key: KeyEvent,
+    state: &mut StartState,
+    handle: &Handle,
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+) -> Result<()> {
+    match state.step {
+        Step::Docker => {
+            if matches!(key.code, KeyCode::Enter) {
+                state.status = Some("Re-checking Docker...".to_string());
+            }
+        }
+        Step::Network => match key.code {
+            KeyCode::Up if state.network_index > 0 => state.network_index -= 1,
+            KeyCode::Down if state.network_index + 1 < NETWORK_OPTIONS.len() => {
+                state.network_index += 1;
+            }
+            KeyCode::Enter => {
+                state.step = Step::Execution;
+                state.status = None;
+            }
+            _ => {}
+        },
+        Step::Execution => match key.code {
+            KeyCode::Up if state.execution_index > 0 => state.execution_index -= 1,
+            KeyCode::Down if state.execution_index + 1 < EXECUTION_OPTIONS.len() => {
+                state.execution_index += 1;
+            }
+            KeyCode::Enter => {
+                state.step = Step::Consensus;
+                state.status = None;
+            }
+            _ => {}
+        },
+        Step::Consensus => match key.code {
+            KeyCode::Up if state.consensus_index > 0 => state.consensus_index -= 1,
+            KeyCode::Down if state.consensus_index + 1 < CONSENSUS_OPTIONS.len() => {
+                state.consensus_index += 1;
+            }
+            KeyCode::Enter => {
+                state.step = Step::Keygen;
+                state.status = None;
+            }
+            _ => {}
+        },
+        Step::Keygen => {
+            if matches!(key.code, KeyCode::Enter) {
+                state.status = Some("Launching key generation...".to_string());
+                if let Some(summary) = run_keygen_flow(terminal, handle)? {
+                    state.keygen_summary = Some(summary);
+                    state.step = Step::Summary;
+                    state.status = Some("Keys generated successfully.".to_string());
+                } else {
+                    state.status = Some("Key generation aborted.".to_string());
+                }
+            }
+        }
+        Step::Summary => {
+            if matches!(key.code, KeyCode::Enter) {
+                state.step = Step::Launch;
+                state.status = None;
+            }
+        }
+        Step::Launch => {
+            if matches!(key.code, KeyCode::Enter)
+                && let Some(summary) = state.keygen_summary.as_ref()
+            {
+                match run_launch_flow(terminal, handle, summary, state.network()) {
+                    Ok(()) => {
+                        state.status = Some("Clients started successfully.".to_string());
+                        state.step = Step::Deposit;
+                    }
+                    Err(error) => {
+                        state.status = Some(format!("Failed to start clients: {error}"));
+                    }
+                }
+            }
+        }
+        Step::Deposit => {
+            state.step = Step::Done;
+        }
+        Step::Done => {}
+    }
+    Ok(())
+}
+
+fn render(frame: &mut Frame, state: &StartState) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(1), Constraint::Length(1)])
+        .split(frame.area());
+    let body = chunks[0];
+    let footer = chunks[1];
+
+    let mut lines = Vec::new();
+    let title_style = Style::default().fg(Color::Cyan);
+
+    match state.step {
+        Step::Docker => {
+            lines.push(Line::styled("Checking Docker", title_style));
+            if state.docker_running {
+                lines.push(Line::from("Docker detected. Preparing next step..."));
+            } else {
+                lines.push(Line::from("Waiting for Docker to become available..."));
+                lines.push(Line::from(format!(
+                    "Install instructions: {DOCKER_DOCS_URL}"
+                )));
+            }
+        }
+        Step::Network => {
+            lines.push(Line::styled("Select a network", title_style));
+            lines.push(Line::from("Use ↑/↓ and press Enter."));
+            lines.push(Line::from(""));
+            lines.extend(option_lines(state.network_index, &NETWORK_OPTIONS));
+        }
+        Step::Execution => {
+            lines.push(Line::styled("Select an execution client", title_style));
+            lines.push(Line::from("Use ↑/↓ and press Enter."));
+            lines.push(Line::from(""));
+            lines.extend(option_lines(state.execution_index, &EXECUTION_OPTIONS));
+        }
+        Step::Consensus => {
+            lines.push(Line::styled("Select a consensus client", title_style));
+            lines.push(Line::from("Use ↑/↓ and press Enter."));
+            lines.push(Line::from(""));
+            lines.extend(option_lines(state.consensus_index, &CONSENSUS_OPTIONS));
+        }
+        Step::Keygen => {
+            lines.push(Line::styled("Generate validator keys", title_style));
+            lines.push(Line::from(
+                "Press Enter to launch the interactive keygen workflow.",
+            ));
+            lines.push(Line::from(
+                "The Kittynode UI will resume automatically afterwards.",
+            ));
+        }
+        Step::Summary => {
+            lines.push(Line::styled("Key generation completed", title_style));
+            if let Some(summary) = &state.keygen_summary {
+                lines.push(Line::from(format!(
+                    "Deposit data: {}",
+                    summary.deposit_data_path.display()
+                )));
+                lines.push(Line::from(format!(
+                    "Keystore directory: {}",
+                    summary.output_dir.display()
+                )));
+                lines.push(Line::from(format!(
+                    "Fee recipient: {}",
+                    summary.fee_recipient
+                )));
+                lines.push(Line::from("Write these paths down before continuing."));
+            } else {
+                lines.push(Line::from("No key information available."));
+            }
+            lines.push(Line::from(""));
+            lines.push(Line::from("Press Enter when you are ready to continue."));
+        }
+        Step::Launch => {
+            lines.push(Line::styled("Start clients", title_style));
+            lines.push(Line::from(format!(
+                "This will configure Reth and Lighthouse for {} and import your keys.",
+                state.network()
+            )));
+            lines.push(Line::from(
+                "Docker output will appear in the terminal while this runs.",
+            ));
+            lines.push(Line::from(""));
+            lines.push(Line::from("Press Enter to continue."));
+        }
+        Step::Deposit => {
+            let launchpad = match state.network() {
+                "sepolia" => "https://sepolia.launchpad.ethereum.org",
+                _ => "https://hoodi.launchpad.ethereum.org",
+            };
+            lines.push(Line::styled("Final steps", title_style));
+            if let Some(summary) = &state.keygen_summary {
+                lines.push(Line::from(format!(
+                    "Deposit file: {}",
+                    summary.deposit_data_path.display()
+                )));
+            }
+            lines.push(Line::from(format!(
+                "Visit {launchpad} to submit the deposit data and 32 ETH per validator."
+            )));
+            lines.push(Line::from(
+                "The validator client will wait for activation. Press any key to exit.",
+            ));
+            lines.push(Line::from(
+                "Monitor progress later with `kittynode validator monitor`.",
+            ));
+        }
+        Step::Done => {}
+    }
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: true })
+        .alignment(ratatui::layout::Alignment::Left);
+    frame.render_widget(paragraph, body);
+
+    let status = state.status.as_deref().unwrap_or("");
+    let foot_line = Line::from(vec![
+        Span::raw(status),
+        Span::raw(if status.is_empty() { "" } else { "  " }),
+        Span::styled("press q to quit", Style::default().fg(Color::DarkGray)),
+    ]);
+    frame.render_widget(Paragraph::new(foot_line), footer);
+}
+
+fn option_lines(selected: usize, options: &[&str]) -> Vec<Line<'static>> {
+    options
+        .iter()
+        .enumerate()
+        .map(|(index, option)| {
+            if index == selected {
+                Line::styled(format!("> {option}"), Style::default().fg(Color::Yellow))
+            } else {
+                Line::from(format!("  {option}"))
+            }
+        })
+        .collect()
+}
+
+fn run_keygen_flow(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    handle: &Handle,
+) -> Result<Option<KeygenSummary>> {
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
+    let outcome = handle.block_on(keygen());
+    enable_raw_mode()?;
+    execute!(terminal.backend_mut(), EnterAlternateScreen)?;
+    terminal.hide_cursor()?;
+    terminal.clear()?;
+    outcome
+}
+
+fn run_launch_flow(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    handle: &Handle,
+    summary: &KeygenSummary,
+    network: &str,
+) -> Result<()> {
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
+
+    let result = (|| -> Result<()> {
+        println!("Configuring Ethereum clients for {network}...");
+        let mut values = HashMap::new();
+        values.insert("network".to_string(), network.to_string());
+        let config = PackageConfig { values };
+        let mut needs_install = false;
+        let update_result = handle
+            .clone()
+            .block_on(async { api::update_package_config("Ethereum", config.clone()).await });
+        if let Err(error) = update_result {
+            if is_missing_volume_error(&error) {
+                needs_install = true;
+            } else {
+                return Err(error);
+            }
+        }
+        if needs_install {
+            handle.block_on(async { api::install_package("Ethereum").await })?;
+        }
+
+        println!("Importing validator keys with Lighthouse...");
+        let lighthouse_dir = lighthouse_root()?;
+        run_validator_import(summary, network, &lighthouse_dir)?;
+
+        println!("Starting Lighthouse validator client...");
+        start_validator_container(network, &lighthouse_dir, &summary.fee_recipient)?;
+        println!("Execution and validator clients are running.");
+        Ok(())
+    })();
+
+    println!("Press Enter to return to Kittynode UI.");
+    let mut buffer = String::new();
+    let _ = io::stdin().read_line(&mut buffer);
+
+    enable_raw_mode()?;
+    execute!(terminal.backend_mut(), EnterAlternateScreen)?;
+    terminal.hide_cursor()?;
+    terminal.clear()?;
+
+    result
+}
+
+fn is_missing_volume_error(error: &Report) -> bool {
+    error.to_string().contains("no such volume")
+}
+
+fn run_validator_import(
+    summary: &KeygenSummary,
+    network: &str,
+    lighthouse_dir: &Path,
+) -> Result<()> {
+    fs::create_dir_all(lighthouse_dir)?;
+    let lighthouse_mount = canonicalize_path(lighthouse_dir);
+    let keys_mount = canonicalize_path(&summary.output_dir);
+
+    let status = Command::new("docker")
+        .arg("run")
+        .arg("--rm")
+        .arg("-i")
+        .arg("-t")
+        .arg("-v")
+        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()))
+        .arg("-v")
+        .arg(format!("{}:/root/validator_keys", keys_mount.display()))
+        .arg("sigp/lighthouse")
+        .arg("lighthouse")
+        .arg("--network")
+        .arg(network)
+        .arg("account")
+        .arg("validator")
+        .arg("import")
+        .arg("--directory")
+        .arg("/root/validator_keys")
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(eyre!("lighthouse import exited with status {status}"))
+    }
+}
+
+fn start_validator_container(
+    network: &str,
+    lighthouse_dir: &Path,
+    fee_recipient: &str,
+) -> Result<()> {
+    let lighthouse_mount = canonicalize_path(lighthouse_dir);
+    let _ = Command::new("docker")
+        .args(["rm", "-f", "kittynode-validator"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    let status = Command::new("docker")
+        .arg("run")
+        .arg("-d")
+        .arg("--name")
+        .arg("kittynode-validator")
+        .arg("--restart")
+        .arg("unless-stopped")
+        .arg("--network")
+        .arg("host")
+        .arg("-v")
+        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()))
+        .arg("sigp/lighthouse")
+        .arg("lighthouse")
+        .arg("--network")
+        .arg(network)
+        .arg("vc")
+        .arg("--beacon-nodes")
+        .arg("http://127.0.0.1:5052")
+        .arg("--suggested-fee-recipient")
+        .arg(fee_recipient)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(eyre!("validator container failed with status {status}"))
+    }
+}
+
+fn lighthouse_root() -> Result<PathBuf> {
+    Ok(api::kittynode_path()?.join(".lighthouse"))
+}
+
+fn canonicalize_path(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 fn clear_clipboard() -> Result<()> {
     let mut clipboard = arboard::Clipboard::new()
