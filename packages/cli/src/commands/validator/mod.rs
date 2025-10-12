@@ -486,26 +486,32 @@ fn handle_event(
         Step::Keygen => {
             if matches!(key.code, KeyCode::Enter) {
                 state.status = Some("Launching key generation...".to_string());
-                if let Some(summary) = run_keygen_flow(terminal, handle, Some(state.network()))? {
-                    // Ensure network consistency: if keygen chose a different network,
-                    // update the wizard selection to match before launch.
-                    if summary.network.as_str() != state.network()
-                        && let Some(new_index) = NETWORK_OPTIONS
-                            .iter()
-                            .position(|n| *n == summary.network.as_str())
-                    {
-                        state.network_index = new_index;
-                        state.status = Some(format!(
-                            "Adjusted network to match keygen: {}",
-                            state.network()
-                        ));
+                match run_keygen_flow(terminal, handle, Some(state.network())) {
+                    Ok(Some(summary)) => {
+                        // Ensure network consistency: if keygen chose a different network,
+                        // update the wizard selection to match before launch.
+                        if summary.network.as_str() != state.network()
+                            && let Some(new_index) = NETWORK_OPTIONS
+                                .iter()
+                                .position(|n| *n == summary.network.as_str())
+                        {
+                            state.network_index = new_index;
+                            state.status = Some(format!(
+                                "Adjusted network to match keygen: {}",
+                                state.network()
+                            ));
+                        }
+                        // Store summary and proceed to Summary step
+                        state.keygen_summary = Some(summary);
+                        state.step = Step::Summary;
+                        state.status = Some("Keys generated successfully.".to_string());
                     }
-                    // Store summary and proceed to Summary step
-                    state.keygen_summary = Some(summary);
-                    state.step = Step::Summary;
-                    state.status = Some("Keys generated successfully.".to_string());
-                } else {
-                    state.status = Some("Key generation aborted.".to_string());
+                    Ok(None) => {
+                        state.status = Some("Key generation aborted.".to_string());
+                    }
+                    Err(error) => {
+                        state.status = Some(format!("Failed to generate keys: {error}"));
+                    }
                 }
             }
         }
