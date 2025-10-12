@@ -360,7 +360,7 @@ impl ContainerCommands {
 impl ValidatorCommands {
     async fn execute(self) -> Result<()> {
         match self {
-            ValidatorCommands::Keygen => commands::validator::keygen().await.map(|_| ()),
+            ValidatorCommands::Keygen => commands::validator::keygen(None).map(|_| ()),
             ValidatorCommands::Start => commands::validator::start().await,
         }
     }

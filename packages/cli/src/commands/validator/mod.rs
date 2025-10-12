@@ -67,9 +67,10 @@ pub struct KeygenSummary {
     pub deposit_data_path: PathBuf,
     pub output_dir: PathBuf,
     pub fee_recipient: String,
+    pub network: String,
 }
 
-pub async fn keygen() -> Result<Option<KeygenSummary>> {
+pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>> {
     let theme = ColorfulTheme::default();
 
     // Pre-check warnings block
@@ -138,15 +139,32 @@ pub async fn keygen() -> Result<Option<KeygenSummary>> {
             "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)"
         ));
     }
-    let network_index = Select::with_theme(&theme)
-        .with_prompt("Select the network")
-        .default(0)
-        .items(&network_labels)
-        .interact()?;
-    let network = network_labels
-        .get(network_index)
-        .copied()
-        .ok_or_else(|| eyre!("Invalid network selection"))?;
+    // Use preselected network if provided and supported; otherwise prompt.
+    let network = if let Some(pre) = preselected_network {
+        if network_labels.iter().any(|n| *n == pre) {
+            pre
+        } else {
+            let idx = Select::with_theme(&theme)
+                .with_prompt("Selected network is not supported by this build. Choose a supported network")
+                .default(0)
+                .items(&network_labels)
+                .interact()?;
+            network_labels
+                .get(idx)
+                .copied()
+                .ok_or_else(|| eyre!("Invalid network selection"))?
+        }
+    } else {
+        let network_index = Select::with_theme(&theme)
+            .with_prompt("Select the network")
+            .default(0)
+            .items(&network_labels)
+            .interact()?;
+        network_labels
+            .get(network_index)
+            .copied()
+            .ok_or_else(|| eyre!("Invalid network selection"))?
+    };
 
     let add_withdrawal_address = Confirm::with_theme(&theme)
         .with_prompt("Add a withdrawal address (y/n)")
@@ -311,6 +329,7 @@ pub async fn keygen() -> Result<Option<KeygenSummary>> {
         deposit_data_path,
         output_dir: output_dir_clone,
         fee_recipient,
+        network: network.to_string(),
     }))
 }
 
@@ -465,7 +484,22 @@ fn handle_event(
         Step::Keygen => {
             if matches!(key.code, KeyCode::Enter) {
                 state.status = Some("Launching key generation...".to_string());
-                if let Some(summary) = run_keygen_flow(terminal, handle)? {
+                if let Some(summary) = run_keygen_flow(terminal, handle, Some(state.network()))? {
+                    // Ensure network consistency: if keygen chose a different network,
+                    // update the wizard selection to match before launch.
+                    if summary.network.as_str() != state.network() {
+                        if let Some(new_index) = NETWORK_OPTIONS
+                            .iter()
+                            .position(|n| *n == summary.network.as_str())
+                        {
+                            state.network_index = new_index;
+                            state.status = Some(format!(
+                                "Adjusted network to match keygen: {}",
+                                state.network()
+                            ));
+                        }
+                    }
+                    // Store summary and proceed to Summary step
                     state.keygen_summary = Some(summary);
                     state.step = Step::Summary;
                     state.status = Some("Keys generated successfully.".to_string());
@@ -568,6 +602,10 @@ fn render(frame: &mut Frame, state: &StartState) {
                     "Fee recipient: {}",
                     summary.fee_recipient
                 )));
+                lines.push(Line::from(format!(
+                    "Network: {}",
+                    summary.network
+                )));
                 lines.push(Line::from("Write these paths down before continuing."));
             } else {
                 lines.push(Line::from("No key information available."));
@@ -643,12 +681,14 @@ fn option_lines(selected: usize, options: &[&str]) -> Vec<Line<'static>> {
 
 fn run_keygen_flow(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
-    handle: &Handle,
+    _handle: &Handle,
+    preselected_network: Option<&str>,
 ) -> Result<Option<KeygenSummary>> {
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
-    let outcome = handle.block_on(keygen());
+    // keygen flow is synchronous; use preselected network if provided
+    let outcome = keygen(preselected_network);
     enable_raw_mode()?;
     execute!(terminal.backend_mut(), EnterAlternateScreen)?;
     terminal.hide_cursor()?;
