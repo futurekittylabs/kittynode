@@ -27,6 +27,11 @@ use std::{
 use tokio_stream::StreamExt;
 use tracing::{error, info};
 
+// Minimal public Docker accessor for reuse in CLI
+pub async fn get_docker() -> Result<Docker> {
+    get_docker_instance().await
+}
+
 #[cfg(target_os = "linux")]
 pub(crate) async fn get_docker_instance() -> Result<Docker> {
     let mut attempted = Vec::new();

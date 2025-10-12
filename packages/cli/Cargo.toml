@@ -21,6 +21,7 @@ eyre = { version = "0.6.12", default-features = false, features = [
 kittynode-core = { version = "0.36.0", path = "../core" }
 kittynode-web = { version = "0.33.0", path = "../web" }
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread", "fs", "time"] }
+tokio-stream = "0.1.17"
 tracing-subscriber = "0.3.20"
 tracing = "0.1.41"
 dialoguer = { version = "0.12.0", default-features = false, features = ["editor", "password"] }
@@ -33,6 +34,7 @@ serde_json = "1.0.145"
 zeroize = "1.7"
 bip39 = { package = "tiny-bip39", version = "2" }
 arboard = "3"
+bollard = "0.19.3"
 
 [dev-dependencies]
 assert_cmd = "2.0.17"

@@ -3943,6 +3943,7 @@ version = "0.44.0"
 dependencies = [
  "arboard",
  "assert_cmd",
+ "bollard",
  "clap",
  "crossterm 0.29.0",
  "dialoguer",
@@ -3958,6 +3959,7 @@ dependencies = [
  "tempfile",
  "tiny-bip39",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tracing-subscriber",
  "zeroize",

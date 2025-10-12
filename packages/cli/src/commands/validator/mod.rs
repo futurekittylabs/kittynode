@@ -31,6 +31,14 @@ use tokio::runtime::Handle;
 use tracing::error;
 use zeroize::Zeroizing;
 
+// Docker (bollard) for starting the validator container
+use bollard::{
+    models::ContainerCreateBody,
+    query_parameters::{CreateContainerOptionsBuilder, CreateImageOptionsBuilder},
+    secret::HostConfig,
+};
+use tokio_stream::StreamExt;
+
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
@@ -683,7 +691,7 @@ fn run_launch_flow(
         run_validator_import(summary, network, &lighthouse_dir)?;
 
         println!("Starting Lighthouse validator client...");
-        start_validator_container(network, &lighthouse_dir, &summary.fee_recipient)?;
+        start_validator_container(handle, network, &lighthouse_dir, &summary.fee_recipient)?;
         println!("Execution and validator clients are running.");
         Ok(())
     })();
@@ -762,6 +770,7 @@ fn run_validator_import(
 }
 
 fn start_validator_container(
+    handle: &Handle,
     network: &str,
     lighthouse_dir: &Path,
     fee_recipient: &str,
@@ -776,51 +785,79 @@ fn start_validator_container(
         .as_ref()
         .map(|config| canonicalize_path(&config.metadata_dir));
 
-    let _ = Command::new("docker")
-        .args(["rm", "-f", "kittynode-validator"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
+    handle.block_on(async move {
+        let docker = kittynode_core::api::get_docker().await?;
+        // Ensure daemon is reachable
+        docker.version().await.map_err(eyre::Report::from)?;
 
-    let mut command = Command::new("docker");
-    command
-        .arg("run")
-        .arg("-d")
-        .arg("--name")
-        .arg("kittynode-validator")
-        .arg("--restart")
-        .arg("unless-stopped")
-        .arg("--network")
-        .arg("host")
-        .arg("-v")
-        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()));
-    if let Some(mount) = metadata_mount.as_ref() {
-        command
-            .arg("-v")
-            .arg(format!("{}:/root/networks/ephemery:ro", mount.display()));
-    }
-    command.arg("sigp/lighthouse").arg("lighthouse");
-    if ephemery.is_some() {
-        command.arg("--testnet-dir").arg("/root/networks/ephemery");
-    } else {
-        command.arg("--network").arg(network);
-    }
-    command
-        .arg("vc")
-        .arg("--beacon-nodes")
-        .arg("http://127.0.0.1:5052")
-        .arg("--suggested-fee-recipient")
-        .arg(fee_recipient);
-    let status = command
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()?;
+        // Ensure image is present (pull if needed)
+        let pull_opts = Some(
+            CreateImageOptionsBuilder::default()
+                .from_image("sigp/lighthouse")
+                .tag("latest")
+                .build(),
+        );
+        let mut pull_stream = docker.create_image(pull_opts, None, None);
+        while let Some(_item) = pull_stream
+            .next()
+            .await
+            .transpose()
+            .map_err(eyre::Report::from)?
+        {}
 
-    if status.success() {
-        Ok(())
-    } else {
-        Err(eyre!("validator container failed with status {status}"))
-    }
+        // Build binds
+        let mut binds = vec![format!("{}:/root/.lighthouse", lighthouse_mount.display())];
+        if let Some(mount) = metadata_mount.as_ref() {
+            binds.push(format!("{}:/root/networks/ephemery:ro", mount.display()));
+        }
+
+        // Build command
+        let mut cmd: Vec<String> = vec!["lighthouse".into()];
+        if ephemery.is_some() {
+            cmd.push("--testnet-dir".into());
+            cmd.push("/root/networks/ephemery".into());
+        } else {
+            cmd.push("--network".into());
+            cmd.push(network.to_string());
+        }
+        cmd.extend([
+            "vc".into(),
+            "--beacon-nodes".into(),
+            "http://127.0.0.1:5052".into(),
+            "--suggested-fee-recipient".into(),
+            fee_recipient.to_string(),
+        ]);
+
+        // Create container
+        let host_config = HostConfig {
+            binds: Some(binds),
+            network_mode: Some("host".into()),
+            ..Default::default()
+        };
+        let config = ContainerCreateBody {
+            image: Some("sigp/lighthouse".into()),
+            cmd: Some(cmd),
+            host_config: Some(host_config),
+            ..Default::default()
+        };
+        let create_opts = Some(
+            CreateContainerOptionsBuilder::default()
+                .name("lighthouse-validator")
+                .build(),
+        );
+        let created = docker
+            .create_container(create_opts, config)
+            .await
+            .map_err(eyre::Report::from)?;
+        docker
+            .start_container(
+                &created.id,
+                None::<bollard::query_parameters::StartContainerOptions>,
+            )
+            .await
+            .map_err(eyre::Report::from)?;
+        Ok::<(), eyre::Report>(())
+    })
 }
 
 fn lighthouse_root() -> Result<PathBuf> {
