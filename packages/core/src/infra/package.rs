@@ -3,6 +3,8 @@ use crate::infra::docker::{
     container_is_running, create_or_recreate_network, find_container, get_docker_instance,
     pull_and_start_container, remove_container, start_named_container, stop_named_container,
 };
+use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
+use crate::infra::file::kittynode_path;
 use crate::manifests::ethereum::Ethereum;
 use eyre::Result;
 use std::{
@@ -182,6 +184,25 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
     info!("Removing network '{}'...", package.network_name);
     docker.remove_network(&package.network_name).await?;
     info!("Network '{}' removed successfully", package.network_name);
+
+    // Additional cleanup: remove Ephemery network data to ensure full teardown
+    // This path is safe to remove even if Ephemery wasn't used.
+    if package.name == Ethereum::NAME {
+        if let Ok(root) = kittynode_path() {
+            let ephemery_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
+            if ephemery_dir.exists() {
+                info!(
+                    "Removing directory '{}'...",
+                    ephemery_dir.display()
+                );
+                fs::remove_dir_all(&ephemery_dir)?;
+                info!(
+                    "Directory '{}' removed successfully",
+                    ephemery_dir.display()
+                );
+            }
+        }
+    }
 
     Ok(())
 }

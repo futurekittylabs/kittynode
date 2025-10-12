@@ -49,6 +49,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
     fs::create_dir_all(&base_dir).wrap_err("Failed to prepare Ephemery network directory")?;
 
     let current_dir = base_dir.join("current");
+    let metadata_dir = current_dir.join("metadata");
     let tag_file = base_dir.join("current_tag");
     let mut active_tag = fs::read_to_string(&tag_file)
         .ok()
@@ -58,11 +59,14 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
 
     match latest_release {
         Ok((latest_tag, archive_url)) => {
+            // Fetch when there is no cached tag, the tag differs,
+            // or the on-disk layout is incomplete (missing current/metadata).
             let needs_fetch = active_tag
                 .as_ref()
                 .map(|tag| tag != &latest_tag)
                 .unwrap_or(true)
-                || !current_dir.exists();
+                || !current_dir.exists()
+                || !metadata_dir.exists();
             if needs_fetch {
                 info!("Updating Ephemery network configuration to {latest_tag}");
                 download_and_install(&base_dir, &archive_url)?;
@@ -72,7 +76,8 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
             active_tag = Some(latest_tag);
         }
         Err(error) => {
-            if active_tag.is_some() && current_dir.exists() {
+            // Offline or fetch failure: continue only if cached layout is complete
+            if active_tag.is_some() && current_dir.exists() && metadata_dir.exists() {
                 warn!(
                     "Failed to check for Ephemery updates, continuing with cached config: {error}"
                 );
@@ -85,7 +90,6 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
     }
 
     let tag = active_tag.context("Ephemery configuration tag is missing")?;
-    let metadata_dir = current_dir.join("metadata");
     if !metadata_dir.exists() {
         return Err(eyre!(
             "Ephemery metadata directory missing at {}",
