@@ -828,6 +828,20 @@ fn start_validator_container(
             fee_recipient.to_string(),
         ]);
 
+        // Create container (idempotent: remove existing with same name first)
+        let container_name = "lighthouse-validator";
+        // Best-effort forced removal by name to avoid 409 on create
+        let _ = docker
+            .remove_container(
+                container_name,
+                Some(bollard::query_parameters::RemoveContainerOptions {
+                    force: true,
+                    link: false,
+                    v: false,
+                }),
+            )
+            .await;
+
         // Create container
         let host_config = HostConfig {
             binds: Some(binds),
@@ -842,7 +856,7 @@ fn start_validator_container(
         };
         let create_opts = Some(
             CreateContainerOptionsBuilder::default()
-                .name("lighthouse-validator")
+                .name(container_name)
                 .build(),
         );
         let created = docker
