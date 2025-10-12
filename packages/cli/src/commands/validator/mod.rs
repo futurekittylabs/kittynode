@@ -9,7 +9,7 @@ use std::{
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::{
-    cursor::MoveTo,
+    cursor::{MoveTo, Show},
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
     terminal::{
@@ -387,10 +387,26 @@ pub async fn start() -> Result<()> {
     tokio::task::block_in_place(run_start_blocking)
 }
 
+struct RawTerminalGuard;
+
+impl Drop for RawTerminalGuard {
+    fn drop(&mut self) {
+        if let Err(error) = disable_raw_mode() {
+            error!("Failed to disable raw mode: {error}");
+        }
+        // Best-effort: attempt to leave the alternate screen and show cursor
+        let mut out = stdout();
+        let _ = execute!(out, LeaveAlternateScreen);
+        let _ = execute!(out, Show);
+    }
+}
+
 fn run_start_blocking() -> Result<()> {
     let handle = Handle::current();
     let mut stdout = stdout();
     enable_raw_mode()?;
+    // Ensure cleanup even if an error occurs anywhere below
+    let _raw_terminal_guard = RawTerminalGuard;
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -432,9 +448,6 @@ fn run_start_blocking() -> Result<()> {
         }
     }
 
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
     Ok(())
 }
 
@@ -720,7 +733,7 @@ fn run_launch_flow(
             .clone()
             .block_on(async { api::update_package_config("Ethereum", config.clone()).await });
         if let Err(error) = update_result {
-            if is_missing_volume_error(&error) {
+            if is_missing_docker_resource_error(&error) {
                 needs_install = true;
             } else {
                 return Err(error);
@@ -752,8 +765,13 @@ fn run_launch_flow(
     result
 }
 
-fn is_missing_volume_error(error: &Report) -> bool {
-    error.to_string().to_lowercase().contains("no such volume")
+fn is_missing_docker_resource_error(error: &Report) -> bool {
+    let msg = error.to_string().to_lowercase();
+    // Treat missing Docker resources (volumes/networks) as recoverable in restart
+    msg.contains("no such volume")
+        || (msg.contains("volume") && msg.contains("not found"))
+        || msg.contains("no such network")
+        || (msg.contains("network") && msg.contains("not found"))
 }
 
 fn run_validator_import(
