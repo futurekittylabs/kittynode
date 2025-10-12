@@ -33,7 +33,7 @@ use zeroize::Zeroizing;
 
 // Docker (bollard) for starting the validator container
 use bollard::{
-    models::ContainerCreateBody,
+    models::{ContainerCreateBody, EndpointSettings, NetworkingConfig},
     query_parameters::{CreateContainerOptionsBuilder, CreateImageOptionsBuilder},
     secret::HostConfig,
 };
@@ -820,10 +820,14 @@ fn start_validator_container(
             cmd.push("--network".into());
             cmd.push(network.to_string());
         }
+        // Prefer service discovery inside the user-defined Docker network
+        // so this works consistently across Docker Desktop and Colima.
+        // The beacon container is named 'lighthouse-node' and exposes 5052.
+        let beacon_endpoint = "http://lighthouse-node:5052";
         cmd.extend([
             "vc".into(),
             "--beacon-nodes".into(),
-            "http://127.0.0.1:5052".into(),
+            beacon_endpoint.into(),
             "--suggested-fee-recipient".into(),
             fee_recipient.to_string(),
         ]);
@@ -842,16 +846,30 @@ fn start_validator_container(
             )
             .await;
 
-        // Create container
+        // Create container attached to the same user-defined network
+        // as the Ethereum package, enabling service-name resolution.
         let host_config = HostConfig {
             binds: Some(binds),
-            network_mode: Some("host".into()),
             ..Default::default()
+        };
+
+        // Resolve the Docker network name for the Ethereum package.
+        let docker_network = kittynode_core::api::get_packages()
+            .ok()
+            .and_then(|pkgs| pkgs.get("Ethereum").map(|p| p.network_name().to_string()))
+            .unwrap_or_else(|| "ethereum-network".to_string());
+
+        let networking_config = NetworkingConfig {
+            endpoints_config: Some(HashMap::from([(
+                docker_network.clone(),
+                EndpointSettings::default(),
+            )])),
         };
         let config = ContainerCreateBody {
             image: Some("sigp/lighthouse".into()),
             cmd: Some(cmd),
             host_config: Some(host_config),
+            networking_config: Some(networking_config),
             ..Default::default()
         };
         let create_opts = Some(

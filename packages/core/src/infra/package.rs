@@ -191,10 +191,7 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
         if let Ok(root) = kittynode_path() {
             let ephemery_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
             if ephemery_dir.exists() {
-                info!(
-                    "Removing directory '{}'...",
-                    ephemery_dir.display()
-                );
+                info!("Removing directory '{}'...", ephemery_dir.display());
                 fs::remove_dir_all(&ephemery_dir)?;
                 info!(
                     "Directory '{}' removed successfully",
