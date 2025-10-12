@@ -48,6 +48,9 @@ impl Ethereum {
         if ephemery.is_some() {
             // For Ephemery, Reth expects a geth-style genesis JSON, not a parity chainspec.
             reth_cmd.push("/root/networks/ephemery/genesis.json".to_string());
+            // Ensure data is written to the mounted volume path instead of the chain-id-derived default.
+            reth_cmd.push("--datadir".to_string());
+            reth_cmd.push(format!("/root/.local/share/reth/{network}"));
         } else {
             reth_cmd.push(network.to_string());
         }
