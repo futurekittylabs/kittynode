@@ -37,15 +37,16 @@ use kittynode_core::api::{
     self,
     types::PackageConfig,
     validator::{
-        ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress, available_networks,
-        check_internet_connectivity, format_eth_from_gwei, generate_validator_files_with_progress,
-        normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
-        resolve_withdrawal_address, validate_password,
+        EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
+        available_networks, check_internet_connectivity, ensure_ephemery_config,
+        format_eth_from_gwei, generate_validator_files_with_progress, normalize_withdrawal_address,
+        parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
+        validate_password,
     },
 };
 
 fn desired_supported_networks() -> Vec<&'static str> {
-    const DESIRED: &[&str] = &["hoodi", "sepolia"];
+    const DESIRED: &[&str] = &[EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];
     let available = available_networks();
     DESIRED
         .iter()
@@ -306,7 +307,7 @@ pub async fn keygen() -> Result<Option<KeygenSummary>> {
 }
 
 const DOCKER_DOCS_URL: &str = "https://docs.docker.com/get-docker/";
-const NETWORK_OPTIONS: [&str; 2] = ["hoodi", "sepolia"];
+const NETWORK_OPTIONS: [&str; 3] = [EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];
 const EXECUTION_OPTIONS: [&str; 1] = ["reth (only option, others coming soon)"];
 const CONSENSUS_OPTIONS: [&str; 1] = ["lighthouse (only option, others coming soon)"];
 
@@ -581,6 +582,7 @@ fn render(frame: &mut Frame, state: &StartState) {
         Step::Deposit => {
             let launchpad = match state.network() {
                 "sepolia" => "https://sepolia.launchpad.ethereum.org",
+                "ephemery" => "https://ephemery.dev/",
                 _ => "https://hoodi.launchpad.ethereum.org",
             };
             lines.push(Line::styled("Final steps", title_style));
@@ -710,8 +712,17 @@ fn run_validator_import(
     fs::create_dir_all(lighthouse_dir)?;
     let lighthouse_mount = canonicalize_path(lighthouse_dir);
     let keys_mount = canonicalize_path(&summary.output_dir);
+    let ephemery = if network == EPHEMERY_NETWORK_NAME {
+        Some(ensure_ephemery_config()?)
+    } else {
+        None
+    };
+    let metadata_mount = ephemery
+        .as_ref()
+        .map(|config| canonicalize_path(&config.metadata_dir));
 
-    let status = Command::new("docker")
+    let mut command = Command::new("docker");
+    command
         .arg("run")
         .arg("--rm")
         .arg("-i")
@@ -719,16 +730,25 @@ fn run_validator_import(
         .arg("-v")
         .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()))
         .arg("-v")
-        .arg(format!("{}:/root/validator_keys", keys_mount.display()))
-        .arg("sigp/lighthouse")
-        .arg("lighthouse")
-        .arg("--network")
-        .arg(network)
+        .arg(format!("{}:/root/validator_keys", keys_mount.display()));
+    if let Some(mount) = metadata_mount.as_ref() {
+        command
+            .arg("-v")
+            .arg(format!("{}:/root/networks/ephemery:ro", mount.display()));
+    }
+    command.arg("sigp/lighthouse").arg("lighthouse");
+    if ephemery.is_some() {
+        command.arg("--testnet-dir").arg("/root/networks/ephemery");
+    } else {
+        command.arg("--network").arg(network);
+    }
+    command
         .arg("account")
         .arg("validator")
         .arg("import")
         .arg("--directory")
-        .arg("/root/validator_keys")
+        .arg("/root/validator_keys");
+    let status = command
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -747,13 +767,23 @@ fn start_validator_container(
     fee_recipient: &str,
 ) -> Result<()> {
     let lighthouse_mount = canonicalize_path(lighthouse_dir);
+    let ephemery = if network == EPHEMERY_NETWORK_NAME {
+        Some(ensure_ephemery_config()?)
+    } else {
+        None
+    };
+    let metadata_mount = ephemery
+        .as_ref()
+        .map(|config| canonicalize_path(&config.metadata_dir));
+
     let _ = Command::new("docker")
         .args(["rm", "-f", "kittynode-validator"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
 
-    let status = Command::new("docker")
+    let mut command = Command::new("docker");
+    command
         .arg("run")
         .arg("-d")
         .arg("--name")
@@ -763,16 +793,25 @@ fn start_validator_container(
         .arg("--network")
         .arg("host")
         .arg("-v")
-        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()))
-        .arg("sigp/lighthouse")
-        .arg("lighthouse")
-        .arg("--network")
-        .arg(network)
+        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()));
+    if let Some(mount) = metadata_mount.as_ref() {
+        command
+            .arg("-v")
+            .arg(format!("{}:/root/networks/ephemery:ro", mount.display()));
+    }
+    command.arg("sigp/lighthouse").arg("lighthouse");
+    if ephemery.is_some() {
+        command.arg("--testnet-dir").arg("/root/networks/ephemery");
+    } else {
+        command.arg("--network").arg(network);
+    }
+    command
         .arg("vc")
         .arg("--beacon-nodes")
         .arg("http://127.0.0.1:5052")
         .arg("--suggested-fee-recipient")
-        .arg(fee_recipient)
+        .arg(fee_recipient);
+    let status = command
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .status()?;
