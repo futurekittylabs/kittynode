@@ -113,13 +113,19 @@ pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRunti
 }
 
 /// Deletes a package and its associated resources
-pub async fn delete_package(package: &Package, include_images: bool) -> Result<()> {
+/// `purge_ephemery_cache` controls whether Ephemery cached config is removed.
+pub async fn delete_package(
+    package: &Package,
+    include_images: bool,
+    purge_ephemery_cache: bool,
+) -> Result<()> {
     let docker = get_docker_instance().await?;
 
     // Clean up containers and collect resources to remove
     let mut image_names = Vec::new();
     let mut file_paths = HashSet::new();
     let mut directory_paths = HashSet::new();
+
     let mut volume_names = Vec::new();
 
     for container in &package.containers {
@@ -132,7 +138,11 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
         for binding in &container.file_bindings {
             if let Ok(metadata) = fs::metadata(&binding.source) {
                 if metadata.is_dir() {
-                    directory_paths.insert(&binding.source);
+                    // Skip Ephemery metadata mount during config restart; purge on explicit uninstall
+                    let is_ephemery_mount = binding.destination == "/root/networks/ephemery";
+                    if !is_ephemery_mount || purge_ephemery_cache {
+                        directory_paths.insert(&binding.source);
+                    }
                 } else {
                     file_paths.insert(&binding.source);
                 }
@@ -185,19 +195,16 @@ pub async fn delete_package(package: &Package, include_images: bool) -> Result<(
     docker.remove_network(&package.network_name).await?;
     info!("Network '{}' removed successfully", package.network_name);
 
-    // Additional cleanup: remove Ephemery network data to ensure full teardown
-    // This path is safe to remove even if Ephemery wasn't used.
-    if package.name == Ethereum::NAME {
-        if let Ok(root) = kittynode_path() {
-            let ephemery_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
-            if ephemery_dir.exists() {
-                info!("Removing directory '{}'...", ephemery_dir.display());
-                fs::remove_dir_all(&ephemery_dir)?;
-                info!(
-                    "Directory '{}' removed successfully",
-                    ephemery_dir.display()
-                );
-            }
+    // Optionally purge the Ephemery cache on explicit uninstall
+    if purge_ephemery_cache
+        && package.name == Ethereum::NAME
+        && let Ok(root) = kittynode_path()
+    {
+        let root_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
+        if root_dir.exists() {
+            info!("Removing directory '{}'...", root_dir.display());
+            fs::remove_dir_all(&root_dir)?;
+            info!("Directory '{}' removed successfully", root_dir.display());
         }
     }
 

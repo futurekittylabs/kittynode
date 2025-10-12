@@ -141,11 +141,13 @@ pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>
     }
     // Use preselected network if provided and supported; otherwise prompt.
     let network = if let Some(pre) = preselected_network {
-        if network_labels.iter().any(|n| *n == pre) {
+        if network_labels.contains(&pre) {
             pre
         } else {
             let idx = Select::with_theme(&theme)
-                .with_prompt("Selected network is not supported by this build. Choose a supported network")
+                .with_prompt(
+                    "Selected network is not supported by this build. Choose a supported network",
+                )
                 .default(0)
                 .items(&network_labels)
                 .interact()?;
@@ -487,17 +489,16 @@ fn handle_event(
                 if let Some(summary) = run_keygen_flow(terminal, handle, Some(state.network()))? {
                     // Ensure network consistency: if keygen chose a different network,
                     // update the wizard selection to match before launch.
-                    if summary.network.as_str() != state.network() {
-                        if let Some(new_index) = NETWORK_OPTIONS
+                    if summary.network.as_str() != state.network()
+                        && let Some(new_index) = NETWORK_OPTIONS
                             .iter()
                             .position(|n| *n == summary.network.as_str())
-                        {
-                            state.network_index = new_index;
-                            state.status = Some(format!(
-                                "Adjusted network to match keygen: {}",
-                                state.network()
-                            ));
-                        }
+                    {
+                        state.network_index = new_index;
+                        state.status = Some(format!(
+                            "Adjusted network to match keygen: {}",
+                            state.network()
+                        ));
                     }
                     // Store summary and proceed to Summary step
                     state.keygen_summary = Some(summary);
@@ -602,10 +603,7 @@ fn render(frame: &mut Frame, state: &StartState) {
                     "Fee recipient: {}",
                     summary.fee_recipient
                 )));
-                lines.push(Line::from(format!(
-                    "Network: {}",
-                    summary.network
-                )));
+                lines.push(Line::from(format!("Network: {}", summary.network)));
                 lines.push(Line::from("Write these paths down before continuing."));
             } else {
                 lines.push(Line::from("No key information available."));
@@ -749,7 +747,7 @@ fn run_launch_flow(
 }
 
 fn is_missing_volume_error(error: &Report) -> bool {
-    error.to_string().contains("no such volume")
+    error.to_string().to_lowercase().contains("no such volume")
 }
 
 fn run_validator_import(
