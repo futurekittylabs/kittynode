@@ -721,7 +721,7 @@ fn run_launch_flow(
     terminal.show_cursor()?;
 
     let result = (|| -> Result<()> {
-        let _ = handle.block_on(remove_validator_container_if_present());
+        handle.block_on(remove_validator_container_if_present());
         println!("Importing validator keys with Lighthouse...");
         let lighthouse_dir = lighthouse_root()?;
         run_validator_import(summary, network, &lighthouse_dir)?;
@@ -832,7 +832,6 @@ fn run_validator_import(
         Err(eyre!("lighthouse import exited with status {status}"))
     }
 }
-
 
 fn lighthouse_root() -> Result<PathBuf> {
     Ok(api::kittynode_path()?.join(".lighthouse"))

@@ -112,8 +112,11 @@ pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRunti
     Ok(PackageRuntimeState { running })
 }
 
-/// Deletes a package and its associated resources
-/// `purge_ephemery_cache` controls whether Ephemery cached config is removed.
+/// Deletes a package and its associated resources.
+/// When `purge_ephemery_cache` is true (explicit uninstall), all file bindings
+/// including persistent RW mounts (e.g., ~/.config/kittynode/.lighthouse) are removed.
+/// When false (config restart), only ephemeral RO mounts are cleaned up and
+/// persistent user data is preserved.
 pub async fn delete_package(
     package: &Package,
     include_images: bool,
@@ -136,6 +139,21 @@ pub async fn delete_package(
         volume_names.extend(container.volume_bindings.iter().map(|b| &b.source));
 
         for binding in &container.file_bindings {
+            // Determine if mount is read-only; read-write mounts are persistent user data.
+            let is_read_only = binding
+                .options
+                .as_deref()
+                .map(|opts| opts.contains("ro"))
+                .unwrap_or(false);
+
+            // During a config restart (purge_ephemery_cache == false), only clean up RO mounts.
+            // During an explicit uninstall (purge_ephemery_cache == true), also remove RW mounts
+            // so that all Kittynode-created data is deleted.
+            let should_consider = is_read_only || purge_ephemery_cache;
+            if !should_consider {
+                continue;
+            }
+
             if let Ok(metadata) = fs::metadata(&binding.source) {
                 if metadata.is_dir() {
                     // Skip Ephemery metadata mount during config restart; purge on explicit uninstall
