@@ -203,7 +203,7 @@ const downloads = [
     </div>
   </div>
 
-  <Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
+  <!-- <Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
     <div
       class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
     >
@@ -234,5 +234,5 @@ const downloads = [
         </CollapsibleContent>
       </div>
     </div>
-  </Collapsible>
+  </Collapsible> -->
 </div>
