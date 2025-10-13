@@ -9,7 +9,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-alloy-primitives = "0.8.25"
+alloy-primitives = "1.4.0"
 bip32 = { version = "0.5.2", default-features = false, features = ["bip39", "secp256k1"] }
 bip39 = { package = "tiny-bip39", version = "2" }
 bollard = "0.19.3"
