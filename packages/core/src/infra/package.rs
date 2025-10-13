@@ -57,18 +57,31 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
     Ok(installed)
 }
 
-/// Installs a package with the given network configuration
-pub async fn install_package(package: &Package, network: Option<&str>) -> Result<()> {
+/// Installs a package using its current, concrete container definition.
+///
+/// Callers are responsible for ensuring required configuration has been
+/// provided beforehand (e.g., selecting a network for Ethereum). When the
+/// package is not fully configured, installation fails with a clear error.
+pub async fn install_package(package: &Package) -> Result<()> {
     let docker = get_docker_instance().await?;
-    let containers = match package.name.as_str() {
-        "Ethereum" => {
-            let net = network.ok_or_else(|| {
-                eyre::eyre!("Network must be configured before installing Ethereum")
-            })?;
-            Ethereum::get_containers(net)?
+
+    // For packages that require user input to determine their concrete
+    // container set (e.g., Ethereum network), the manifest returns an empty
+    // list until configured. Treat that as a deterministic error, not a
+    // fallback.
+    if package.containers.is_empty() {
+        if package.name == Ethereum::NAME {
+            return Err(eyre::eyre!(
+                "Network must be selected before installing Ethereum. Set one via: `kittynode package config set Ethereum --value network=<mainnet|sepolia|hoodi|ephemery>`"
+            ));
         }
-        _ => package.containers.clone(),
-    };
+        return Err(eyre::eyre!(
+            "Package '{}' is not fully configured for installation",
+            package.name
+        ));
+    }
+
+    let containers = package.containers.clone();
 
     info!("Creating network '{}'...", package.network_name);
     create_or_recreate_network(&docker, &package.network_name).await?;

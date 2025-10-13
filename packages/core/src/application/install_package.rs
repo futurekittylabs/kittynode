@@ -6,11 +6,12 @@ pub async fn install_package(name: &str) -> Result<()> {
     generate_jwt_secret().wrap_err("Failed to generate JWT secret")?;
 
     let package = package::get_package_by_name(name)?;
+    // Load package config explicitly to surface TOML parse errors to the caller.
+    // We don't need the values here; this ensures malformed configs don't get
+    // silently ignored by manifest defaults.
+    let _ = PackageConfigStore::load(name)?;
 
-    let config = PackageConfigStore::load(name)?;
-    let network = config.values.get("network");
-
-    package::install_package(&package, network.map(String::as_str)).await?;
+    package::install_package(&package).await?;
     info!("Package '{}' installed successfully.", name);
     Ok(())
 }
