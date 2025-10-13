@@ -4,10 +4,15 @@ description: Build Kittynode from source.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-Kittynode is free software, in the spirit of that, let's build from source.
+Kittynode is free software, and in the spirit of that, let's build from source.
 
 ### Prerequisites
+
+:::note
+You can skip this section if you're using Nix.
+:::
 
 <Steps>
 
@@ -37,25 +42,35 @@ Kittynode is free software, in the spirit of that, let's build from source.
 
 <Steps>
 
-1. Clone the repo and change into the directory:
+1. Clone the repo and change into it:
 
     ```bash
-    git clone git@github.com:futurekittylabs/kittynode.git && cd kittynode
+    git clone git@github.com:futurekittylabs/kittynode.git
+    cd kittynode
     ```
 
-2. Install dependencies:
+2. Install dev tools:
+
+    <Tabs>
+      <TabItem label="Not using Nix">
+        ```bash
+        just install-dev-tools
+        ```
+      </TabItem>
+      <TabItem label="Using Nix">
+        ```bash
+        nix develop
+        ```
+      </TabItem>
+    </Tabs>
+
+3. Install dependencies:
 
     ```bash
     bun install
     ```
 
-3. Install dev tools:
-
-    ```bash
-    just install-dev-tools
-    ```
-
-4. Build all crates (including the CLI app):
+4. Build all crates:
 
     ```bash
     just build
@@ -65,6 +80,24 @@ Kittynode is free software, in the spirit of that, let's build from source.
 
     ```bash
     just build-app
+    ```
+
+</Steps>
+
+### Run Kittynode
+
+<Steps>
+
+1. Run the CLI:
+
+    ```bash
+    just kittynode
+    ```
+
+2. Run the desktop app:
+
+    ```bash
+    just app
     ```
 
 </Steps>
