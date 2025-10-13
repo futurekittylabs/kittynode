@@ -73,16 +73,20 @@ export default defineConfig({
       ],
       sidebar: [
         {
+          label: "Start Here",
+          items: [
+            {
+              label: "Getting started",
+              slug: "start-here/getting-started",
+            },
+          ],
+        },
+        {
           label: "Guides",
           items: [
             {
-              label: "Build from source",
-              slug: "guides/build-from-source",
-            },
-            {
               label: "Run Ethereum",
               slug: "guides/run-ethereum",
-              badge: "New",
             },
           ],
         },
@@ -92,6 +96,10 @@ export default defineConfig({
             {
               label: "Architecture",
               slug: "reference/architecture",
+            },
+            {
+              label: "Build from source",
+              slug: "reference/build-from-source",
             },
           ],
         },
