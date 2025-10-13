@@ -3,6 +3,8 @@ mod update_checker;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tracing_subscriber::fmt::MakeWriter;
 
 #[derive(Parser)]
 #[command(
@@ -394,11 +396,51 @@ fn parse_key_val(s: &str) -> Result<(String, String), String> {
     Ok((key.to_string(), value.to_string()))
 }
 
+mod log_control {
+    use super::*;
+
+    static QUIET: AtomicBool = AtomicBool::new(false);
+
+    pub struct LogGuard {
+        prev: bool,
+    }
+
+    impl Drop for LogGuard {
+        fn drop(&mut self) {
+            QUIET.store(self.prev, Ordering::SeqCst);
+        }
+    }
+
+    struct ToggleWriter;
+    impl<'a> MakeWriter<'a> for ToggleWriter {
+        type Writer = Box<dyn std::io::Write + Send>;
+        fn make_writer(&'a self) -> Self::Writer {
+            if QUIET.load(Ordering::SeqCst) {
+                Box::new(std::io::sink())
+            } else {
+                Box::new(std::io::stderr())
+            }
+        }
+    }
+
+    pub fn init_logging() {
+        tracing_subscriber::fmt().with_writer(ToggleWriter).init();
+    }
+
+    pub fn mute_guard() -> LogGuard {
+        let prev = QUIET.swap(true, Ordering::SeqCst);
+        LogGuard { prev }
+    }
+
+    pub fn enable_guard() -> LogGuard {
+        let prev = QUIET.swap(false, Ordering::SeqCst);
+        LogGuard { prev }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
-        .init();
+    log_control::init_logging();
 
     // Skip update check if the user is running the update command
     if std::env::args().nth(1).as_deref() != Some("update") {

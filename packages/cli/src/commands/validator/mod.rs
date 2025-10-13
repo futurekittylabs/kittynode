@@ -403,6 +403,8 @@ fn run_start_blocking() -> Result<()> {
     enable_raw_mode()?;
     // Ensure cleanup even if an error occurs anywhere below
     let _raw_terminal_guard = RawTerminalGuard;
+    // Suppress logs while the TUI is active to avoid pushing content
+    let _mute_logs = crate::log_control::mute_guard();
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -697,6 +699,8 @@ fn run_keygen_flow(
     _handle: &Handle,
     preselected_network: Option<&str>,
 ) -> Result<Option<KeygenSummary>> {
+    // Temporarily enable logging while leaving the TUI for prompts
+    let _logs_on = crate::log_control::enable_guard();
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
@@ -715,6 +719,8 @@ fn run_launch_flow(
     summary: &KeygenSummary,
     network: &str,
 ) -> Result<()> {
+    // Temporarily enable logging while we leave the TUI
+    let _logs_on = crate::log_control::enable_guard();
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
