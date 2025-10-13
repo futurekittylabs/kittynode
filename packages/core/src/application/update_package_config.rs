@@ -7,7 +7,18 @@ use eyre::Result;
 pub async fn update_package_config(package_name: &str, config: PackageConfig) -> Result<()> {
     // Take a snapshot of the pre-update package definition so we can remove
     // containers that may be dropped by the new config (e.g., validator).
-    let pre_update_package = infra_package::get_package_by_name(package_name)?;
+    let pre_update_package = match infra_package::get_package_by_name(package_name) {
+        Ok(package) => Some(package),
+        Err(err) => {
+            let message = err.to_string();
+            let unsupported_network = message.contains("Unsupported Ethereum network");
+            if unsupported_network {
+                None
+            } else {
+                return Err(err);
+            }
+        }
+    };
 
     // Load existing config and perform a shallow overlay with the incoming keys
     // to avoid clobbering user-provided settings. This is deterministic and
@@ -22,14 +33,19 @@ pub async fn update_package_config(package_name: &str, config: PackageConfig) ->
 
     // Best-effort removal using the pre-update snapshot; tolerate missing Docker
     // resources to keep reconfiguration robust on first-time installs.
-    if let Err(err) = infra_package::delete_package(&pre_update_package, false, false).await {
-        let msg = err.to_string().to_lowercase();
-        let missing = msg.contains("no such volume")
-            || (msg.contains("volume") && msg.contains("not found"))
-            || msg.contains("no such network")
-            || (msg.contains("network") && msg.contains("not found"));
-        if !missing {
-            return Err(err);
+    if let Some(package) = &pre_update_package {
+        match infra_package::delete_package(package, false, false).await {
+            Ok(_) => {}
+            Err(err) => {
+                let msg = err.to_string().to_lowercase();
+                let missing = msg.contains("no such volume")
+                    || (msg.contains("volume") && msg.contains("not found"))
+                    || msg.contains("no such network")
+                    || (msg.contains("network") && msg.contains("not found"));
+                if !missing {
+                    return Err(err);
+                }
+            }
         }
     }
 

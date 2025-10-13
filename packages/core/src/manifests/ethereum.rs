@@ -24,7 +24,7 @@ impl PackageDefinition for Ethereum {
 
         // Use currently saved config (if any) to shape the live container set.
         // If the network is not configured yet, leave containers empty.
-        let saved_cfg = PackageConfigStore::load(ETHEREUM_NAME).unwrap_or_default();
+        let saved_cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
         let containers = match saved_cfg.values.get("network") {
             Some(n) => Ethereum::get_containers(n)?,
             None => Vec::new(),
@@ -236,7 +236,7 @@ impl Ethereum {
             },
         ];
 
-        let cfg = PackageConfigStore::load(ETHEREUM_NAME).unwrap_or_default();
+        let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
         let enabled = cfg
             .values
             .get("validator_enabled")
