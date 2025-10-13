@@ -3,6 +3,8 @@ mod update_checker;
 
 use clap::{Parser, Subcommand};
 use eyre::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tracing_subscriber::fmt::MakeWriter;
 
 #[derive(Parser)]
 #[command(
@@ -204,6 +206,8 @@ enum ContainerCommands {
 enum ValidatorCommands {
     #[command(name = "keygen", about = "Generate Ethereum validator keys")]
     Keygen,
+    #[command(name = "start", about = "Launch the validator setup workflow")]
+    Start,
 }
 
 #[derive(Subcommand)]
@@ -358,7 +362,8 @@ impl ContainerCommands {
 impl ValidatorCommands {
     async fn execute(self) -> Result<()> {
         match self {
-            ValidatorCommands::Keygen => commands::validator::keygen().await,
+            ValidatorCommands::Keygen => commands::validator::keygen(None).map(|_| ()),
+            ValidatorCommands::Start => commands::validator::start().await,
         }
     }
 }
@@ -391,13 +396,53 @@ fn parse_key_val(s: &str) -> Result<(String, String), String> {
     Ok((key.to_string(), value.to_string()))
 }
 
+mod log_control {
+    use super::*;
+
+    static QUIET: AtomicBool = AtomicBool::new(false);
+
+    pub struct LogGuard {
+        prev: bool,
+    }
+
+    impl Drop for LogGuard {
+        fn drop(&mut self) {
+            QUIET.store(self.prev, Ordering::SeqCst);
+        }
+    }
+
+    struct ToggleWriter;
+    impl<'a> MakeWriter<'a> for ToggleWriter {
+        type Writer = Box<dyn std::io::Write + Send>;
+        fn make_writer(&'a self) -> Self::Writer {
+            if QUIET.load(Ordering::SeqCst) {
+                Box::new(std::io::sink())
+            } else {
+                Box::new(std::io::stderr())
+            }
+        }
+    }
+
+    pub fn init_logging() {
+        tracing_subscriber::fmt().with_writer(ToggleWriter).init();
+    }
+
+    pub fn mute_guard() -> LogGuard {
+        let prev = QUIET.swap(true, Ordering::SeqCst);
+        LogGuard { prev }
+    }
+
+    pub fn enable_guard() -> LogGuard {
+        let prev = QUIET.swap(false, Ordering::SeqCst);
+        LogGuard { prev }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
-        .init();
+    log_control::init_logging();
 
-    // Skip update check if the user is running the update command
+    // Skip the update check when the CLI itself is being updated.
     if std::env::args().nth(1).as_deref() != Some("update") {
         update_checker::check_and_print_update().await;
     }

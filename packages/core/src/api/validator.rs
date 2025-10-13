@@ -7,3 +7,6 @@ pub use crate::application::validator::{
     normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
     resolve_withdrawal_address, validate_password,
 };
+pub use crate::infra::ephemery::{
+    EPHEMERY_CHECKPOINT_URLS, EPHEMERY_NETWORK_NAME, EphemeryConfig, ensure_ephemery_config,
+};

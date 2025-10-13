@@ -1,4 +1,4 @@
-use crate::infra::{file::generate_jwt_secret, package, package_config::PackageConfigStore};
+use crate::infra::{file::generate_jwt_secret, package};
 use eyre::{Context, Result};
 use tracing::info;
 
@@ -7,10 +7,7 @@ pub async fn install_package(name: &str) -> Result<()> {
 
     let package = package::get_package_by_name(name)?;
 
-    let config = PackageConfigStore::load(name)?;
-    let network = config.values.get("network");
-
-    package::install_package(&package, network.map(String::as_str)).await?;
+    package::install_package(&package).await?;
     info!("Package '{}' installed successfully.", name);
     Ok(())
 }

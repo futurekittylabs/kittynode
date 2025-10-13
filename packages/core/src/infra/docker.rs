@@ -26,6 +26,9 @@ use std::{
 };
 use tokio_stream::StreamExt;
 use tracing::{error, info};
+pub async fn get_docker() -> Result<Docker> {
+    get_docker_instance().await
+}
 
 #[cfg(target_os = "linux")]
 pub(crate) async fn get_docker_instance() -> Result<Docker> {
@@ -108,7 +111,7 @@ fn linux_socket_candidates() -> Vec<PathBuf> {
 
     if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
         let runtime = PathBuf::from(runtime_dir);
-        // Order matches Docker Desktop defaults where the proxy socket sits in docker.sock.
+        // Prefer the Docker-provided sockets before falling back to the system defaults.
         for rel in ["docker.sock", "docker-desktop.sock"] {
             let path = runtime.join(rel);
             if seen.insert(path.clone()) {
@@ -187,20 +190,18 @@ fn annotate_error(err: Report, attempted: &[String]) -> Report {
 }
 
 pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &str) -> Result<()> {
-    // Check if network already exists
     let network_exists = docker
         .list_networks(None::<bollard::query_parameters::ListNetworksOptions>)
         .await?
         .iter()
         .any(|n| n.name.as_deref() == Some(network_name));
 
-    // Remove network if it already exists
     if network_exists {
+        // Tear down the existing bridge to guarantee a clean reconfiguration.
         docker.remove_network(network_name).await?;
         info!("Removed existing network: '{}'", network_name);
     }
 
-    // Create new network
     let network_config = NetworkCreateRequest {
         name: network_name.to_string(),
         driver: Some("bridge".to_string()),
@@ -228,10 +229,10 @@ pub(crate) async fn remove_container(docker: &Docker, name: &str) -> Result<()> 
         let id = container
             .id
             .ok_or_else(|| eyre::eyre!("Container ID was None"))?;
-        docker
+        // Attempts to stop may fail if the container already exited; ignore those errors.
+        let _ = docker
             .stop_container(&id, None::<bollard::query_parameters::StopContainerOptions>)
-            .await
-            .ok(); // Ignore stop errors
+            .await;
         docker
             .remove_container(
                 &id,
@@ -293,6 +294,11 @@ pub(crate) async fn pull_and_start_container(
     container: &Container,
     network_name: &str,
 ) -> Result<()> {
+    let exposed_ports: HashMap<String, HashMap<(), ()>> = container
+        .port_bindings
+        .keys()
+        .map(|key| (key.to_string(), HashMap::new()))
+        .collect();
     let options = Some(
         CreateImageOptionsBuilder::default()
             .from_image(container.image.as_str())
@@ -330,6 +336,7 @@ pub(crate) async fn pull_and_start_container(
     let config = ContainerCreateBody {
         image: Some(container.image.to_string()),
         cmd: Some(container.cmd.clone()),
+        exposed_ports: Some(exposed_ports),
         host_config: Some(host_config),
         ..Default::default()
     };
@@ -340,6 +347,7 @@ pub(crate) async fn pull_and_start_container(
             .build(),
     );
 
+    let _ = remove_container(docker, container.name.as_str()).await;
     let created_container = docker.create_container(options, config).await?;
     info!("Container {} created successfully.", container.name);
 

@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use crate::infra::ephemery::{EPHEMERY_NETWORK_NAME, ensure_ephemery_config};
 use alloy_primitives::{
     U256,
     utils::{Unit, format_units, keccak256},
@@ -34,7 +35,11 @@ const DEPOSIT_CLI_VERSION: &str = "1.2.0";
 
 /// Returns the list of Lighthouse networks supported by this build.
 pub fn available_networks() -> Vec<&'static str> {
-    HARDCODED_NET_NAMES.to_vec()
+    let mut networks = HARDCODED_NET_NAMES.to_vec();
+    if !networks.contains(&EPHEMERY_NETWORK_NAME) {
+        networks.push(EPHEMERY_NETWORK_NAME);
+    }
+    networks
 }
 
 /// Performs a basic DNS + TCP connectivity check against a fixed set of probes.
@@ -156,6 +161,7 @@ pub fn generate_validator_files_with_progress(
         compounding,
         timestamp,
         suffix,
+        network: &network,
     };
 
     for index in 0..validator_count {
@@ -224,6 +230,7 @@ struct GenerationParams<'a> {
     compounding: bool,
     timestamp: u64,
     suffix: Option<u32>,
+    network: &'a str,
 }
 
 fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathBuf, DepositEntry)> {
@@ -276,11 +283,15 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
     let deposit_message_root = deposit_data.as_deposit_message().tree_hash_root();
     let deposit_data_root = deposit_data.tree_hash_root();
 
-    let network_name = params
-        .spec
-        .config_name
-        .clone()
-        .context("Network config name missing")?;
+    let network_name = if params.network == EPHEMERY_NETWORK_NAME {
+        EPHEMERY_NETWORK_NAME.to_string()
+    } else {
+        params
+            .spec
+            .config_name
+            .clone()
+            .context("Network config name missing")?
+    };
 
     let DepositData {
         pubkey,
@@ -346,6 +357,12 @@ struct DepositEntry {
 }
 
 fn load_chain_spec(network: &str) -> Result<ChainSpec> {
+    if network == EPHEMERY_NETWORK_NAME {
+        let config =
+            ensure_ephemery_config().wrap_err("Failed to prepare Ephemery configuration")?;
+        return build_spec_from_dir(&config.metadata_dir);
+    }
+
     if let Some(spec) = build_spec(network)? {
         return Ok(spec);
     }
@@ -367,6 +384,21 @@ fn build_spec(network: &str) -> Result<Option<ChainSpec>> {
         Ok(None) => Ok(None),
         Err(error) => Err(eyre!("Failed to load network config {network}: {error}")),
     }
+}
+
+fn build_spec_from_dir(path: &Path) -> Result<ChainSpec> {
+    let config = Eth2NetworkConfig::load(path.to_path_buf()).map_err(|error| {
+        eyre!(
+            "Failed to load network configuration from {}: {error}",
+            path.display()
+        )
+    })?;
+    config.chain_spec::<MainnetEthSpec>().map_err(|error| {
+        eyre!(
+            "Failed to build chain spec from {}: {error}",
+            path.display()
+        )
+    })
 }
 
 fn prepare_output_dir(path: &Path) -> Result<()> {

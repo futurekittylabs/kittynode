@@ -28,6 +28,9 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sysinfo = "0.37.2"
 tempfile = "3.23.0"
+flate2 = { version = "1.0.34", default-features = false, features = ["rust_backend"] }
+tar = "0.4.43"
+ureq = { version = "2.9.7", features = ["json", "tls"] }
 tokio-stream = "0.1.17"
 toml = "0.9.7"
 tracing = "0.1.41"
