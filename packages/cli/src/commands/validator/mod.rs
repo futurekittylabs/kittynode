@@ -811,7 +811,7 @@ fn run_validator_import(
         metadata_mount: Option<&Path>,
         network: &str,
         use_ephemery: bool,
-        provided_password: &str,
+        provided_password: &Zeroizing<String>,
     ) -> Result<()> {
         let docker: Docker = kittynode_core::api::get_docker().await?;
 
@@ -898,11 +898,10 @@ fn run_validator_import(
                 ),
             )
             .await?;
-        // Provide the password via stdin and then close input
-        input
-            .write_all(format!("{}\n", provided_password).as_bytes())
-            .await
-            .ok();
+        // Provide the password via stdin and then close input without creating
+        // intermediate formatted strings that might persist in memory.
+        input.write_all(provided_password.as_bytes()).await.ok();
+        input.write_all(b"\n").await.ok();
         // Close stdin to signal EOF
         drop(input);
 
@@ -960,7 +959,8 @@ fn run_validator_import(
         .with_prompt("Enter the keystore password to import validators")
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
-
+    // Zeroize the password in memory after use
+    let password = Zeroizing::new(password);
     let handle = Handle::current();
     handle.block_on(import_with_bollard(
         &lighthouse_mount,
