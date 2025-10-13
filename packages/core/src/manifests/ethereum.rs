@@ -1,4 +1,4 @@
-use eyre::Result;
+use eyre::{Result, eyre};
 use std::collections::HashMap;
 
 use crate::infra::package_config::PackageConfigStore;
@@ -19,23 +19,33 @@ impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
 
     fn get_package() -> Result<Package> {
-        let mut default_config = PackageConfig::new();
-        default_config
-            .values
-            .insert("network".to_string(), "hoodi".to_string());
+        // Default config presented to clients (no implicit network selection)
+        let default_config = PackageConfig::new();
+
+        // Use currently saved config (if any) to shape the live container set.
+        // If the network is not configured yet, leave containers empty.
+        let saved_cfg = PackageConfigStore::load(ETHEREUM_NAME).unwrap_or_default();
+        let containers = match saved_cfg.values.get("network") {
+            Some(n) => Ethereum::get_containers(n)?,
+            None => Vec::new(),
+        };
 
         Ok(Package {
             name: ETHEREUM_NAME.to_string(),
             description: "This package installs an Ethereum node.".to_string(),
             network_name: "ethereum-network".to_string(),
             default_config,
-            containers: Ethereum::get_containers("hoodi")?,
+            containers,
         })
     }
 }
 
 impl Ethereum {
     pub(crate) fn get_containers(network: &str) -> Result<Vec<Container>> {
+        // Strictly validate supported networks to avoid accidental fallbacks
+        if !Self::is_supported_network(network) {
+            return Err(eyre!("Unsupported Ethereum network: {network}"));
+        }
         let kittynode_path = kittynode_path()?;
         let jwt_path = kittynode_path.join("jwt.hex");
 
@@ -275,5 +285,9 @@ impl Ethereum {
         }
 
         Ok(containers)
+    }
+
+    fn is_supported_network(network: &str) -> bool {
+        matches!(network, "mainnet" | "hoodi" | "sepolia") || network == EPHEMERY_NETWORK_NAME
     }
 }

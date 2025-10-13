@@ -34,6 +34,11 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
     let mut installed = Vec::new();
 
     for package in packages.values() {
+        // If a package defines no containers (e.g., not yet configured), it is not installed.
+        if package.containers.is_empty() {
+            continue;
+        }
+
         let mut all_containers_exist = true;
 
         for container in &package.containers {
@@ -56,7 +61,12 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
 pub async fn install_package(package: &Package, network: Option<&str>) -> Result<()> {
     let docker = get_docker_instance().await?;
     let containers = match package.name.as_str() {
-        "Ethereum" => Ethereum::get_containers(network.unwrap_or("hoodi"))?,
+        "Ethereum" => {
+            let net = network.ok_or_else(|| {
+                eyre::eyre!("Network must be configured before installing Ethereum")
+            })?;
+            Ethereum::get_containers(net)?
+        }
         _ => package.containers.clone(),
     };
 
@@ -98,6 +108,10 @@ pub async fn resume_package(package: &Package) -> Result<()> {
 
 pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRuntimeState> {
     let docker = get_docker_instance().await?;
+    // No containers means not running
+    if package.containers.is_empty() {
+        return Ok(PackageRuntimeState { running: false });
+    }
     let mut running = true;
 
     for container in &package.containers {
