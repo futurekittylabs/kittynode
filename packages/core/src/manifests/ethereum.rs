@@ -116,10 +116,11 @@ impl Ethereum {
             lighthouse_cmd.push("--checkpoint-sync-url".to_string());
             lighthouse_cmd.push(url.to_string());
         } else {
-            let checkpoint_sync_url = if network == "mainnet" {
-                "https://mainnet.checkpoint.sigp.io/"
-            } else {
-                "https://checkpoint-sync.hoodi.ethpandaops.io"
+            let checkpoint_sync_url = match network {
+                "mainnet" => "https://mainnet.checkpoint.sigp.io/",
+                "sepolia" => "https://checkpoint-sync.sepolia.ethpandaops.io/",
+                "hoodi" => "https://checkpoint-sync.hoodi.ethpandaops.io",
+                other => return Err(eyre!("Unsupported network for checkpoint sync: {other}")),
             };
             lighthouse_cmd.push("--checkpoint-sync-url".to_string());
             lighthouse_cmd.push(checkpoint_sync_url.to_string());
