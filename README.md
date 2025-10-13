@@ -23,7 +23,6 @@ View the documentation at [docs.kittynode.com](https://docs.kittynode.com).
 
 - [Discord](https://discord.gg/kittynode)
 - [Farcaster](https://farcaster.xyz/kittynode)
-- [X](https://x.com/kittynode)
 
 ## License
 

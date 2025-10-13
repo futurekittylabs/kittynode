@@ -65,9 +65,6 @@ let { children } = $props();
           <a href="https://github.com/futurekittylabs/kittynode" class="nav-link">
             GitHub
           </a>
-          <a href="https://x.com/kittynode" class="nav-link">
-            X
-          </a>
         </div>
         <div class="text-center text-sm text-muted-foreground">
           Kittynode is <a
