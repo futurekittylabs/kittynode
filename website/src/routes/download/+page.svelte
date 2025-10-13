@@ -4,16 +4,9 @@ import {
   Monitor,
   Download,
   AppWindowMac,
-  CircleQuestionMark,
-  ChevronDown,
   Package,
 } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "$lib/components/ui/collapsible/index.js";
 import { CopyButton } from "$lib/components/ui/copy-button/index.js";
 import appRelease from "$lib/app-release.json";
 
@@ -32,15 +25,12 @@ function formatReleaseDate(pubDate: string | undefined): string {
   return releaseDateFormatter.format(parsed);
 }
 
-let linuxHelpOpen = false;
-
 const { version: appVersion, pub_date: appPubDate } = appRelease;
 const releaseDate = formatReleaseDate(appPubDate);
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
-const discordUrl = "https://discord.kittynode.com";
 const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
 
 const downloads = [
@@ -202,37 +192,4 @@ const downloads = [
       </div>
     </div>
   </div>
-
-  <!-- <Collapsible bind:open={linuxHelpOpen} class="mt-10 max-w-2xl mx-auto">
-    <div
-      class="rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
-    >
-      <div class="overflow-hidden rounded-lg border">
-        <CollapsibleTrigger
-          class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none"
-        >
-          <span class="flex items-center gap-2">
-            <CircleQuestionMark class="h-4 w-4 text-link" />
-            Looking for another Linux package format?
-          </span>
-          <ChevronDown
-            class={`h-4 w-4 transition-transform ${linuxHelpOpen ? "rotate-180" : ""}`}
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent
-          class="space-y-3 px-4 pb-4 pt-1 text-sm text-muted-foreground"
-        >
-          <p>
-            We're expanding our Linux packaging support beyond the options
-            listed above.
-          </p>
-          <p>
-            Please reach out on <a href={discordUrl} class="link">Discord</a> or
-            <a href={baseUrl} class="link">GitHub</a> if your distro is not supported
-            — we want to support your system and will prioritize it!
-          </p>
-        </CollapsibleContent>
-      </div>
-    </div>
-  </Collapsible> -->
 </div>
