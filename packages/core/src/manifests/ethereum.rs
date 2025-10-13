@@ -19,11 +19,8 @@ impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
 
     fn get_package() -> Result<Package> {
-        // Default config presented to clients (no implicit network selection)
         let default_config = PackageConfig::new();
 
-        // Use currently saved config (if any) to shape the live container set.
-        // If the network is not configured yet, leave containers empty.
         let saved_cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
         let containers = match saved_cfg.values.get("network") {
             Some(n) => Ethereum::get_containers(n)?,
@@ -42,7 +39,6 @@ impl PackageDefinition for Ethereum {
 
 impl Ethereum {
     pub(crate) fn get_containers(network: &str) -> Result<Vec<Container>> {
-        // Strictly validate supported networks to avoid accidental fallbacks
         if !Self::is_supported_network(network) {
             return Err(eyre!("Unsupported Ethereum network: {network}"));
         }
@@ -57,9 +53,8 @@ impl Ethereum {
 
         let mut reth_cmd = vec!["node".to_string(), "--chain".to_string()];
         if ephemery.is_some() {
-            // For Ephemery, Reth expects a geth-style genesis JSON, not a parity chainspec.
+            // Ephemery uses the bundled testnet config and needs an explicit datadir override.
             reth_cmd.push("/root/networks/ephemery/genesis.json".to_string());
-            // Ensure data is written to the mounted volume path instead of the chain-id-derived default.
             reth_cmd.push("--datadir".to_string());
             reth_cmd.push(format!("/root/.local/share/reth/{network}"));
         } else {

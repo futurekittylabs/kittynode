@@ -5,8 +5,7 @@ use crate::infra::package_config::PackageConfigStore;
 use eyre::Result;
 
 pub async fn update_package_config(package_name: &str, config: PackageConfig) -> Result<()> {
-    // Take a snapshot of the pre-update package definition so we can remove
-    // containers that may be dropped by the new config (e.g., validator).
+    // Capture the current concrete package so we can remove stale containers after the update.
     let pre_update_package = match infra_package::get_package_by_name(package_name) {
         Ok(package) => Some(package),
         Err(err) => {
@@ -20,20 +19,16 @@ pub async fn update_package_config(package_name: &str, config: PackageConfig) ->
         }
     };
 
-    // Load existing config and perform a shallow overlay with the incoming keys
-    // to avoid clobbering user-provided settings. This is deterministic and
-    // idempotent: repeated calls with the same inputs yield the same result.
+    // Overlay incoming keys without clobbering unrelated user-provided values.
     let mut merged = PackageConfigStore::load(package_name)?;
     for (k, v) in config.values.into_iter() {
         merged.values.insert(k, v);
     }
 
-    // Persist the merged configuration so any fallback install paths can read it
     PackageConfigStore::save(package_name, &merged)?;
 
-    // Best-effort removal using the pre-update snapshot; tolerate missing Docker
-    // resources to keep reconfiguration robust on first-time installs.
     if let Some(package) = &pre_update_package {
+        // Best-effort cleanup: tolerate missing Docker resources on first-time installs.
         match infra_package::delete_package(package, false, false).await {
             Ok(_) => {}
             Err(err) => {
@@ -49,7 +44,7 @@ pub async fn update_package_config(package_name: &str, config: PackageConfig) ->
         }
     }
 
-    // Install using the newly-saved configuration
+    // Reinstall using the saved configuration so changes take effect.
     install_package(package_name).await?;
 
     Ok(())

@@ -59,8 +59,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
 
     match latest_release {
         Ok((latest_tag, archive_url)) => {
-            // Fetch when there is no cached tag, the tag differs,
-            // or the on-disk layout is incomplete (missing current/metadata).
+            // Refresh when the cached tag is missing, outdated, or the on-disk layout is incomplete.
             let needs_fetch = active_tag
                 .as_ref()
                 .map(|tag| tag != &latest_tag)
@@ -76,7 +75,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
             active_tag = Some(latest_tag);
         }
         Err(error) => {
-            // Offline or fetch failure: continue only if cached layout is complete
+            // Allow offline operation when we already have a complete cache on disk.
             if active_tag.is_some() && current_dir.exists() && metadata_dir.exists() {
                 warn!(
                     "Failed to check for Ephemery updates, continuing with cached config: {error}"
@@ -175,7 +174,7 @@ fn download_and_install(base_dir: &Path, archive_url: &str) -> Result<()> {
             .wrap_err("Failed to move previous Ephemery configuration to backup")?;
     }
     if let Err(error) = fs::rename(&new_dir, &current_dir) {
-        // Attempt to restore the backup before returning an error.
+        // Restore the previous configuration if promotion fails midflight.
         if backup_dir.exists() {
             let _ = fs::rename(&backup_dir, &current_dir);
         }

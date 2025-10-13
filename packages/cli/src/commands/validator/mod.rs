@@ -30,8 +30,6 @@ use tokio::runtime::Handle;
 use tracing::error;
 use zeroize::Zeroizing;
 
-// Docker (bollard) for starting the validator container
-
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
@@ -46,7 +44,7 @@ use kittynode_core::api::{
     },
 };
 
-// Single source of truth for the validator container name
+/// Lighthouse validator container name shared across the CLI.
 pub const VALIDATOR_CONTAINER_NAME: &str = "lighthouse-validator";
 
 fn desired_supported_networks() -> Vec<&'static str> {
@@ -69,17 +67,14 @@ pub struct KeygenSummary {
 pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>> {
     let theme = ColorfulTheme::default();
 
-    // Pre-check warnings block
     let mut warnings: Vec<String> = Vec::new();
 
-    // Internet connectivity warning
     if check_internet_connectivity() {
         warnings.push(
             "Internet connectivity detected. You should never generate keys on a device that's ever been connected to the internet.".to_string(),
         );
     }
 
-    // Swap detection or limitation
     #[cfg(target_os = "linux")]
     {
         if swap_active() {
@@ -95,7 +90,6 @@ pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>
         );
     }
 
-    // Non-Unix permission enforcement limitation
     #[cfg(not(unix))]
     {
         warnings.push(
@@ -135,7 +129,6 @@ pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>
             "No supported networks are available in this Lighthouse build. Please upgrade Lighthouse (and this CLI if needed)"
         ));
     }
-    // Use preselected network if provided and supported; otherwise prompt.
     let network = if let Some(pre) = preselected_network {
         if network_labels.contains(&pre) {
             pre
@@ -219,7 +212,6 @@ pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>
     let deposit_amount_per_validator_eth_str =
         format_eth_from_gwei(deposit_amount_gwei_per_validator);
 
-    // Allow user to select output directory for keys.
     let output_dir_input = Input::<String>::with_theme(&theme)
         .with_prompt("Output directory for validator keys")
         .default("./validator-keys".to_string())
@@ -390,7 +382,6 @@ impl Drop for RawTerminalGuard {
         if let Err(error) = disable_raw_mode() {
             error!("Failed to disable raw mode: {error}");
         }
-        // Best-effort: attempt to leave the alternate screen and show cursor
         let mut out = stdout();
         let _ = execute!(out, LeaveAlternateScreen);
         let _ = execute!(out, Show);
@@ -401,9 +392,7 @@ fn run_start_blocking() -> Result<()> {
     let handle = Handle::current();
     let mut stdout = stdout();
     enable_raw_mode()?;
-    // Ensure cleanup even if an error occurs anywhere below
     let _raw_terminal_guard = RawTerminalGuard;
-    // Suppress logs while the TUI is active to avoid pushing content
     let _mute_logs = crate::log_control::mute_guard();
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
@@ -499,20 +488,18 @@ fn handle_event(
                 state.status = Some("Launching key generation...".to_string());
                 match run_keygen_flow(terminal, handle, Some(state.network())) {
                     Ok(Some(summary)) => {
-                        // Ensure network consistency: if keygen chose a different network,
-                        // update the wizard selection to match before launch.
                         if summary.network.as_str() != state.network()
                             && let Some(new_index) = NETWORK_OPTIONS
                                 .iter()
                                 .position(|n| *n == summary.network.as_str())
                         {
                             state.network_index = new_index;
+                            // Keep the wizard selection aligned with the network chosen during keygen.
                             state.status = Some(format!(
                                 "Adjusted network to match keygen: {}",
                                 state.network()
                             ));
                         }
-                        // Store summary and proceed to Summary step
                         state.keygen_summary = Some(summary);
                         state.step = Step::Summary;
                         state.status = Some("Keys generated successfully.".to_string());
@@ -699,12 +686,11 @@ fn run_keygen_flow(
     _handle: &Handle,
     preselected_network: Option<&str>,
 ) -> Result<Option<KeygenSummary>> {
-    // Temporarily enable logging while leaving the TUI for prompts
+    // Allow logs to surface while the interactive prompts take over stdout.
     let _logs_on = crate::log_control::enable_guard();
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
-    // keygen flow is synchronous; use preselected network if provided
     let outcome = keygen(preselected_network);
     enable_raw_mode()?;
     execute!(terminal.backend_mut(), EnterAlternateScreen)?;
@@ -719,7 +705,7 @@ fn run_launch_flow(
     summary: &KeygenSummary,
     network: &str,
 ) -> Result<()> {
-    // Temporarily enable logging while we leave the TUI
+    // Re-enable logging while the blocking container import flow executes.
     let _logs_on = crate::log_control::enable_guard();
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -769,12 +755,9 @@ fn run_launch_flow(
     result
 }
 
-// Best-effort stop/remove of the lighthouse validator container to avoid
-// dangling endpoints on the ethereum network during package reconfiguration.
-
 fn is_missing_docker_resource_error(error: &Report) -> bool {
     let msg = error.to_string().to_lowercase();
-    // Treat missing Docker resources (volumes/networks) as recoverable in restart
+    // Missing Docker resources can happen on first install; trigger a reinstall path instead of failing.
     msg.contains("no such volume")
         || (msg.contains("volume") && msg.contains("not found"))
         || msg.contains("no such network")
@@ -798,7 +781,6 @@ fn run_validator_import(
         .as_ref()
         .map(|config| canonicalize_path(&config.metadata_dir));
 
-    // Use bollard to run the lighthouse container interactively (replaces docker CLI usage)
     use bollard::Docker;
     use bollard::models::ContainerCreateBody;
     use bollard::secret::HostConfig;
@@ -815,7 +797,6 @@ fn run_validator_import(
     ) -> Result<()> {
         let docker: Docker = kittynode_core::api::get_docker().await?;
 
-        // Ensure image is available (equivalent to docker run auto-pull)
         let create_image_opts = Some(
             bollard::query_parameters::CreateImageOptionsBuilder::default()
                 .from_image("sigp/lighthouse")
@@ -824,10 +805,9 @@ fn run_validator_import(
         );
         let mut pull = docker.create_image(create_image_opts, None, None);
         while let Some(_progress) = pull.next().await {
-            // Best-effort: ignore individual progress messages
+            // Ignore pull progress; the CLI will surface meaningful output once the container starts.
         }
 
-        // Compose bind mounts
         let mut binds = vec![
             format!("{}:/root/.lighthouse", lighthouse_mount.display()),
             format!("{}:/root/validator_keys", keys_mount.display()),
@@ -836,7 +816,6 @@ fn run_validator_import(
             binds.push(format!("{}:/root/networks/ephemery:ro", meta.display()));
         }
 
-        // Command (matches docker run invocation)
         let mut cmd: Vec<String> = vec!["lighthouse".to_string(), "--stdin-inputs".to_string()];
         if use_ephemery {
             cmd.push("--testnet-dir".into());
@@ -861,7 +840,7 @@ fn run_validator_import(
         let config = ContainerCreateBody {
             image: Some("sigp/lighthouse".to_string()),
             cmd: Some(cmd),
-            // no TTY: we provide inputs via stdin to avoid echoing passwords
+            // Disable TTY so the password supplied over stdin is not echoed.
             tty: Some(false),
             attach_stdin: Some(true),
             attach_stdout: Some(true),
@@ -881,7 +860,6 @@ fn run_validator_import(
             )
             .await?;
 
-        // Attach for input/output
         let bollard::container::AttachContainerResults {
             mut output,
             mut input,
@@ -898,14 +876,10 @@ fn run_validator_import(
                 ),
             )
             .await?;
-        // Provide the password via stdin and then close input without creating
-        // intermediate formatted strings that might persist in memory.
         input.write_all(provided_password.as_bytes()).await.ok();
         input.write_all(b"\n").await.ok();
-        // Close stdin to signal EOF
         drop(input);
 
-        // Stream container output to stdout/stderr
         let mut exit_code: Option<i64> = None;
         let mut wait_stream = docker.wait_container(
             &created.id,
@@ -927,14 +901,12 @@ fn run_validator_import(
             }
         });
 
-        // Wait for container exit
         if let Some(Ok(details)) = wait_stream.next().await {
             exit_code = Some(details.status_code);
         }
 
         let _ = output_task.await;
 
-        // Remove the container (equivalent to --rm)
         let _ = docker
             .remove_container(
                 &created.id,
@@ -952,14 +924,11 @@ fn run_validator_import(
         }
     }
 
-    // Block on the async import to run within the synchronous CLI flow
-    // Prompt for the keystore password securely and pipe it to the container via stdin
     let theme = ColorfulTheme::default();
     let password = Password::with_theme(&theme)
         .with_prompt("Enter the keystore password to import validators")
         .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
         .interact()?;
-    // Zeroize the password in memory after use
     let password = Zeroizing::new(password);
     let handle = Handle::current();
     handle.block_on(import_with_bollard(
@@ -1035,8 +1004,7 @@ fn normalize_mnemonic(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-// Public async helper so other commands (e.g., delete-package) can best-effort
-// remove the validator container before tearing down Ethereum resources.
+/// Removes the validator container if present so other commands can safely reconfigure Ethereum state.
 pub async fn remove_validator_container_if_present() {
     if let Ok(docker) = kittynode_core::api::get_docker().await {
         let _ = docker

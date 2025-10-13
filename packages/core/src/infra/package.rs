@@ -34,7 +34,6 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
     let mut installed = Vec::new();
 
     for package in packages.values() {
-        // If a package defines no containers (e.g., not yet configured), it is not installed.
         if package.containers.is_empty() {
             continue;
         }
@@ -65,10 +64,6 @@ pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Resu
 pub async fn install_package(package: &Package) -> Result<()> {
     let docker = get_docker_instance().await?;
 
-    // For packages that require user input to determine their concrete
-    // container set (e.g., Ethereum network), the manifest returns an empty
-    // list until configured. Treat that as a deterministic error, not a
-    // fallback.
     if package.containers.is_empty() {
         if package.name == Ethereum::NAME {
             return Err(eyre::eyre!(
@@ -121,7 +116,6 @@ pub async fn resume_package(package: &Package) -> Result<()> {
 
 pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRuntimeState> {
     let docker = get_docker_instance().await?;
-    // No containers means not running
     if package.containers.is_empty() {
         return Ok(PackageRuntimeState { running: false });
     }
@@ -151,7 +145,7 @@ pub async fn delete_package(
 ) -> Result<()> {
     let docker = get_docker_instance().await?;
 
-    // Clean up containers and collect resources to remove
+    // Track every resource that needs cleanup after containers are removed.
     let mut image_names = Vec::new();
     let mut file_paths = HashSet::new();
     let mut directory_paths = HashSet::new();
@@ -166,16 +160,13 @@ pub async fn delete_package(
         volume_names.extend(container.volume_bindings.iter().map(|b| &b.source));
 
         for binding in &container.file_bindings {
-            // Determine if mount is read-only; read-write mounts are persistent user data.
             let is_read_only = binding
                 .options
                 .as_deref()
                 .map(|opts| opts.contains("ro"))
                 .unwrap_or(false);
 
-            // During a config restart (purge_ephemery_cache == false), only clean up RO mounts.
-            // During an explicit uninstall (purge_ephemery_cache == true), also remove RW mounts
-            // so that all Kittynode-created data is deleted.
+            // Config restarts retain RW mounts unless we are explicitly purging user data.
             let should_consider = is_read_only || purge_ephemery_cache;
             if !should_consider {
                 continue;
@@ -183,7 +174,7 @@ pub async fn delete_package(
 
             if let Ok(metadata) = fs::metadata(&binding.source) {
                 if metadata.is_dir() {
-                    // Skip Ephemery metadata mount during config restart; purge on explicit uninstall
+                    // Ephemery metadata is preserved during config restarts but purged on uninstall.
                     let is_ephemery_mount = binding.destination == "/root/networks/ephemery";
                     if !is_ephemery_mount || purge_ephemery_cache {
                         directory_paths.insert(&binding.source);
@@ -199,7 +190,6 @@ pub async fn delete_package(
         info!("Container '{}' removed successfully", container.name);
     }
 
-    // Clean up images if requested
     for image in image_names {
         info!("Removing image '{}'...", image);
         docker
@@ -212,7 +202,6 @@ pub async fn delete_package(
         info!("Image '{}' removed successfully", image);
     }
 
-    // Clean up files and directories
     for path in file_paths {
         info!("Removing file '{}'...", path);
         fs::remove_file(path)?;
@@ -224,7 +213,6 @@ pub async fn delete_package(
         info!("Directory '{}' removed successfully", path);
     }
 
-    // Clean up Docker volumes and network
     for volume in volume_names {
         info!("Removing volume '{}'...", volume);
         docker
@@ -240,7 +228,6 @@ pub async fn delete_package(
     docker.remove_network(&package.network_name).await?;
     info!("Network '{}' removed successfully", package.network_name);
 
-    // Optionally purge the Ephemery cache on explicit uninstall
     if purge_ephemery_cache
         && package.name == Ethereum::NAME
         && let Ok(root) = kittynode_path()
