@@ -4,14 +4,62 @@ description: Run the world computer.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-This guide will go over how to run the world computer with Kittynode.
+This guide covers how to run Ethereum with Kittynode.
 
-## Getting hardware
+:::note
+Kittynode is in alpha release, and only recommended for testnets. We're working towards a beta release for mainnet.
+:::
 
-To run an Ethereum node, it's best to use dedicated hardware. I would recommend the [ASUS NUC 14 Pro](https://www.newegg.com/asus-nuc-configurator/ASUS-NUC-14-Pro/56-110-266) with 64GB RAM and 4TB SSD. Minisforum and Beelink would be good options as well.
+## Run an Ethereum validator
 
-Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.ethereum.org/EIPS/eip-7870) for further guidance. Kevaundray's [post on hardware requirements](https://hackmd.io/@kevaundray/S1hUQuV4Jx) is also helpful.
+<Steps>
+
+1. Install Kittynode CLI:
+
+    <Tabs>
+      <TabItem label="Linux">
+        ```bash
+        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
+        ```
+      </TabItem>
+      <TabItem label="macOS">
+        ```bash
+        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
+        ```
+      </TabItem>
+      <TabItem label="Windows">
+        ```bash
+        powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"
+        ```
+      </TabItem>
+    </Tabs>
+
+2. Set up the validator:
+
+    ```bash
+    kittynode validator start
+    ```
+
+3. Optionally, monitor your validator with the desktop app:
+
+   [Download the Kittynode app](https://kittynode.com/download) (available for Linux, macOS, and Windows).
+
+</Steps>
+
+## Hardware requirements
+
+To run an Ethereum node, it's best to use a dedicated machine. Some good options include:
+
+- [ASUS NUC 14 Pro](https://www.newegg.com/asus-nuc-configurator/ASUS-NUC-14-Pro/56-110-266)
+- Beelink
+- Minisforum
+
+For additional information please refer to:
+
+- [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.ethereum.org/EIPS/eip-7870)
+- Kevaundray's [post on hardware requirements](https://hackmd.io/@kevaundray/S1hUQuV4Jx)
 
 ## Set up an Ubuntu machine
 
@@ -99,11 +147,25 @@ Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.
 
 <Steps>
 
-1. Install kittynode-cli:
+1. Install Kittynode CLI:
 
-    ```bash
-    curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
-    ```
+    <Tabs>
+      <TabItem label="Linux">
+        ```bash
+        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
+        ```
+      </TabItem>
+      <TabItem label="macOS">
+        ```bash
+        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
+        ```
+      </TabItem>
+      <TabItem label="Windows">
+        ```bash
+        powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"
+        ```
+      </TabItem>
+    </Tabs>
 
 2. Start the local web server:
 
@@ -111,6 +173,6 @@ Please refer to [EIP-7870: Hardware and Bandwidth Recommendations](https://eips.
     kittynode web start
     ```
 
-3. On the Kittynode desktop app, visit settings and connect to the local web server.
+3. Open the [Kittynode desktop app](https://kittynode.com/download), visit settings, and connect to the remote server.
 
 </Steps>
