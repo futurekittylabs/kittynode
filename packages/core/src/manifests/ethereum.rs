@@ -9,6 +9,7 @@ use crate::{
         file::kittynode_path,
     },
 };
+use crate::infra::package_config::PackageConfigStore;
 
 pub(crate) struct Ethereum;
 
@@ -150,7 +151,7 @@ impl Ethereum {
             });
         }
 
-        Ok(vec![
+        let mut containers = vec![
             Container {
                 name: "reth-node".to_string(),
                 image: "ghcr.io/paradigmxyz/reth".to_string(),
@@ -222,6 +223,56 @@ impl Ethereum {
                 volume_bindings: vec![],
                 file_bindings: lighthouse_file_bindings,
             },
-        ])
+        ];
+
+        let cfg = PackageConfigStore::load(ETHEREUM_NAME).unwrap_or_default();
+        let enabled = cfg
+            .values
+            .get("validator_enabled")
+            .map(|v| v == "true")
+            .unwrap_or(false);
+        if enabled {
+            if let Some(fee) = cfg.values.get("validator_fee_recipient") {
+                let mut vc_cmd = vec!["lighthouse".to_string()];
+                if ephemery.is_some() {
+                    vc_cmd.push("--testnet-dir".to_string());
+                    vc_cmd.push("/root/networks/ephemery".to_string());
+                } else {
+                    vc_cmd.push("--network".to_string());
+                    vc_cmd.push(network.to_string());
+                }
+                vc_cmd.extend([
+                    "vc".to_string(),
+                    "--beacon-nodes".to_string(),
+                    "http://lighthouse-node:5052".to_string(),
+                    "--suggested-fee-recipient".to_string(),
+                    fee.to_string(),
+                ]);
+
+                let mut vc_file_bindings = vec![Binding {
+                    source: kittynode_path.join(".lighthouse").to_string_lossy().to_string(),
+                    destination: "/root/.lighthouse".to_string(),
+                    options: None,
+                }];
+                if let Some(config) = &ephemery {
+                    vc_file_bindings.push(Binding {
+                        source: config.metadata_dir.to_string_lossy().to_string(),
+                        destination: "/root/networks/ephemery".to_string(),
+                        options: Some("ro".to_string()),
+                    });
+                }
+
+                containers.push(Container {
+                    name: "lighthouse-validator".to_string(),
+                    image: "sigp/lighthouse".to_string(),
+                    cmd: vc_cmd,
+                    port_bindings: HashMap::new(),
+                    volume_bindings: vec![],
+                    file_bindings: vc_file_bindings,
+                });
+            }
+        }
+
+        Ok(containers)
     }
 }

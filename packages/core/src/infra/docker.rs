@@ -351,6 +351,7 @@ pub(crate) async fn pull_and_start_container(
             .build(),
     );
 
+    let _ = remove_container(docker, container.name.as_str()).await;
     let created_container = docker.create_container(options, config).await?;
     info!("Container {} created successfully.", container.name);
 

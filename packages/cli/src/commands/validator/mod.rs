@@ -32,12 +32,6 @@ use tracing::error;
 use zeroize::Zeroizing;
 
 // Docker (bollard) for starting the validator container
-use bollard::{
-    models::{ContainerCreateBody, EndpointSettings, NetworkingConfig},
-    query_parameters::{CreateContainerOptionsBuilder, CreateImageOptionsBuilder},
-    secret::HostConfig,
-};
-use tokio_stream::StreamExt;
 
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
@@ -52,6 +46,9 @@ use kittynode_core::api::{
         validate_password,
     },
 };
+
+// Single source of truth for the validator container name
+pub const VALIDATOR_CONTAINER_NAME: &str = "lighthouse-validator";
 
 fn desired_supported_networks() -> Vec<&'static str> {
     const DESIRED: &[&str] = &[EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];
@@ -724,9 +721,18 @@ fn run_launch_flow(
     terminal.show_cursor()?;
 
     let result = (|| -> Result<()> {
+        let _ = handle.block_on(remove_validator_container_if_present());
+        println!("Importing validator keys with Lighthouse...");
+        let lighthouse_dir = lighthouse_root()?;
+        run_validator_import(summary, network, &lighthouse_dir)?;
         println!("Configuring Ethereum clients for {network}...");
         let mut values = HashMap::new();
         values.insert("network".to_string(), network.to_string());
+        values.insert("validator_enabled".to_string(), "true".to_string());
+        values.insert(
+            "validator_fee_recipient".to_string(),
+            summary.fee_recipient.clone(),
+        );
         let config = PackageConfig { values };
         let mut needs_install = false;
         let update_result = handle
@@ -742,13 +748,6 @@ fn run_launch_flow(
         if needs_install {
             handle.block_on(async { api::install_package("Ethereum").await })?;
         }
-
-        println!("Importing validator keys with Lighthouse...");
-        let lighthouse_dir = lighthouse_root()?;
-        run_validator_import(summary, network, &lighthouse_dir)?;
-
-        println!("Starting Lighthouse validator client...");
-        start_validator_container(handle, network, &lighthouse_dir, &summary.fee_recipient)?;
         println!("Execution and validator clients are running.");
         Ok(())
     })();
@@ -764,6 +763,9 @@ fn run_launch_flow(
 
     result
 }
+
+// Best-effort stop/remove of the lighthouse validator container to avoid
+// dangling endpoints on the ethereum network during package reconfiguration.
 
 fn is_missing_docker_resource_error(error: &Report) -> bool {
     let msg = error.to_string().to_lowercase();
@@ -831,128 +833,6 @@ fn run_validator_import(
     }
 }
 
-fn start_validator_container(
-    handle: &Handle,
-    network: &str,
-    lighthouse_dir: &Path,
-    fee_recipient: &str,
-) -> Result<()> {
-    let lighthouse_mount = canonicalize_path(lighthouse_dir);
-    let ephemery = if network == EPHEMERY_NETWORK_NAME {
-        Some(ensure_ephemery_config()?)
-    } else {
-        None
-    };
-    let metadata_mount = ephemery
-        .as_ref()
-        .map(|config| canonicalize_path(&config.metadata_dir));
-
-    handle.block_on(async move {
-        let docker = kittynode_core::api::get_docker().await?;
-        // Ensure daemon is reachable
-        docker.version().await.map_err(eyre::Report::from)?;
-
-        // Ensure image is present (pull if needed)
-        let pull_opts = Some(
-            CreateImageOptionsBuilder::default()
-                .from_image("sigp/lighthouse")
-                .tag("latest")
-                .build(),
-        );
-        let mut pull_stream = docker.create_image(pull_opts, None, None);
-        while let Some(_item) = pull_stream
-            .next()
-            .await
-            .transpose()
-            .map_err(eyre::Report::from)?
-        {}
-
-        // Build binds
-        let mut binds = vec![format!("{}:/root/.lighthouse", lighthouse_mount.display())];
-        if let Some(mount) = metadata_mount.as_ref() {
-            binds.push(format!("{}:/root/networks/ephemery:ro", mount.display()));
-        }
-
-        // Build command
-        let mut cmd: Vec<String> = vec!["lighthouse".into()];
-        if ephemery.is_some() {
-            cmd.push("--testnet-dir".into());
-            cmd.push("/root/networks/ephemery".into());
-        } else {
-            cmd.push("--network".into());
-            cmd.push(network.to_string());
-        }
-        // Prefer service discovery inside the user-defined Docker network
-        // so this works consistently across Docker Desktop and Colima.
-        // The beacon container is named 'lighthouse-node' and exposes 5052.
-        let beacon_endpoint = "http://lighthouse-node:5052";
-        cmd.extend([
-            "vc".into(),
-            "--beacon-nodes".into(),
-            beacon_endpoint.into(),
-            "--suggested-fee-recipient".into(),
-            fee_recipient.to_string(),
-        ]);
-
-        // Create container (idempotent: remove existing with same name first)
-        let container_name = "lighthouse-validator";
-        // Best-effort forced removal by name to avoid 409 on create
-        let _ = docker
-            .remove_container(
-                container_name,
-                Some(bollard::query_parameters::RemoveContainerOptions {
-                    force: true,
-                    link: false,
-                    v: false,
-                }),
-            )
-            .await;
-
-        // Create container attached to the same user-defined network
-        // as the Ethereum package, enabling service-name resolution.
-        let host_config = HostConfig {
-            binds: Some(binds),
-            ..Default::default()
-        };
-
-        // Resolve the Docker network name for the Ethereum package.
-        let docker_network = kittynode_core::api::get_packages()
-            .ok()
-            .and_then(|pkgs| pkgs.get("Ethereum").map(|p| p.network_name().to_string()))
-            .unwrap_or_else(|| "ethereum-network".to_string());
-
-        let networking_config = NetworkingConfig {
-            endpoints_config: Some(HashMap::from([(
-                docker_network.clone(),
-                EndpointSettings::default(),
-            )])),
-        };
-        let config = ContainerCreateBody {
-            image: Some("sigp/lighthouse".into()),
-            cmd: Some(cmd),
-            host_config: Some(host_config),
-            networking_config: Some(networking_config),
-            ..Default::default()
-        };
-        let create_opts = Some(
-            CreateContainerOptionsBuilder::default()
-                .name(container_name)
-                .build(),
-        );
-        let created = docker
-            .create_container(create_opts, config)
-            .await
-            .map_err(eyre::Report::from)?;
-        docker
-            .start_container(
-                &created.id,
-                None::<bollard::query_parameters::StartContainerOptions>,
-            )
-            .await
-            .map_err(eyre::Report::from)?;
-        Ok::<(), eyre::Report>(())
-    })
-}
 
 fn lighthouse_root() -> Result<PathBuf> {
     Ok(api::kittynode_path()?.join(".lighthouse"))
@@ -1015,4 +895,21 @@ fn capture_mnemonic_securely(theme: &ColorfulTheme) -> Result<String> {
 
 fn normalize_mnemonic(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+// Public async helper so other commands (e.g., delete-package) can best-effort
+// remove the validator container before tearing down Ethereum resources.
+pub async fn remove_validator_container_if_present() {
+    if let Ok(docker) = kittynode_core::api::get_docker().await {
+        let _ = docker
+            .remove_container(
+                VALIDATOR_CONTAINER_NAME,
+                Some(bollard::query_parameters::RemoveContainerOptions {
+                    force: true,
+                    link: false,
+                    v: false,
+                }),
+            )
+            .await;
+    }
 }
