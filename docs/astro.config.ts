@@ -8,7 +8,7 @@ import starlightLlmsTxt from "starlight-llms-txt";
 // https://astro.build/config
 export default defineConfig({
   redirects: {
-    "/": "/guides/build-from-source",
+    "/": "/start-here/getting-started",
   },
   adapter: cloudflare({
     imageService: "compile",
