@@ -9,9 +9,16 @@ pub async fn update_package_config(package_name: &str, config: PackageConfig) ->
     // containers that may be dropped by the new config (e.g., validator).
     let pre_update_package = infra_package::get_package_by_name(package_name)?;
 
-    // Persist the new configuration first so that any fallback install paths
-    // (e.g., when deletion hits missing resources) can read the intended config.
-    PackageConfigStore::save(package_name, &config)?;
+    // Load existing config and perform a shallow overlay with the incoming keys
+    // to avoid clobbering user-provided settings. This is deterministic and
+    // idempotent: repeated calls with the same inputs yield the same result.
+    let mut merged = PackageConfigStore::load(package_name)?;
+    for (k, v) in config.values.into_iter() {
+        merged.values.insert(k, v);
+    }
+
+    // Persist the merged configuration so any fallback install paths can read it
+    PackageConfigStore::save(package_name, &merged)?;
 
     // Best-effort removal using the pre-update snapshot; tolerate missing Docker
     // resources to keep reconfiguration robust on first-time installs.
