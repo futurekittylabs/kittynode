@@ -3,7 +3,6 @@ use std::{
     fs,
     io::{self, Write, stdout},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
     time::{Duration, Instant},
 };
 
@@ -793,44 +792,178 @@ fn run_validator_import(
         .as_ref()
         .map(|config| canonicalize_path(&config.metadata_dir));
 
-    let mut command = Command::new("docker");
-    command
-        .arg("run")
-        .arg("--rm")
-        .arg("-i")
-        .arg("-t")
-        .arg("-v")
-        .arg(format!("{}:/root/.lighthouse", lighthouse_mount.display()))
-        .arg("-v")
-        .arg(format!("{}:/root/validator_keys", keys_mount.display()));
-    if let Some(mount) = metadata_mount.as_ref() {
-        command
-            .arg("-v")
-            .arg(format!("{}:/root/networks/ephemery:ro", mount.display()));
-    }
-    command.arg("sigp/lighthouse").arg("lighthouse");
-    if ephemery.is_some() {
-        command.arg("--testnet-dir").arg("/root/networks/ephemery");
-    } else {
-        command.arg("--network").arg(network);
-    }
-    command
-        .arg("account")
-        .arg("validator")
-        .arg("import")
-        .arg("--directory")
-        .arg("/root/validator_keys");
-    let status = command
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()?;
+    // Use bollard to run the lighthouse container interactively (replaces docker CLI usage)
+    use bollard::Docker;
+    use bollard::models::ContainerCreateBody;
+    use bollard::secret::HostConfig;
+    use tokio::io::AsyncWriteExt;
+    use tokio_stream::StreamExt;
 
-    if status.success() {
-        Ok(())
-    } else {
-        Err(eyre!("lighthouse import exited with status {status}"))
+    async fn import_with_bollard(
+        lighthouse_mount: &Path,
+        keys_mount: &Path,
+        metadata_mount: Option<&Path>,
+        network: &str,
+        use_ephemery: bool,
+        provided_password: &str,
+    ) -> Result<()> {
+        let docker: Docker = kittynode_core::api::get_docker().await?;
+
+        // Ensure image is available (equivalent to docker run auto-pull)
+        let create_image_opts = Some(
+            bollard::query_parameters::CreateImageOptionsBuilder::default()
+                .from_image("sigp/lighthouse")
+                .tag("latest")
+                .build(),
+        );
+        let mut pull = docker.create_image(create_image_opts, None, None);
+        while let Some(_progress) = pull.next().await {
+            // Best-effort: ignore individual progress messages
+        }
+
+        // Compose bind mounts
+        let mut binds = vec![
+            format!("{}:/root/.lighthouse", lighthouse_mount.display()),
+            format!("{}:/root/validator_keys", keys_mount.display()),
+        ];
+        if let Some(meta) = metadata_mount {
+            binds.push(format!("{}:/root/networks/ephemery:ro", meta.display()));
+        }
+
+        // Command (matches docker run invocation)
+        let mut cmd: Vec<String> = vec!["lighthouse".to_string(), "--stdin-inputs".to_string()];
+        if use_ephemery {
+            cmd.push("--testnet-dir".into());
+            cmd.push("/root/networks/ephemery".into());
+        } else {
+            cmd.push("--network".into());
+            cmd.push(network.to_string());
+        }
+        cmd.extend([
+            "account".into(),
+            "validator".into(),
+            "import".into(),
+            "--directory".into(),
+            "/root/validator_keys".into(),
+        ]);
+
+        let host_config = HostConfig {
+            binds: Some(binds),
+            ..Default::default()
+        };
+
+        let config = ContainerCreateBody {
+            image: Some("sigp/lighthouse".to_string()),
+            cmd: Some(cmd),
+            // no TTY: we provide inputs via stdin to avoid echoing passwords
+            tty: Some(false),
+            attach_stdin: Some(true),
+            attach_stdout: Some(true),
+            attach_stderr: Some(true),
+            open_stdin: Some(true),
+            host_config: Some(host_config),
+            ..Default::default()
+        };
+
+        let create_opts: Option<bollard::query_parameters::CreateContainerOptions> = None;
+        let created = docker.create_container(create_opts, config).await?;
+
+        docker
+            .start_container(
+                &created.id,
+                None::<bollard::query_parameters::StartContainerOptions>,
+            )
+            .await?;
+
+        // Attach for input/output
+        let bollard::container::AttachContainerResults {
+            mut output,
+            mut input,
+        } = docker
+            .attach_container(
+                &created.id,
+                Some(
+                    bollard::query_parameters::AttachContainerOptionsBuilder::default()
+                        .stdin(true)
+                        .stdout(true)
+                        .stderr(true)
+                        .stream(true)
+                        .build(),
+                ),
+            )
+            .await?;
+        // Provide the password via stdin and then close input
+        input
+            .write_all(format!("{}\n", provided_password).as_bytes())
+            .await
+            .ok();
+        // Close stdin to signal EOF
+        drop(input);
+
+        // Stream container output to stdout/stderr
+        let mut exit_code: Option<i64> = None;
+        let mut wait_stream = docker.wait_container(
+            &created.id,
+            None::<bollard::query_parameters::WaitContainerOptions>,
+        );
+
+        let output_task = tokio::spawn(async move {
+            use std::io::Write as _;
+            let mut out = std::io::stdout();
+            while let Some(next) = output.next().await {
+                match next {
+                    Ok(chunk) => {
+                        let bytes = chunk.into_bytes();
+                        let _ = out.write_all(&bytes);
+                        let _ = out.flush();
+                    }
+                    Err(_) => break,
+                }
+            }
+        });
+
+        // Wait for container exit
+        if let Some(Ok(details)) = wait_stream.next().await {
+            exit_code = Some(details.status_code);
+        }
+
+        let _ = output_task.await;
+
+        // Remove the container (equivalent to --rm)
+        let _ = docker
+            .remove_container(
+                &created.id,
+                Some(
+                    bollard::query_parameters::RemoveContainerOptionsBuilder::default()
+                        .force(true)
+                        .build(),
+                ),
+            )
+            .await;
+
+        match exit_code.unwrap_or_default() {
+            0 => Ok(()),
+            code => Err(eyre!("lighthouse import exited with status code {code}")),
+        }
     }
+
+    // Block on the async import to run within the synchronous CLI flow
+    // Prompt for the keystore password securely and pipe it to the container via stdin
+    let theme = ColorfulTheme::default();
+    let password = Password::with_theme(&theme)
+        .with_prompt("Enter the keystore password to import validators")
+        .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
+        .interact()?;
+
+    let handle = Handle::current();
+    handle.block_on(import_with_bollard(
+        &lighthouse_mount,
+        &keys_mount,
+        metadata_mount.as_deref(),
+        network,
+        ephemery.is_some(),
+        &password,
+    ))
 }
 
 fn lighthouse_root() -> Result<PathBuf> {
