@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { ArrowUpRight, Download } from "@lucide/svelte";
+import { Download } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
 import appRelease from "$lib/app-release.json";
 
