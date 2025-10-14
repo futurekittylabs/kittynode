@@ -6,12 +6,6 @@ import * as Tabs from "$lib/components/ui/tabs/index.js";
 import appRelease from "$lib/app-release.json";
 import cliRelease from "$lib/cli-release.json";
 
-const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
-
 const { version: appVersion } = appRelease;
 const { version: cliVersion } = cliRelease;
 
@@ -71,8 +65,7 @@ const downloads = [
 ];
 </script>
 
-<div class="py-16">
-  <!-- Header -->
+<div class="mt-16">
   <div class="mb-4 text-center">
     <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
     <p class="text-sm text-muted-foreground">
@@ -82,7 +75,6 @@ const downloads = [
   <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
     A desktop app for securely operating Ethereum.
   </p>
-  <!-- Download cards -->
   <div class="grid gap-4 min-[900px]:grid-cols-3">
     {#each downloads as info}
       <div class="rounded-lg border bg-card p-5">
@@ -95,7 +87,6 @@ const downloads = [
             <p class="text-xs text-muted-foreground">{info.requirements}</p>
           </div>
         </div>
-
         <div class="space-y-2">
           {#if info.primary}
             <Button
@@ -108,7 +99,6 @@ const downloads = [
               {info.primary.label}
             </Button>
           {/if}
-
           {#if info.options && info.options.length > 0}
             {#if info.layout === "stacked"}
               {#each info.options as option}
