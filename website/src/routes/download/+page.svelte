@@ -2,6 +2,7 @@
 import { Monitor, Download, AppWindowMac, Package } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
 import * as Code from "$lib/components/ui/code";
+import * as Tabs from "$lib/components/ui/tabs/index.js";
 import appRelease from "$lib/app-release.json";
 import cliRelease from "$lib/cli-release.json";
 
@@ -152,19 +153,21 @@ const downloads = [
     <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
       A CLI app for securely operating Ethereum.
     </p>
-    <div class="space-y-6">
-      <div>
-        <h2 class="text-base font-medium pb-1">Linux &amp; macOS:</h2>
+    <Tabs.Root value="linux/macos">
+      <Tabs.List>
+        <Tabs.Trigger value="linux/macos">Linux / macOS</Tabs.Trigger>
+        <Tabs.Trigger value="windows">Windows</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="linux/macos">
         <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
           <Code.CopyButton />
         </Code.Root>
-      </div>
-      <div>
-        <h2 class="text-base font-medium pb-1">Windows:</h2>
+      </Tabs.Content>
+      <Tabs.Content value="windows">
         <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
           <Code.CopyButton />
         </Code.Root>
-      </div>
-    </div>
+      </Tabs.Content>
+    </Tabs.Root>
   </div>
 </div>
