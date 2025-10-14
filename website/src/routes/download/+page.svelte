@@ -154,7 +154,7 @@ const downloads = [
     {/each}
   </div>
 
-  <div class="mt-16">
+  <div class="my-16">
     <div class="mb-4 text-center">
       <h1 class="text-2xl font-semibold mb-2">Install Kittynode CLI</h1>
       <p class="text-sm text-muted-foreground">
@@ -174,12 +174,12 @@ const downloads = [
       </Tabs.List>
       <Tabs.Content value="linux/macos">
         <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
-          <Code.CopyButton />
+          <Code.CopyButton variant="secondary" />
         </Code.Root>
       </Tabs.Content>
       <Tabs.Content value="windows">
         <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
-          <Code.CopyButton />
+          <Code.CopyButton variant="secondary" />
         </Code.Root>
       </Tabs.Content>
     </Tabs.Root>
