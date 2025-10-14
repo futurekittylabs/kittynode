@@ -93,7 +93,7 @@ const downloads = [
         • {releaseDate}
       {/if}
     </p>
-    <a href={changelogUrl} class="link text-sm"> View changelog</a>
+    <a href={changelogUrl} class="link text-sm">View changelog</a>
   </div>
   <!-- Download cards -->
   <div class="grid gap-4 min-[900px]:grid-cols-3">
@@ -162,7 +162,7 @@ const downloads = [
         <div class="rounded-md bg-muted p-2">
           <Terminal class="h-5 w-5" />
         </div>
-        <h2 class="text-xl font-semibold">Install Kittynode CLI</h2>
+        <h1 class="text-2xl font-semibold">Install Kittynode CLI</h1>
       </div>
       <p class="text-sm text-muted-foreground">
         Manage your node infrastructure directly from the terminal.
