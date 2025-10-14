@@ -1,5 +1,6 @@
 <script lang="ts">
 import "../app.css";
+import { page } from "$app/state";
 import { ModeWatcher } from "mode-watcher";
 
 let { children } = $props();
@@ -45,10 +46,14 @@ let { children } = $props();
         <a href="https://docs.kittynode.com/start-here/getting-started" class="nav-link">
           Docs
         </a>
-        <a href="/download" class="nav-link">
+        <a
+          href="/download"
+          class="nav-link"
+          class:text-link={page.url.pathname === "/download"}
+          aria-current={page.url.pathname === "/download" ? "page" : undefined}
+        >
           Download
         </a>
-        <!-- <a href="/store" class="nav-link">Store</a> -->
       </nav>
     </header>
 
