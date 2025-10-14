@@ -167,8 +167,8 @@
   /* Only apply hover color on devices that support hover */
   @media (hover: hover) {
     .nav-link:hover {
-      cursor: pointer;
       @apply text-link;
+      cursor: pointer;
     }
   }
 }
