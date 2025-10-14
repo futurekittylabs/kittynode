@@ -6,14 +6,32 @@ import * as Tabs from "$lib/components/ui/tabs/index.js";
 import appRelease from "$lib/app-release.json";
 import cliRelease from "$lib/cli-release.json";
 
-const { version: appVersion } = appRelease;
-const { version: cliVersion } = cliRelease;
+const { version: appVersion, pub_date: appPubDate } = appRelease;
+const { version: cliVersion, date: cliPubDate } = cliRelease;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
 const cliInstallCommandUnix = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
 const cliInstallCommandWindows = `powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"`;
+
+const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
+function formatReleaseDate(pubDate: string | undefined): string {
+  if (!pubDate) return "";
+  const parsed = new Date(pubDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return releaseDateFormatter.format(parsed);
+}
+
+const appReleaseDate = formatReleaseDate(appPubDate);
+const cliReleaseDate = formatReleaseDate(cliPubDate);
 
 const downloads = [
   {
@@ -70,6 +88,9 @@ const downloads = [
     <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
     <p class="text-sm text-muted-foreground">
       <a href={changelogUrl} class="link">Version {appVersion}</a>
+      {#if appReleaseDate}
+        • {appReleaseDate}
+      {/if}
     </p>
   </div>
   <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
@@ -138,6 +159,9 @@ const downloads = [
       <h1 class="text-2xl font-semibold mb-2">Install Kittynode CLI</h1>
       <p class="text-sm text-muted-foreground">
         <a href={changelogUrl} class="link">Version {cliVersion}</a>
+        {#if cliReleaseDate}
+          • {cliReleaseDate}
+        {/if}
       </p>
     </div>
     <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
