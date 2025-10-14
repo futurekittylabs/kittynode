@@ -45,6 +45,9 @@ let { children } = $props();
         <a href="https://docs.kittynode.com/start-here/getting-started" class="nav-link">
           Docs
         </a>
+        <a href="/download" class="nav-link">
+          Download
+        </a>
         <!-- <a href="/store" class="nav-link">Store</a> -->
       </nav>
     </header>

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { Download } from "@lucide/svelte";
+import { ArrowRight, Download } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
 import appRelease from "$lib/app-release.json";
 
@@ -17,7 +17,7 @@ const downloads = {
 } as const;
 
 let downloadHref = "/download";
-let downloadButtonText = "Download now";
+let downloadButtonText = "Get started";
 let showFallback = true;
 
 function setButtonState(os: KnownOS) {
@@ -106,8 +106,13 @@ onMount(() => {
           />
           <div class="flex flex-col items-center gap-[clamp(0.9rem,2.2vh,1.5rem)]">
             <Button href={downloadHref} size="lg" class="gap-2">
-              <Download class="h-5 w-5" />
-              {downloadButtonText}
+              {#if showFallback}
+                {downloadButtonText}
+                <ArrowRight class="h-5 w-5" />
+              {:else}
+                <Download class="h-5 w-5" />
+                {downloadButtonText}
+              {/if}
             </Button>
             {#if showFallback}
               <p class="text-sm text-muted-foreground">
@@ -115,7 +120,7 @@ onMount(() => {
               </p>
             {:else}
               <p class="text-sm text-muted-foreground">
-                Need something else? <a href="/download" class="link">See all downloads</a>.
+                Need something else? <a href="/download" class="link">See all download options</a>.
               </p>
             {/if}
           </div>
