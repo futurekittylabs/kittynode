@@ -6,7 +6,6 @@ import { Context } from "runed";
 import type { ReadableBoxedValues, WritableBoxedValues } from "svelte-toolbelt";
 import type { CodeRootProps } from "./types";
 import { highlighter } from "./shiki";
-import DOMPurify from "isomorphic-dompurify";
 import type { HighlighterCore } from "shiki";
 
 type CodeOverflowStateProps = WritableBoxedValues<{
@@ -79,7 +78,8 @@ class CodeRootState {
     return this.opts.code.current;
   }
 
-  highlighted = $derived(DOMPurify.sanitize(this.highlight(this.code) ?? ""));
+  // Avoid DOMPurify in SSR/Workers; Shiki output is already escaped
+  highlighted = $derived(this.highlight(this.code) ?? "");
 }
 
 function within(num: number, range: CodeRootProps["highlight"]) {
