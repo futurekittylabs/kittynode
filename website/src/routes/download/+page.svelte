@@ -1,14 +1,9 @@
 <script lang="ts">
-import {
-  Terminal,
-  Monitor,
-  Download,
-  AppWindowMac,
-  Package,
-} from "@lucide/svelte";
+import { Monitor, Download, AppWindowMac, Package } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
-import { CopyButton } from "$lib/components/ui/copy-button/index.js";
+import * as Code from "$lib/components/ui/code";
 import appRelease from "$lib/app-release.json";
+import cliRelease from "$lib/cli-release.json";
 
 const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -16,22 +11,14 @@ const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-function formatReleaseDate(pubDate: string | undefined): string {
-  if (!pubDate) return "";
-  const parsed = new Date(pubDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return "";
-  }
-  return releaseDateFormatter.format(parsed);
-}
-
-const { version: appVersion, pub_date: appPubDate } = appRelease;
-const releaseDate = formatReleaseDate(appPubDate);
+const { version: appVersion } = appRelease;
+const { version: cliVersion } = cliRelease;
 
 const baseUrl = "https://github.com/futurekittylabs/kittynode";
 const changelogUrl = `${baseUrl}/releases`;
 const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
-const cliInstallCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
+const cliInstallCommandUnix = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
+const cliInstallCommandWindows = `powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"`;
 
 const downloads = [
   {
@@ -85,16 +72,15 @@ const downloads = [
 
 <div class="py-16">
   <!-- Header -->
-  <div class="mb-8 text-center">
+  <div class="mb-4 text-center">
     <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
-    <p class="text-sm text-muted-foreground mb-4">
-      Version {appVersion}
-      {#if releaseDate}
-        • {releaseDate}
-      {/if}
+    <p class="text-sm text-muted-foreground">
+      <a href={changelogUrl} class="link">Version {appVersion}</a>
     </p>
-    <a href={changelogUrl} class="link text-sm">View changelog</a>
   </div>
+  <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
+    A desktop app for securely operating Ethereum.
+  </p>
   <!-- Download cards -->
   <div class="grid gap-4 min-[900px]:grid-cols-3">
     {#each downloads as info}
@@ -156,39 +142,28 @@ const downloads = [
     {/each}
   </div>
 
-  <div class="mt-10 overflow-hidden rounded-lg border bg-card">
-    <div class="flex flex-col gap-6 px-6 py-6">
-      <div class="flex items-center gap-3">
-        <div class="rounded-md bg-muted p-2">
-          <Terminal class="h-5 w-5" />
-        </div>
-        <h1 class="text-2xl font-semibold">Install Kittynode CLI</h1>
-      </div>
+  <div class="mt-16">
+    <div class="mb-4 text-center">
+      <h1 class="text-2xl font-semibold mb-2">Install Kittynode CLI</h1>
       <p class="text-sm text-muted-foreground">
-        Manage your node infrastructure directly from the terminal.
+        <a href={changelogUrl} class="link">Version {cliVersion}</a>
       </p>
+    </div>
+    <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
+      A CLI app for securely operating Ethereum.
+    </p>
+    <div class="space-y-6">
       <div>
-        <p
-          class="text-sm font-semibold text-muted-foreground"
-        >
-          Run the following in your terminal:
-        </p>
-        <div class="mt-3 rounded-lg border bg-background/80 px-4 py-3 font-mono text-sm">
-          <div
-            class="flex flex-nowrap items-start gap-3 min-[640px]:items-center min-[640px]:justify-between"
-          >
-            <div class="min-w-0 overflow-x-auto px-2 pt-1 pb-2">
-              <code class="block whitespace-nowrap leading-snug pr-8">
-                {cliInstallCommand}
-              </code>
-            </div>
-            <CopyButton
-              class="shrink-0 min-[640px]:self-center"
-              aria-label="Copy install command"
-              text={cliInstallCommand}
-            />
-          </div>
-        </div>
+        <h2 class="text-base font-medium pb-1">Linux &amp; macOS:</h2>
+        <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
+          <Code.CopyButton />
+        </Code.Root>
+      </div>
+      <div>
+        <h2 class="text-base font-medium pb-1">Windows:</h2>
+        <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
+          <Code.CopyButton />
+        </Code.Root>
       </div>
     </div>
   </div>
