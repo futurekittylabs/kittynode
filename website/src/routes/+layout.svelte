@@ -73,6 +73,9 @@ let { children } = $props();
           <a href="https://github.com/futurekittylabs/kittynode" class="nav-link">
             GitHub
           </a>
+          <a href="https://x.com/kittynode" class="nav-link">
+            X
+          </a>
         </div>
         <div class="text-center text-sm text-muted-foreground">
           Kittynode is <a
@@ -95,10 +98,10 @@ let { children } = $props();
   }
 
   .app-logo {
-    height: 2.5rem;
-    width: 2.5rem;
-    min-height: 2.5rem;
-    min-width: 2.5rem;
+    height: 2.25rem;
+    width: 2.25rem;
+    min-height: 2.25rem;
+    min-width: 2.25rem;
     max-width: none;
     flex-shrink: 0;
   }
