@@ -10,6 +10,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { coreClient } from "$lib/client";
+import { formatPackageName } from "$lib/utils";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import * as Sidebar from "$lib/components/ui/sidebar";
 import {
@@ -51,10 +52,10 @@ const navigationItems = [
 ];
 
 const nodeSubNavigation: Record<string, { label: string; href: string }[]> = {
-  Ethereum: [
+  ethereum: [
     {
       label: "Validator Config",
-      href: "/node/Ethereum/validator-config",
+      href: "/node/ethereum/validator-config",
     },
   ],
 };
@@ -152,7 +153,7 @@ onMount(async () => {
                     {#snippet child({ props })}
                       <a href={`/node/${pkg.name}`} {...props}>
                         <Activity class="h-4 w-4" />
-                        <span>{pkg.name}</span>
+                        <span>{formatPackageName(pkg.name)}</span>
                       </a>
                     {/snippet}
                   </Sidebar.MenuButton>
