@@ -61,14 +61,14 @@ export default defineConfig({
       ],
       social: [
         {
-          icon: "github",
-          label: "GitHub",
-          href: "https://github.com/futurekittylabs/kittynode",
-        },
-        {
           icon: "discord",
           label: "Discord",
           href: "https://discord.kittynode.com",
+        },
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/futurekittylabs/kittynode",
         },
       ],
       sidebar: [
