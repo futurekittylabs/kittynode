@@ -29,9 +29,19 @@ $effect(() => {
       </Button>
     </div>
     <Card.Root>
-      <Card.Content>
+      <Card.Content class="space-y-2">
         <p class="text-sm text-muted-foreground">
-          This is the validator config page
+          This is the validator config page, where soon you'll be able to manage your validator. In the meantime, you can manage your validators with the Kittynode CLI.
+        </p>
+        <p class="text-sm text-muted-foreground">
+          Install it at
+          <a
+            href="https://kittynode.com/download"
+            target="_blank"
+            rel="noreferrer"
+            class="link"
+            >kittynode.com/download</a
+          >.
         </p>
       </Card.Content>
     </Card.Root>

@@ -1,5 +1,4 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
@@ -24,7 +23,7 @@ import {
   CircleAlert,
   PauseCircle,
   ShieldCheck,
-  ArrowRight,
+  ArrowUpRight,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 import { formatPackageName } from "$lib/utils";
@@ -450,84 +449,88 @@ onDestroy(() => {
       </div>
 
       <!-- Configuration -->
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center gap-2">
-            <Settings class="h-5 w-5" />
-            Configuration
-          </Card.Title>
-          <Card.Description>
-            Adjust settings for your {formatPackageName(pkg.name)} node
-          </Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <form
-            class="space-y-4"
-            onsubmit={(e) => {
-              e.preventDefault();
-              updateConfig();
-            }}
-          >
-            <div class="space-y-2">
-              <label for="network" class="text-sm font-medium">Network</label>
-              <Select.Root
-                type="single"
-                name="network"
-                bind:value={selectedNetwork}
-              >
-                <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
-                  {networkTriggerContent}
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Group>
-                    {#each networks as network}
-                      <Select.Item value={network.value} label={network.label}>
-                        {network.label}
-                      </Select.Item>
-                    {/each}
-                  </Select.Group>
-                </Select.Content>
-              </Select.Root>
-            </div>
-            <Button
-              type="submit"
-              disabled={configLoading || selectedNetwork === currentNetwork}
-              size="sm"
-            >
-              {configLoading ? "Updating..." : "Update Configuration"}
-            </Button>
-          </form>
-        </Card.Content>
-      </Card.Root>
-
-      {#if pkg.name === "ethereum"}
+      <div class="grid gap-4 {pkg.name === 'ethereum' ? 'sm:grid-cols-2' : ''}">
         <Card.Root>
           <Card.Header>
             <Card.Title class="flex items-center gap-2">
-              <ShieldCheck class="h-5 w-5" />
-              Validator Config
+              <Settings class="h-5 w-5" />
+              Configuration
             </Card.Title>
             <Card.Description>
-              Fine-tune validator settings for your Ethereum node
+              Adjust settings for your {formatPackageName(pkg.name)} node
             </Card.Description>
           </Card.Header>
-          <Card.Content
-            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p class="text-sm text-muted-foreground">
-              Manage keys, duties, and validator preferences.
-            </p>
-            <Button
-              size="sm"
-              onclick={() => void goto(`/node/${pkg.name}/validator-config`)}
-              class="w-full sm:w-auto"
+          <Card.Content>
+            <form
+              class="space-y-4"
+              onsubmit={(e) => {
+                e.preventDefault();
+                updateConfig();
+              }}
             >
-              <span>Manage Validator Config</span>
-              <ArrowRight class="h-4 w-4" />
-            </Button>
+              <div class="space-y-2">
+                <label for="network" class="text-sm font-medium">Network</label>
+                <Select.Root
+                  type="single"
+                  name="network"
+                  bind:value={selectedNetwork}
+                >
+                  <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
+                    {networkTriggerContent}
+                  </Select.Trigger>
+                  <Select.Content>
+                    <Select.Group>
+                      {#each networks as network}
+                        <Select.Item value={network.value} label={network.label}>
+                          {network.label}
+                        </Select.Item>
+                      {/each}
+                    </Select.Group>
+                  </Select.Content>
+                </Select.Root>
+              </div>
+              <Button
+                type="submit"
+                disabled={configLoading || selectedNetwork === currentNetwork}
+                size="sm"
+              >
+                {configLoading ? "Updating..." : "Update Configuration"}
+              </Button>
+            </form>
           </Card.Content>
         </Card.Root>
-      {/if}
+
+        {#if pkg.name === "ethereum"}
+          <Card.Root>
+            <Card.Header>
+              <Card.Title class="flex items-center gap-2">
+                <ShieldCheck class="h-5 w-5" />
+                Validator Config
+              </Card.Title>
+              <Card.Description>
+                Manage your validators with Kittynode CLI
+              </Card.Description>
+            </Card.Header>
+            <Card.Content class="flex h-full flex-col">
+              <p class="text-sm text-muted-foreground">
+                Currently, validator management is only supported through the Kittynode CLI. Install the Kittynode CLI, and you'll be able to monitor your validators from here!
+              </p>
+              <div class="mt-4 sm:mt-auto sm:pt-4">
+                <Button
+                  size="sm"
+                  href="https://kittynode.com/download"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="w-full sm:w-auto"
+                >
+                  <span>Install Kittynode CLI</span>
+                  <ArrowUpRight class="h-4 w-4" />
+                </Button>
+              </div>
+            </Card.Content>
+          </Card.Root>
+        {/if}
+      </div>
 
       <!-- Logs -->
       <Card.Root class="min-w-0">
