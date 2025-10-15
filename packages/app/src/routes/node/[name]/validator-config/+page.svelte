@@ -38,7 +38,7 @@ $effect(() => {
           <a
             href="https://kittynode.com/download"
             target="_blank"
-            rel="noreferrer"
+            rel="noreferrer noopener"
             class="link"
             >kittynode.com/download</a
           >.
