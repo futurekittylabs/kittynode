@@ -15,8 +15,8 @@ fn get_packages_outputs_known_package() {
         .clone();
     let stdout = String::from_utf8_lossy(&output);
     assert!(
-        stdout.contains("Ethereum"),
-        "expected CLI output to list Ethereum package, got {stdout}"
+        stdout.contains("ethereum"),
+        "expected CLI output to list ethereum package, got {stdout}"
     );
 }
 

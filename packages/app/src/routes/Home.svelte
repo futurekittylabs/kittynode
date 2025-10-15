@@ -25,6 +25,7 @@ import {
   Loader2,
   CircleAlert,
 } from "@lucide/svelte";
+import { formatPackageName } from "$lib/utils";
 
 const { isInstalling, installPackage } = usePackageInstaller();
 
@@ -252,9 +253,11 @@ onDestroy(() => {
                     {/if}
                   </div>
                   <div class="min-w-0">
-                    <Card.Title class="text-base">{pkg.name}</Card.Title>
+                    <Card.Title class="text-base">
+                      {formatPackageName(pkg.name)}
+                    </Card.Title>
                     <Card.Description class="mt-1">
-                      Manage your {pkg.name} node.
+                      Manage your {formatPackageName(pkg.name)} node.
                     </Card.Description>
                   </div>
                 </div>

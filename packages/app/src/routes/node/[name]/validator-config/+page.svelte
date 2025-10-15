@@ -9,13 +9,13 @@ const packageName = $derived(page.params.name || "");
 const parentHref = $derived(packageName ? `/node/${packageName}` : "/node");
 
 $effect(() => {
-  if (packageName && packageName !== "Ethereum") {
+  if (packageName && packageName !== "ethereum") {
     void goto(parentHref);
   }
 });
 </script>
 
-{#if packageName === "Ethereum"}
+{#if packageName === "ethereum"}
   <div class="mx-auto flex w-full max-w-4xl flex-col gap-6">
     <div>
       <Button

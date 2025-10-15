@@ -77,17 +77,11 @@ pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
     let packages = api::get_installed_packages()
         .await
         .wrap_err("Failed to list installed packages")?;
-    let resolved_name = if let Some(pkg) = packages.iter().find(|pkg| pkg.name() == name) {
-        pkg.name()
-    } else if let Some(pkg) = packages
-        .iter()
-        .find(|pkg| pkg.name().eq_ignore_ascii_case(&name))
-    {
-        pkg.name()
-    } else {
+    let Some(pkg) = packages.iter().find(|pkg| pkg.name() == name) else {
         println!("Package {name} is not installed");
         return Ok(());
     };
+    let resolved_name = pkg.name();
 
     api::delete_package(resolved_name, include_images)
         .await

@@ -728,7 +728,7 @@ fn run_launch_flow(
         let mut needs_install = false;
         let update_result = handle
             .clone()
-            .block_on(async { api::update_package_config("Ethereum", config.clone()).await });
+            .block_on(async { api::update_package_config("ethereum", config.clone()).await });
         if let Err(error) = update_result {
             if is_missing_docker_resource_error(&error) {
                 needs_install = true;
@@ -737,7 +737,7 @@ fn run_launch_flow(
             }
         }
         if needs_install {
-            handle.block_on(async { api::install_package("Ethereum").await })?;
+            handle.block_on(async { api::install_package("ethereum").await })?;
         }
         println!("Execution and validator clients are running.");
         Ok(())

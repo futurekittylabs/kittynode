@@ -27,6 +27,7 @@ import {
   ArrowRight,
 } from "@lucide/svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
+import { formatPackageName } from "$lib/utils";
 
 const { isDeleting, deletePackage } = usePackageDeleter();
 
@@ -34,7 +35,6 @@ const packageName = $derived(page.params.name || "");
 const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
-
 const installedState = $derived(packagesStore.installedState);
 const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
@@ -220,8 +220,12 @@ onDestroy(() => {
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h2 class="text-3xl font-bold tracking-tight">{pkg.name}</h2>
-        <p class="text-muted-foreground">Manage your {pkg.name} node</p>
+        <h2 class="text-3xl font-bold tracking-tight">
+          {formatPackageName(pkg.name)}
+        </h2>
+        <p class="text-muted-foreground">
+          Manage your {formatPackageName(pkg.name)} node
+        </p>
       </div>
       {#if isInstalled}
         <div class="flex items-center space-x-2">
@@ -453,7 +457,7 @@ onDestroy(() => {
             Configuration
           </Card.Title>
           <Card.Description>
-            Adjust settings for your {pkg.name} node
+            Adjust settings for your {formatPackageName(pkg.name)} node
           </Card.Description>
         </Card.Header>
         <Card.Content>
@@ -496,7 +500,7 @@ onDestroy(() => {
         </Card.Content>
       </Card.Root>
 
-      {#if pkg.name === "Ethereum"}
+      {#if pkg.name === "ethereum"}
         <Card.Root>
           <Card.Header>
             <Card.Title class="flex items-center gap-2">
