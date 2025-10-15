@@ -1,87 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { ArrowRight, Download } from "@lucide/svelte";
+import { ArrowRight } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
-import appRelease from "$lib/app-release.json";
-
-type KnownOS = "linux" | "mac" | "windows" | "ios" | "android" | "unknown";
-
-const { version } = appRelease;
-const repoUrl = "https://github.com/futurekittylabs/kittynode";
-const releaseBaseUrl = `${repoUrl}/releases/download/kittynode-app-${version}`;
-
-const downloads = {
-  linux: `${releaseBaseUrl}/Kittynode_${version}_amd64.deb`,
-  mac: `${releaseBaseUrl}/Kittynode_${version}_aarch64.dmg`,
-  windows: `${releaseBaseUrl}/Kittynode_${version}_x64-setup.exe`,
-} as const;
-
-let downloadHref = "/download";
-let downloadButtonText = "Get started";
-let showFallback = true;
-
-function setButtonState(os: KnownOS) {
-  if (os === "linux") {
-    downloadHref = downloads.linux;
-    downloadButtonText = "Download .deb for Linux";
-    showFallback = false;
-    return;
-  }
-
-  if (os === "mac") {
-    downloadHref = downloads.mac;
-    downloadButtonText = "Download for macOS";
-    showFallback = false;
-    return;
-  }
-
-  if (os === "windows") {
-    downloadHref = downloads.windows;
-    downloadButtonText = "Download for Windows";
-    showFallback = false;
-    return;
-  }
-}
-
-function detectOS(): KnownOS {
-  if (typeof navigator === "undefined") {
-    return "unknown";
-  }
-
-  const userAgent = navigator.userAgent.toLowerCase();
-
-  // Check mobile signatures first; their UAs also contain desktop keywords.
-  if (
-    userAgent.includes("iphone") ||
-    userAgent.includes("ipad") ||
-    userAgent.includes("ipod")
-  ) {
-    return "ios";
-  }
-
-  if (userAgent.includes("android")) {
-    return "android";
-  }
-
-  // Ordering from most to least specific.
-  if (userAgent.includes("windows")) {
-    return "windows";
-  }
-
-  if (userAgent.includes("mac") || userAgent.includes("macintosh")) {
-    return "mac";
-  }
-
-  if (userAgent.includes("linux") || userAgent.includes("x11")) {
-    return "linux";
-  }
-
-  return "unknown";
-}
-
-onMount(() => {
-  setButtonState(detectOS());
-});
 </script>
 
 <div class="hero">
@@ -105,24 +24,13 @@ onMount(() => {
             class="nyan-cat mx-auto w-[clamp(160px,20vw,210px)]"
           />
           <div class="flex flex-col items-center gap-[clamp(0.9rem,2.2vh,1.5rem)]">
-            <Button href={downloadHref} size="lg" class="gap-2">
-              {#if showFallback}
-                {downloadButtonText}
-                <ArrowRight class="h-5 w-5" />
-              {:else}
-                <Download class="h-5 w-5" />
-                {downloadButtonText}
-              {/if}
+            <Button href="/download" size="lg" class="gap-2">
+              Get started
+              <ArrowRight class="h-5 w-5" />
             </Button>
-            {#if showFallback}
-              <p class="text-sm text-muted-foreground">
-                Available for Linux, macOS, and Windows.
-              </p>
-            {:else}
-              <p class="text-sm text-muted-foreground">
-                Need something else? <a href="/download" class="link">See all download options</a>.
-              </p>
-            {/if}
+            <p class="text-sm text-muted-foreground">
+              Available for Linux, macOS, and Windows.
+            </p>
           </div>
         </div>
       </div>
