@@ -20,41 +20,41 @@ pub async fn hello_world() -> &'static str {
     "Hello World!"
 }
 
+fn to_http_error<E: std::fmt::Display>(err: E) -> (StatusCode, String) {
+    let msg = err.to_string();
+    if msg.to_ascii_lowercase().contains("not found") {
+        (StatusCode::NOT_FOUND, msg)
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, msg)
+    }
+}
+
 pub async fn add_capability(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::add_capability(&name).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::add_capability(&name).map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn remove_capability(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    api::remove_capability(&name)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::remove_capability(&name).map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    api::get_capabilities()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    api::get_capabilities().map(Json).map_err(to_http_error)
 }
 
 pub async fn get_packages() -> Result<Json<HashMap<String, Package>>, (StatusCode, String)> {
-    api::get_packages()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    api::get_packages().map(Json).map_err(to_http_error)
 }
 
 pub async fn get_config() -> Result<Json<Config>, (StatusCode, String)> {
-    api::get_config()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    api::get_config().map(Json).map_err(to_http_error)
 }
 
 pub async fn install_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::install_package(&name)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::install_package(&name).await.map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
@@ -70,21 +70,17 @@ pub async fn delete_package(
     let include_images = params.include_images.unwrap_or(false);
     api::delete_package(&name, include_images)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn stop_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::stop_package(&name)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::stop_package(&name).await.map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn resume_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::resume_package(&name)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::resume_package(&name).await.map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
@@ -99,7 +95,7 @@ pub async fn get_package_runtime_state(
     api::get_package_runtime_state(&name)
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn get_package_runtime_states(
@@ -108,14 +104,14 @@ pub async fn get_package_runtime_states(
     api::get_packages_runtime_state(&payload.names)
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
     api::get_installed_packages()
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn is_docker_running() -> Result<StatusCode, (StatusCode, String)> {
@@ -129,19 +125,17 @@ pub async fn is_docker_running() -> Result<StatusCode, (StatusCode, String)> {
 }
 
 pub async fn init_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    api::init_kittynode().map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::init_kittynode().map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn delete_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    api::delete_kittynode().map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    api::delete_kittynode().map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn get_system_info() -> Result<Json<SystemInfo>, (StatusCode, String)> {
-    api::get_system_info()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    api::get_system_info().map(Json).map_err(to_http_error)
 }
 
 pub async fn get_container_logs(
@@ -151,7 +145,7 @@ pub async fn get_container_logs(
     api::get_container_logs(&container_name, params.tail)
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn get_package_config(
@@ -160,7 +154,7 @@ pub async fn get_package_config(
     api::get_package_config(&name)
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn update_package_config(
@@ -169,7 +163,7 @@ pub async fn update_package_config(
 ) -> Result<StatusCode, (StatusCode, String)> {
     api::update_package_config(&name, config)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
@@ -177,14 +171,14 @@ pub async fn start_docker_if_needed() -> Result<Json<DockerStartStatus>, (Status
     api::start_docker_if_needed()
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub async fn get_operational_state() -> Result<Json<OperationalState>, (StatusCode, String)> {
     api::get_operational_state()
         .await
         .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        .map_err(to_http_error)
 }
 
 pub fn app() -> Router {
@@ -225,4 +219,27 @@ pub async fn run_with_port(port: u16) -> Result<()> {
     let listener = TcpListener::bind(address).await?;
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::Request};
+    use tower::ServiceExt; // for `oneshot`
+
+    #[tokio::test]
+    async fn delete_unknown_package_maps_to_404() {
+        let app = app();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/delete_package/does-not-exist")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
 }
