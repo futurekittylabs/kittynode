@@ -76,10 +76,6 @@ onMount(() => {
           <p class="text-xs text-muted-foreground break-all">
             {serverUrlStore.serverUrl}
           </p>
-        {:else if serverUrlStore.lastServerUrl}
-          <p class="text-xs text-muted-foreground break-all">
-            Last connected: {serverUrlStore.lastServerUrl}
-          </p>
         {/if}
       </Card.Content>
     </Card.Root>
@@ -148,11 +144,6 @@ onMount(() => {
             <p class="text-sm text-muted-foreground">Total System Memory</p>
             <p class="text-2xl font-bold">
               {systemInfoStore.systemInfo.memory.totalDisplay}
-            </p>
-          </div>
-          <div class="pt-2">
-            <p class="text-xs text-muted-foreground">
-              Memory is managed automatically by the system
             </p>
           </div>
         </Card.Content>

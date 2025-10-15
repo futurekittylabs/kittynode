@@ -2,6 +2,7 @@
 import { onMount } from "svelte";
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
+import { formatPackageName } from "$lib/utils";
 import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { goto } from "$app/navigation";
@@ -134,7 +135,7 @@ onMount(() => {
               <div class="flex items-start space-x-3">
                 <Package2 class="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div class="flex-1">
-                  <Card.Title class="text-base">{name}</Card.Title>
+                  <Card.Title class="text-base">{formatPackageName(name)}</Card.Title>
                   <Card.Description class="mt-1">
                     {pkg.description}
                   </Card.Description>

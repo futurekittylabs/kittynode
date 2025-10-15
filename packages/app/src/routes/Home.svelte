@@ -408,7 +408,7 @@ onDestroy(() => {
                   <Package2 class="w-5 h-5 text-muted-foreground mt-0.5" />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <Card.Title class="text-base">{name}</Card.Title>
+                  <Card.Title class="text-base">{formatPackageName(name)}</Card.Title>
                   <Card.Description class="mt-1">
                     {pkg.description}
                   </Card.Description>
