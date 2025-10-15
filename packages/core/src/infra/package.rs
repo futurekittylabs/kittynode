@@ -21,6 +21,8 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
 }
 
 /// Retrieves a single package or returns a not-found error.
+///
+/// Lookup is case-sensitive; callers should use the canonical lowercase id.
 pub fn get_package_by_name(name: &str) -> Result<Package> {
     let mut catalog = get_packages()?;
     catalog
@@ -242,4 +244,26 @@ pub async fn delete_package(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
+        // Canonical key is lowercase
+        let catalog = get_packages().expect("catalog should load");
+        assert!(catalog.contains_key("ethereum"));
+
+        // Exact lowercase match succeeds
+        assert!(get_package_by_name("ethereum").is_ok());
+
+        // Mixed case should not match
+        assert!(get_package_by_name("Ethereum").is_err());
+
+        // Non-existent package should report a not found error
+        let missing = get_package_by_name("does-not-exist");
+        assert!(missing.is_err());
+    }
 }
