@@ -38,3 +38,4 @@ tree_hash = "0.9.1"
 types = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "types", default-features = false }
 url = "2.5.7"
 zeroize = "1.7"
+dunce = "1"

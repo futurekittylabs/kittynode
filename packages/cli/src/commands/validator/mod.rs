@@ -946,7 +946,8 @@ fn lighthouse_root() -> Result<PathBuf> {
 }
 
 fn canonicalize_path(path: &Path) -> PathBuf {
-    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    // Use dunce to get a platform-friendly canonical path (no \\\\?\\ prefix on Windows).
+    dunce::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 fn clear_clipboard() -> Result<()> {
     let mut clipboard = arboard::Clipboard::new()
