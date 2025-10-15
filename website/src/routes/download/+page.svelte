@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Monitor, Download, AppWindowMac, Package } from "@lucide/svelte";
+import { Monitor, Download, AppWindowMac, Terminal } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
 import * as Code from "$lib/components/ui/code";
 import * as Tabs from "$lib/components/ui/tabs/index.js";
@@ -36,8 +36,12 @@ const cliReleaseDate = formatReleaseDate(cliPubDate);
 const downloads = [
   {
     name: "Linux",
-    icon: Package,
+    icon: Terminal,
     requirements: "Linux (x86_64)",
+    primary: {
+      label: ".AppImage",
+      url: `${releaseUrl}/Kittynode_${appVersion}_amd64.AppImage`,
+    },
     options: [
       {
         label: ".deb",
@@ -48,7 +52,6 @@ const downloads = [
         url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
       },
     ],
-    layout: "stacked",
   },
   {
     name: "macOS",
@@ -121,19 +124,7 @@ const downloads = [
             </Button>
           {/if}
           {#if info.options && info.options.length > 0}
-            {#if info.layout === "stacked"}
-              {#each info.options as option}
-                <Button
-                  href={option.url}
-                  size="sm"
-                  class="w-full gap-2"
-                  variant="outline"
-                >
-                  <Download class="h-3.5 w-3.5" />
-                  {option.label}
-                </Button>
-              {/each}
-            {:else}
+            {#if info.options.length > 1}
               <div class="flex gap-2">
                 {#each info.options as option}
                   <Button
@@ -147,6 +138,13 @@ const downloads = [
                   </Button>
                 {/each}
               </div>
+            {:else}
+              {#each info.options as option}
+                <Button href={option.url} size="sm" class="w-full gap-2" variant="outline">
+                  <Download class="h-3.5 w-3.5" />
+                  {option.label}
+                </Button>
+              {/each}
             {/if}
           {/if}
         </div>
