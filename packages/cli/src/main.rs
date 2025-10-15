@@ -76,9 +76,9 @@ enum PackageCommands {
         #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to install")]
         name: String,
     },
-    #[command(about = "Uninstall a package and optionally remove its Docker images")]
-    Uninstall {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to uninstall")]
+    #[command(about = "Delete a package and optionally remove its Docker images")]
+    Delete {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to delete")]
         name: String,
         #[arg(long = "include-images", help = "Remove associated Docker images")]
         include_images: bool,
@@ -289,7 +289,7 @@ impl PackageCommands {
             PackageCommands::List => commands::get_packages().await,
             PackageCommands::Installed => commands::get_installed_packages().await,
             PackageCommands::Install { name } => commands::install_package(name).await,
-            PackageCommands::Uninstall {
+            PackageCommands::Delete {
                 name,
                 include_images,
             } => commands::delete_package(name, include_images).await,

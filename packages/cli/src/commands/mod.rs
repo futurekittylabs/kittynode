@@ -74,10 +74,25 @@ pub async fn install_package(name: String) -> Result<()> {
 }
 
 pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
-    api::delete_package(&name, include_images)
+    let packages = api::get_installed_packages()
         .await
-        .wrap_err_with(|| format!("Failed to delete {name}"))?;
-    tracing::info!("deleted {name}");
+        .wrap_err("Failed to list installed packages")?;
+    let resolved_name = if let Some(pkg) = packages.iter().find(|pkg| pkg.name() == name) {
+        pkg.name()
+    } else if let Some(pkg) = packages
+        .iter()
+        .find(|pkg| pkg.name().eq_ignore_ascii_case(&name))
+    {
+        pkg.name()
+    } else {
+        println!("Package {name} is not installed");
+        return Ok(());
+    };
+
+    api::delete_package(resolved_name, include_images)
+        .await
+        .wrap_err_with(|| format!("Failed to delete {resolved_name}"))?;
+    tracing::info!("deleted {resolved_name}");
     Ok(())
 }
 
