@@ -410,9 +410,13 @@ pub async fn get_container_logs(
 }
 
 fn create_binding_string(binding: &Binding) -> String {
+    // Use dunce::canonicalize to avoid returning extended-length (\\?\) paths on Windows.
+    let source_path = dunce::canonicalize(&binding.source)
+        .unwrap_or_else(|_| std::path::PathBuf::from(&binding.source));
+    let source = source_path.to_string_lossy();
     match &binding.options {
-        Some(options) => format!("{}:{}:{}", binding.source, binding.destination, options),
-        None => format!("{}:{}", binding.source, binding.destination),
+        Some(options) => format!("{}:{}:{}", source, binding.destination, options),
+        None => format!("{}:{}", source, binding.destination),
     }
 }
 
