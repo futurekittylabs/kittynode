@@ -18,7 +18,7 @@ Kittynode is split into four crates. These boundaries let us reason clearly abou
 | `kittynode-tauri`  | Tauri desktop/mobile shell that communicates with kittynode-core over IPC or HTTP                          |
 | `kittynode-web`    | Axum HTTP service that exposes the core API for remote management and automation                           |
 
-### Core API Facade
+### Core API facade
 
 - Consumers import from `kittynode_core::api` and `kittynode_core::api::types` only.
 - Internal layers (`application`, `domain`, `infra`, `manifests`) remain crate-internal to allow for refactors without breaking consumers.
