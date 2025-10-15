@@ -1,7 +1,6 @@
 use crate::infra::file::kittynode_path;
 use eyre::{Context, ContextCompat, Result, eyre};
 use flate2::read::GzDecoder;
-use serde::Deserialize;
 use std::{
     fs,
     io::copy,
@@ -17,8 +16,8 @@ pub const EPHEMERY_CHECKPOINT_URLS: &[&str] = &[
     "https://ephemery.beaconstate.ethstaker.cc/",
 ];
 
-const RELEASE_API_URL: &str =
-    "https://api.github.com/repos/ephemery-testnet/ephemery-genesis/releases/latest";
+const RELEASE_LATEST_PAGE_URL: &str =
+    "https://github.com/ephemery-testnet/ephemery-genesis/releases/latest";
 const NETWORK_ARCHIVE_NAME: &str = "network-config.tar.gz";
 const USER_AGENT: &str = "kittynode";
 
@@ -28,18 +27,6 @@ pub struct EphemeryConfig {
     pub metadata_dir: PathBuf,
     pub execution_bootnodes: Vec<String>,
     pub consensus_bootnodes: Vec<String>,
-}
-
-#[derive(Deserialize)]
-struct Release {
-    tag_name: String,
-    assets: Vec<Asset>,
-}
-
-#[derive(Deserialize)]
-struct Asset {
-    name: String,
-    browser_download_url: String,
 }
 
 pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
@@ -54,6 +41,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
     let mut active_tag = fs::read_to_string(&tag_file)
         .ok()
         .map(|s| s.trim().to_string());
+    let has_cached_layout = current_dir.exists() && metadata_dir.exists();
 
     let latest_release = fetch_latest_release();
 
@@ -63,7 +51,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
             let needs_fetch = active_tag
                 .as_ref()
                 .map(|tag| tag != &latest_tag)
-                .unwrap_or(true)
+                .unwrap_or(!has_cached_layout)
                 || !current_dir.exists()
                 || !metadata_dir.exists();
             if needs_fetch {
@@ -76,10 +64,13 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
         }
         Err(error) => {
             // Allow offline operation when we already have a complete cache on disk.
-            if active_tag.is_some() && current_dir.exists() && metadata_dir.exists() {
+            if has_cached_layout {
                 warn!(
                     "Failed to check for Ephemery updates, continuing with cached config: {error}"
                 );
+                if active_tag.is_none() {
+                    active_tag = Some("cached-offline".to_string());
+                }
             } else {
                 return Err(error.wrap_err(
                     "Unable to download Ephemery configuration and no cached copy is available",
@@ -110,23 +101,31 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
 }
 
 fn fetch_latest_release() -> Result<(String, String)> {
-    let response = ureq::get(RELEASE_API_URL)
+    let response = ureq::get(RELEASE_LATEST_PAGE_URL)
         .set("User-Agent", USER_AGENT)
-        .set("Accept", "application/vnd.github+json")
         .call()
-        .map_err(|error| eyre!("Failed to fetch Ephemery release metadata: {error}"))?;
+        .map_err(|error| eyre!("Failed to resolve Ephemery latest release page: {error}"))?;
 
-    let release: Release = response
-        .into_json()
-        .map_err(|error| eyre!("Failed to decode Ephemery release metadata: {error}"))?;
+    let location = response.get_url();
+    let tag = parse_tag_from_location(location)?;
+    let download_url = format!(
+        "https://github.com/ephemery-testnet/ephemery-genesis/releases/download/{tag}/{NETWORK_ARCHIVE_NAME}"
+    );
+    Ok((tag, download_url))
+}
 
-    let asset = release
-        .assets
-        .into_iter()
-        .find(|asset| asset.name == NETWORK_ARCHIVE_NAME)
-        .context("Ephemery release missing network archive")?;
-
-    Ok((release.tag_name, asset.browser_download_url))
+fn parse_tag_from_location(location: &str) -> Result<String> {
+    let after_tag = location
+        .split("/tag/")
+        .nth(1)
+        .context("Unable to locate /tag/ segment in Ephemery release redirect")?;
+    let trimmed = after_tag.trim_end_matches('/');
+    if trimmed.is_empty() {
+        return Err(eyre!(
+            "Ephemery release redirect contained empty tag segment: {location}"
+        ));
+    }
+    Ok(trimmed.to_string())
 }
 
 fn download_and_install(base_dir: &Path, archive_url: &str) -> Result<()> {

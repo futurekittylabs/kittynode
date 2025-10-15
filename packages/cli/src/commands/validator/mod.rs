@@ -26,7 +26,10 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Paragraph, Wrap},
 };
-use tokio::runtime::Handle;
+use tokio::{
+    io::{AsyncWrite, AsyncWriteExt},
+    runtime::Handle,
+};
 use tracing::error;
 use zeroize::Zeroizing;
 
@@ -784,16 +787,15 @@ fn run_validator_import(
     use bollard::Docker;
     use bollard::models::ContainerCreateBody;
     use bollard::secret::HostConfig;
-    use tokio::io::AsyncWriteExt;
     use tokio_stream::StreamExt;
 
     async fn import_with_bollard(
         lighthouse_mount: &Path,
         keys_mount: &Path,
+        keys_display_root: &Path,
         metadata_mount: Option<&Path>,
         network: &str,
         use_ephemery: bool,
-        provided_password: &Zeroizing<String>,
     ) -> Result<()> {
         let docker: Docker = kittynode_core::api::get_docker().await?;
 
@@ -804,9 +806,7 @@ fn run_validator_import(
                 .build(),
         );
         let mut pull = docker.create_image(create_image_opts, None, None);
-        while let Some(_progress) = pull.next().await {
-            // Ignore pull progress; the CLI will surface meaningful output once the container starts.
-        }
+        while pull.next().await.is_some() {}
 
         let mut binds = vec![
             format!("{}:/root/.lighthouse", lighthouse_mount.display()),
@@ -840,7 +840,6 @@ fn run_validator_import(
         let config = ContainerCreateBody {
             image: Some("sigp/lighthouse".to_string()),
             cmd: Some(cmd),
-            // Disable TTY so the password supplied over stdin is not echoed.
             tty: Some(false),
             attach_stdin: Some(true),
             attach_stdout: Some(true),
@@ -850,8 +849,12 @@ fn run_validator_import(
             ..Default::default()
         };
 
-        let create_opts: Option<bollard::query_parameters::CreateContainerOptions> = None;
-        let created = docker.create_container(create_opts, config).await?;
+        let created = docker
+            .create_container(
+                None::<bollard::query_parameters::CreateContainerOptions>,
+                config,
+            )
+            .await?;
 
         docker
             .start_container(
@@ -876,38 +879,49 @@ fn run_validator_import(
                 ),
             )
             .await?;
-        input.write_all(provided_password.as_bytes()).await.ok();
-        input.write_all(b"\n").await.ok();
-        drop(input);
 
-        let mut exit_code: Option<i64> = None;
         let mut wait_stream = docker.wait_container(
             &created.id,
             None::<bollard::query_parameters::WaitContainerOptions>,
         );
 
-        let output_task = tokio::spawn(async move {
-            use std::io::Write as _;
-            let mut out = std::io::stdout();
-            while let Some(next) = output.next().await {
-                match next {
-                    Ok(chunk) => {
-                        let bytes = chunk.into_bytes();
-                        let _ = out.write_all(&bytes);
-                        let _ = out.flush();
+        let mut stdout = std::io::stdout();
+        let mut buffer = String::new();
+        let mut current_keystore: Option<PathBuf> = None;
+        let mut exit_code: Option<i64> = None;
+        let mut output_finished = false;
+
+        while !output_finished || exit_code.is_none() {
+            tokio::select! {
+                maybe_chunk = output.next(), if !output_finished => {
+                    match maybe_chunk {
+                        Some(Ok(chunk)) => {
+                            handle_output_chunk(
+                                chunk,
+                                &mut stdout,
+                                &mut buffer,
+                                keys_display_root,
+                                &mut current_keystore,
+                                &mut input,
+                            ).await?;
+                        }
+                        Some(Err(error)) => return Err(error.into()),
+                        None => output_finished = true,
                     }
-                    Err(_) => break,
+                }
+                maybe_status = wait_stream.next(), if exit_code.is_none() => {
+                    match maybe_status {
+                        Some(Ok(details)) => exit_code = Some(details.status_code),
+                        Some(Err(error)) => return Err(error.into()),
+                        None => exit_code = Some(0),
+                    }
                 }
             }
-        });
-
-        if let Some(Ok(details)) = wait_stream.next().await {
-            exit_code = Some(details.status_code);
         }
 
-        let _ = output_task.await;
+        drop(input);
 
-        let _ = docker
+        docker
             .remove_container(
                 &created.id,
                 Some(
@@ -916,7 +930,7 @@ fn run_validator_import(
                         .build(),
                 ),
             )
-            .await;
+            .await?;
 
         match exit_code.unwrap_or_default() {
             0 => Ok(()),
@@ -924,20 +938,114 @@ fn run_validator_import(
         }
     }
 
-    let theme = ColorfulTheme::default();
-    let password = Password::with_theme(&theme)
-        .with_prompt("Enter the keystore password to import validators")
-        .validate_with(|value: &String| validate_password(value).map_err(|error| error.to_string()))
-        .interact()?;
-    let password = Zeroizing::new(password);
+    async fn handle_output_chunk<W>(
+        chunk: bollard::container::LogOutput,
+        stdout: &mut std::io::Stdout,
+        buffer: &mut String,
+        keys_display_root: &Path,
+        current_keystore: &mut Option<PathBuf>,
+        input: &mut W,
+    ) -> Result<()>
+    where
+        W: AsyncWrite + Unpin,
+    {
+        let bytes = chunk.into_bytes();
+        stdout.write_all(&bytes)?;
+        stdout.flush()?;
+
+        let text = String::from_utf8_lossy(&bytes);
+        buffer.push_str(&text);
+
+        while let Some(idx) = buffer.find('\n') {
+            let mut line = buffer[..idx].to_string();
+            buffer.drain(..idx + 1);
+            if line.ends_with('\r') {
+                line.pop();
+            }
+            process_line(&line, keys_display_root, current_keystore, input).await?;
+        }
+
+        if !buffer.is_empty() && line_contains_password_prompt(buffer) {
+            let mut line = buffer.clone();
+            if line.ends_with('\r') {
+                line.pop();
+            }
+            process_line(&line, keys_display_root, current_keystore, input).await?;
+            buffer.clear();
+        }
+
+        Ok(())
+    }
+
+    async fn process_line<W>(
+        line: &str,
+        keys_display_root: &Path,
+        current_keystore: &mut Option<PathBuf>,
+        input: &mut W,
+    ) -> Result<()>
+    where
+        W: AsyncWrite + Unpin,
+    {
+        if let Some(path) = extract_keystore_path(line, keys_display_root) {
+            *current_keystore = Some(path);
+        }
+
+        if line_contains_password_prompt(line) {
+            let prompt = current_keystore
+                .as_ref()
+                .map(|path| format!("Enter the password for {}", path.display()))
+                .unwrap_or_else(|| "Enter the keystore password to import validators".to_string());
+            let password = prompt_for_password(prompt).await?;
+            input.write_all(password.as_bytes()).await?;
+            input.write_all(b"\n").await?;
+            input.flush().await?;
+            drop(password);
+        }
+
+        Ok(())
+    }
+
+    async fn prompt_for_password(prompt: String) -> Result<Zeroizing<String>> {
+        tokio::task::spawn_blocking(move || -> Result<Zeroizing<String>> {
+            let theme = ColorfulTheme::default();
+            let password = Password::with_theme(&theme)
+                .with_prompt(&prompt)
+                .validate_with(|value: &String| {
+                    validate_password(value).map_err(|error| error.to_string())
+                })
+                .interact()
+                .map_err(|error| eyre!("Failed to read password: {error}"))?;
+            Ok(Zeroizing::new(password))
+        })
+        .await
+        .map_err(|error| eyre!("Failed to prompt for password: {error}"))?
+    }
+
+    fn extract_keystore_path(line: &str, keys_display_root: &Path) -> Option<PathBuf> {
+        const PREFIX: &str = "Keystore found at \"";
+        let start = line.find(PREFIX)?;
+        let remainder = &line[start + PREFIX.len()..];
+        let end = remainder.find('"')?;
+        let container_path = &remainder[..end];
+        if let Some(stripped) = container_path.strip_prefix("/root/validator_keys/") {
+            return Some(keys_display_root.join(stripped));
+        }
+        Some(PathBuf::from(container_path))
+    }
+
+    fn line_contains_password_prompt(line: &str) -> bool {
+        let lower = line.to_ascii_lowercase();
+        lower.contains("enter the keystore password")
+    }
+
     let handle = Handle::current();
     handle.block_on(import_with_bollard(
         &lighthouse_mount,
         &keys_mount,
+        &summary.output_dir,
         metadata_mount.as_deref(),
         network,
         ephemery.is_some(),
-        &password,
     ))
 }
 
