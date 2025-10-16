@@ -33,6 +33,8 @@ pub fn is_supported_network(network: &str) -> bool {
 pub(crate) struct Ethereum;
 
 const ETHEREUM_NAME: &str = "ethereum";
+pub const LIGHTHOUSE_DATA_DIR: &str = "/root/.lighthouse";
+pub const LIGHTHOUSE_DATA_VOLUME: &str = "lighthouse-data";
 
 impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
@@ -109,7 +111,7 @@ impl Ethereum {
             });
         }
 
-        let lighthouse_jwt_path = format!("/root/.lighthouse/{network}/jwt.hex");
+        let lighthouse_jwt_path = format!("{LIGHTHOUSE_DATA_DIR}/{network}/jwt.hex");
 
         let mut lighthouse_cmd = vec!["lighthouse".to_string()];
         if ephemery.is_some() {
@@ -238,8 +240,8 @@ impl Ethereum {
                     ),
                 ]),
                 volume_bindings: vec![Binding {
-                    source: "lighthouse-data".to_string(),
-                    destination: "/root/.lighthouse".to_string(),
+                    source: LIGHTHOUSE_DATA_VOLUME.to_string(),
+                    destination: LIGHTHOUSE_DATA_DIR.to_string(),
                     options: None,
                 }],
                 file_bindings: lighthouse_file_bindings,
@@ -284,8 +286,8 @@ impl Ethereum {
                 cmd: vc_cmd,
                 port_bindings: HashMap::new(),
                 volume_bindings: vec![Binding {
-                    source: "lighthouse-data".to_string(),
-                    destination: "/root/.lighthouse".to_string(),
+                    source: LIGHTHOUSE_DATA_VOLUME.to_string(),
+                    destination: LIGHTHOUSE_DATA_DIR.to_string(),
                     options: None,
                 }],
                 file_bindings: vc_file_bindings,

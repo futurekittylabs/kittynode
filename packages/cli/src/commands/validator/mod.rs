@@ -35,7 +35,7 @@ use zeroize::Zeroizing;
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
-    self,
+    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME,
     types::PackageConfig,
     validator::{
         EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
@@ -800,7 +800,7 @@ fn run_validator_import(summary: &KeygenSummary, network: &str) -> Result<()> {
         while pull.next().await.is_some() {}
 
         let mut binds = vec![
-            "lighthouse-data:/root/.lighthouse".to_string(),
+            format!("{LIGHTHOUSE_DATA_VOLUME}:{LIGHTHOUSE_DATA_DIR}"),
             format!("{}:/root/validator_keys", keys_mount.display()),
         ];
         if let Some(meta) = metadata_mount {
