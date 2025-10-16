@@ -18,6 +18,8 @@ pub fn start_web_service(
     args: &[&str],
 ) -> Result<WebServiceStatus> {
     let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
+
+    // If we already have a tracked process and it matches, report it.
     if let Some(mut state) = web_service::load_state()? {
         if process_matches(&state) {
             if state.log_path.is_none() {
@@ -125,40 +127,72 @@ pub fn get_web_service_log_path() -> Result<PathBuf> {
 }
 
 pub fn stop_web_service() -> Result<WebServiceStatus> {
-    let Some(state) = web_service::load_state()? else {
-        return Ok(WebServiceStatus::NotRunning);
-    };
-
-    if !process_matches(&state) {
-        web_service::clear_state()?;
-        return Ok(WebServiceStatus::NotRunning);
+    let mut killed: Option<(u32, u16)> = None;
+    if let Some(state) = web_service::load_state()? {
+        if process_matches(&state) {
+            let system = System::new_all();
+            let pid = Pid::from_u32(state.pid);
+            if let Some(process) = system.process(pid) {
+                if process.kill() {
+                    web_service::clear_state()?;
+                    info!(
+                        pid = state.pid,
+                        port = state.port,
+                        "Stopped kittynode-web service"
+                    );
+                    killed = Some((state.pid, state.port));
+                } else {
+                    return Err(eyre!(
+                        "Failed to stop kittynode-web process with pid {}",
+                        state.pid
+                    ));
+                }
+            } else {
+                web_service::clear_state()?;
+            }
+        } else {
+            web_service::clear_state()?;
+        }
     }
 
-    let system = System::new_all();
-    let pid = Pid::from_u32(state.pid);
+    // Scan and stop any remaining internal-run instances from this binary.
+    let current_bin = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.canonicalize().ok());
+    if let Some(current_bin) = current_bin {
+        let system = System::new_all();
+        for (pid, process) in system.processes() {
+            if let Some(exe) = process.exe() {
+                if !paths_match(exe, &current_bin) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
 
-    let Some(process) = system.process(pid) else {
-        web_service::clear_state()?;
-        return Ok(WebServiceStatus::NotRunning);
-    };
-
-    if !process.kill() {
-        return Err(eyre!(
-            "Failed to stop kittynode-web process with pid {}",
-            state.pid
-        ));
+            let cmd = process.cmd();
+            let has_internal = cmd.iter().any(|a| a.to_string_lossy() == "__internal-run");
+            let has_web = cmd.iter().any(|a| a.to_string_lossy() == "web");
+            if has_internal && has_web {
+                if !process.kill() {
+                    return Err(eyre!(
+                        "Failed to stop kittynode-web process with pid {}",
+                        pid.as_u32()
+                    ));
+                }
+                if killed.is_none() {
+                    let port = extract_port_from_cmd(cmd).unwrap_or(DEFAULT_WEB_PORT);
+                    killed = Some((pid.as_u32(), port));
+                }
+            }
+        }
     }
 
-    web_service::clear_state()?;
-    info!(
-        pid = state.pid,
-        port = state.port,
-        "Stopped kittynode-web service"
-    );
-    Ok(WebServiceStatus::Stopped {
-        pid: state.pid,
-        port: state.port,
-    })
+    if let Some((pid, port)) = killed {
+        Ok(WebServiceStatus::Stopped { pid, port })
+    } else {
+        Ok(WebServiceStatus::NotRunning)
+    }
 }
 
 pub fn get_web_service_status() -> Result<WebServiceStatus> {
@@ -222,6 +256,27 @@ fn args_contain_token(cmd: &[OsString], token: Option<&str>) -> bool {
     }
     cmd.iter().any(|arg| arg == &token_flag)
 }
+
+fn extract_port_from_cmd(cmd: &[OsString]) -> Option<u16> {
+    let port_flag = OsStr::new("--port");
+    let mut iter = cmd.iter().peekable();
+    while let Some(arg) = iter.next() {
+        let s = arg.to_string_lossy();
+        if let Some(val) = s.strip_prefix("--port=") {
+            if let Ok(p) = val.parse::<u16>() {
+                return Some(p);
+            }
+        } else if arg == port_flag
+            && let Some(next) = iter.peek()
+            && let Ok(p) = next.to_string_lossy().parse::<u16>()
+        {
+            return Some(p);
+        }
+    }
+    None
+}
+
+//
 
 fn generate_service_token() -> String {
     let mut buf = [0u8; 16];
