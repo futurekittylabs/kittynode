@@ -19,9 +19,7 @@ import {
   Settings,
   Package2,
   Activity,
-  MessageSquare,
-  Github,
-  Users,
+  MessageCircleMore,
   Globe,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
@@ -188,27 +186,12 @@ onMount(async () => {
             <Sidebar.MenuButton>
               {#snippet child({ props })}
                 <a
-                  href="https://github.com/futurekittylabs/kittynode/discussions/new?category=feedback"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  {...props}
-                >
-                  <MessageSquare class="h-4 w-4" />
-                  <span>Feedback</span>
-                </a>
-              {/snippet}
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton>
-              {#snippet child({ props })}
-                <a
                   href="https://discord.kittynode.com"
                   target="_blank"
                   rel="noreferrer noopener"
                   {...props}
                 >
-                  <Users class="h-4 w-4" />
+                  <MessageCircleMore class="h-4 w-4" />
                   <span>Discord</span>
                 </a>
               {/snippet}
