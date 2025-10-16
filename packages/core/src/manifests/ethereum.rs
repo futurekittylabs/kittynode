@@ -33,6 +33,8 @@ pub fn is_supported_network(network: &str) -> bool {
 pub(crate) struct Ethereum;
 
 const ETHEREUM_NAME: &str = "ethereum";
+pub const LIGHTHOUSE_DATA_DIR: &str = "/root/.lighthouse";
+pub const LIGHTHOUSE_DATA_VOLUME: &str = "lighthouse-data";
 
 impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
@@ -109,6 +111,8 @@ impl Ethereum {
             });
         }
 
+        let lighthouse_jwt_path = format!("{LIGHTHOUSE_DATA_DIR}/{network}/jwt.hex");
+
         let mut lighthouse_cmd = vec!["lighthouse".to_string()];
         if ephemery.is_some() {
             lighthouse_cmd.push("--testnet-dir".to_string());
@@ -141,7 +145,7 @@ impl Ethereum {
         }
         lighthouse_cmd.extend([
             "--execution-jwt".to_string(),
-            format!("/root/.lighthouse/{network}/jwt.hex"),
+            lighthouse_jwt_path.clone(),
             "--execution-endpoint".to_string(),
             "http://reth-node:8551".to_string(),
         ]);
@@ -153,21 +157,11 @@ impl Ethereum {
             lighthouse_cmd.push(config.consensus_bootnodes.join(","));
         }
 
-        let mut lighthouse_file_bindings = vec![
-            Binding {
-                source: kittynode_path
-                    .join(".lighthouse")
-                    .to_string_lossy()
-                    .to_string(),
-                destination: "/root/.lighthouse".to_string(),
-                options: None,
-            },
-            Binding {
-                source: jwt_path.to_string_lossy().to_string(),
-                destination: format!("/root/.lighthouse/{network}/jwt.hex"),
-                options: Some("ro".to_string()),
-            },
-        ];
+        let mut lighthouse_file_bindings = vec![Binding {
+            source: jwt_path.to_string_lossy().to_string(),
+            destination: lighthouse_jwt_path.clone(),
+            options: Some("ro".to_string()),
+        }];
         if let Some(config) = &ephemery {
             lighthouse_file_bindings.push(Binding {
                 source: config.metadata_dir.to_string_lossy().to_string(),
@@ -245,7 +239,11 @@ impl Ethereum {
                         }],
                     ),
                 ]),
-                volume_bindings: vec![],
+                volume_bindings: vec![Binding {
+                    source: LIGHTHOUSE_DATA_VOLUME.to_string(),
+                    destination: LIGHTHOUSE_DATA_DIR.to_string(),
+                    options: None,
+                }],
                 file_bindings: lighthouse_file_bindings,
             },
         ];
@@ -273,14 +271,7 @@ impl Ethereum {
                 fee.to_string(),
             ]);
 
-            let mut vc_file_bindings = vec![Binding {
-                source: kittynode_path
-                    .join(".lighthouse")
-                    .to_string_lossy()
-                    .to_string(),
-                destination: "/root/.lighthouse".to_string(),
-                options: None,
-            }];
+            let mut vc_file_bindings = Vec::new();
             if let Some(config) = &ephemery {
                 vc_file_bindings.push(Binding {
                     source: config.metadata_dir.to_string_lossy().to_string(),
@@ -294,7 +285,11 @@ impl Ethereum {
                 image: "sigp/lighthouse".to_string(),
                 cmd: vc_cmd,
                 port_bindings: HashMap::new(),
-                volume_bindings: vec![],
+                volume_bindings: vec![Binding {
+                    source: LIGHTHOUSE_DATA_VOLUME.to_string(),
+                    destination: LIGHTHOUSE_DATA_DIR.to_string(),
+                    options: None,
+                }],
                 file_bindings: vc_file_bindings,
             });
         }

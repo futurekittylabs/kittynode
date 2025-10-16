@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fs,
     io::{self, Write, stdout},
     path::{Path, PathBuf},
     time::{Duration, Instant},
@@ -36,7 +35,7 @@ use zeroize::Zeroizing;
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
-    self,
+    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME,
     types::PackageConfig,
     validator::{
         EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
@@ -717,8 +716,7 @@ fn run_launch_flow(
     let result = (|| -> Result<()> {
         handle.block_on(remove_validator_container_if_present());
         println!("Importing validator keys with Lighthouse...");
-        let lighthouse_dir = lighthouse_root()?;
-        run_validator_import(summary, network, &lighthouse_dir)?;
+        run_validator_import(summary, network)?;
         println!("Configuring Ethereum clients for {network}...");
         let mut values = HashMap::new();
         values.insert("network".to_string(), network.to_string());
@@ -767,13 +765,7 @@ fn is_missing_docker_resource_error(error: &Report) -> bool {
         || (msg.contains("network") && msg.contains("not found"))
 }
 
-fn run_validator_import(
-    summary: &KeygenSummary,
-    network: &str,
-    lighthouse_dir: &Path,
-) -> Result<()> {
-    fs::create_dir_all(lighthouse_dir)?;
-    let lighthouse_mount = canonicalize_path(lighthouse_dir);
+fn run_validator_import(summary: &KeygenSummary, network: &str) -> Result<()> {
     let keys_mount = canonicalize_path(&summary.output_dir);
     let ephemery = if network == EPHEMERY_NETWORK_NAME {
         Some(ensure_ephemery_config()?)
@@ -790,7 +782,6 @@ fn run_validator_import(
     use tokio_stream::StreamExt;
 
     async fn import_with_bollard(
-        lighthouse_mount: &Path,
         keys_mount: &Path,
         keys_display_root: &Path,
         metadata_mount: Option<&Path>,
@@ -809,7 +800,7 @@ fn run_validator_import(
         while pull.next().await.is_some() {}
 
         let mut binds = vec![
-            format!("{}:/root/.lighthouse", lighthouse_mount.display()),
+            format!("{LIGHTHOUSE_DATA_VOLUME}:{LIGHTHOUSE_DATA_DIR}"),
             format!("{}:/root/validator_keys", keys_mount.display()),
         ];
         if let Some(meta) = metadata_mount {
@@ -1040,17 +1031,12 @@ fn run_validator_import(
 
     let handle = Handle::current();
     handle.block_on(import_with_bollard(
-        &lighthouse_mount,
         &keys_mount,
         &summary.output_dir,
         metadata_mount.as_deref(),
         network,
         ephemery.is_some(),
     ))
-}
-
-fn lighthouse_root() -> Result<PathBuf> {
-    Ok(api::kittynode_path()?.join(".lighthouse"))
 }
 
 fn canonicalize_path(path: &Path) -> PathBuf {
