@@ -80,12 +80,10 @@ const networkTriggerContent = $derived(
     defaultNetworkLabel,
 );
 
-const currentNetworkDisplay = $derived(() => {
-  const match = networks.find((n) => n.value === currentNetwork);
-  if (match) return match.label;
-  if (!currentNetwork) return "Not configured";
-  return `${currentNetwork} (unsupported)`;
-});
+const currentNetworkDisplay = $derived(
+  networks.find((n) => n.value === currentNetwork)?.label ??
+    (!currentNetwork ? "Not configured" : `${currentNetwork} (unsupported)`),
+);
 
 const installedStatus = $derived(installedState.status);
 const isInstalled = $derived(packageStatus === "installed");
