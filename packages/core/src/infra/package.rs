@@ -69,7 +69,7 @@ pub async fn install_package(package: &Package) -> Result<()> {
     if package.containers.is_empty() {
         if package.name == Ethereum::NAME {
             return Err(eyre::eyre!(
-                "Network must be selected before installing Ethereum. Set one via: `kittynode package config set {} --value network=<mainnet|sepolia|hoodi|ephemery>`",
+                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <hoodi|mainnet|sepolia|ephemery>`",
                 Ethereum::NAME
             ));
         }

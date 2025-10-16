@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn compounding_withdrawal_credentials_uses_prefix_byte() -> Result<()> {
-        let spec = ChainSpec::mainnet();
+        let spec = ChainSpec::default();
         let address: Address = WITHDRAWAL_ADDRESS.parse()?;
         let creds = compounding_withdrawal_credentials(address, &spec);
         assert_eq!(creds.as_slice()[0], spec.compounding_withdrawal_prefix_byte);

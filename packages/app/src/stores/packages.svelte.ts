@@ -161,9 +161,9 @@ export const packagesStore = {
     }
   },
 
-  async installPackage(name: string) {
+  async installPackage(name: string, network?: string) {
     try {
-      await coreClient.installPackage(name);
+      await coreClient.installPackage(name, network);
       await this.loadInstalledPackages({ force: true });
     } catch (e) {
       console.error(`Failed to install ${name}: ${e}`);

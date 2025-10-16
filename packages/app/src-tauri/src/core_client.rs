@@ -43,7 +43,7 @@ pub trait CoreClient: Send + Sync + std::any::Any {
         tail_lines: Option<usize>,
     ) -> Result<Vec<String>>;
     /// Install a package via the core.
-    async fn install_package(&self, name: &str) -> Result<()>;
+    async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()>;
     /// Delete a package, optionally removing images.
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()>;
     /// Stop all containers for a package.
@@ -128,8 +128,8 @@ impl CoreClient for LocalCoreClient {
         api::get_container_logs(container_name, tail_lines).await
     }
 
-    async fn install_package(&self, name: &str) -> Result<()> {
-        api::install_package(name).await
+    async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()> {
+        api::install_package_with_network(name, network).await
     }
 
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()> {
@@ -319,9 +319,13 @@ impl CoreClient for HttpCoreClient {
         self.get_json(&path).await
     }
 
-    async fn install_package(&self, name: &str) -> Result<()> {
-        self.post_unit(&format!("/install_package/{name}"), Option::<&()>::None)
-            .await
+    async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()> {
+        let mut path = format!("/install_package/{name}");
+        if let Some(network) = network {
+            path.push_str("?network=");
+            path.push_str(network);
+        }
+        self.post_unit(&path, Option::<&()>::None).await
     }
 
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()> {
@@ -519,7 +523,7 @@ mod tests {
             vec!["remote-capability".to_string()]
         );
         client.add_capability("beta").await?;
-        client.install_package("ok").await?;
+        client.install_package("ok", None).await?;
         let states = client
             .get_package_runtime_states(&["alpha".to_string()])
             .await?;
@@ -530,7 +534,7 @@ mod tests {
         );
 
         let install_err = client
-            .install_package("fail")
+            .install_package("fail", None)
             .await
             .expect_err("expected failure");
         assert!(install_err.to_string().contains("HTTP 500"));

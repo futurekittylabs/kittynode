@@ -48,9 +48,12 @@ let selectedNetwork = $state("hoodi");
 let currentNetwork = $state("hoodi");
 
 const networks = [
-  { value: "mainnet", label: "Mainnet" },
   { value: "hoodi", label: "Hoodi" },
+  { value: "mainnet", label: "Mainnet" },
+  { value: "sepolia", label: "Sepolia" },
+  { value: "ephemery", label: "Ephemery" },
 ];
+const supportedNetworkValues = networks.map((option) => option.value);
 
 const logSources = {
   execution: {
@@ -71,9 +74,12 @@ const networkTriggerContent = $derived(
   networks.find((n) => n.value === selectedNetwork)?.label || "Hoodi",
 );
 
-const currentNetworkDisplay = $derived(
-  networks.find((n) => n.value === currentNetwork)?.label || "Hoodi",
-);
+const currentNetworkDisplay = $derived(() => {
+  const match = networks.find((n) => n.value === currentNetwork);
+  if (match) return match.label;
+  if (!currentNetwork) return "Not configured";
+  return `${currentNetwork} (unsupported)`;
+});
 
 const installedStatus = $derived(installedState.status);
 const isInstalled = $derived(packageStatus === "installed");
@@ -118,7 +124,14 @@ async function loadConfigFor(name: string) {
     const config = await packageConfigStore.getConfig(name);
     const network = config.values.network || "hoodi";
     currentNetwork = network;
-    selectedNetwork = network;
+    if (!supportedNetworkValues.includes(network)) {
+      notifyError(
+        `Network "${network}" is no longer supported. Please choose hoodi, mainnet, sepolia, or ephemery.`,
+      );
+      selectedNetwork = "hoodi";
+    } else {
+      selectedNetwork = network;
+    }
     lastLoadedConfig = name;
   } catch (error) {
     notifyError("Failed to get package config", error);

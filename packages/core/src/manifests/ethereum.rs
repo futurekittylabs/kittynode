@@ -284,6 +284,6 @@ impl Ethereum {
     }
 
     fn is_supported_network(network: &str) -> bool {
-        matches!(network, "mainnet" | "hoodi" | "sepolia") || network == EPHEMERY_NETWORK_NAME
+        matches!(network, "hoodi" | "mainnet" | "sepolia") || network == EPHEMERY_NETWORK_NAME
     }
 }

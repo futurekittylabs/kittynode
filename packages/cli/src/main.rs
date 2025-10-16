@@ -1,7 +1,7 @@
 mod commands;
 mod update_checker;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use eyre::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing_subscriber::fmt::MakeWriter;
@@ -62,6 +62,25 @@ enum Commands {
     Update,
 }
 
+#[derive(Copy, Clone, Debug, ValueEnum)]
+enum EthereumNetwork {
+    Mainnet,
+    Hoodi,
+    Sepolia,
+    Ephemery,
+}
+
+impl EthereumNetwork {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Mainnet => "mainnet",
+            Self::Hoodi => "hoodi",
+            Self::Sepolia => "sepolia",
+            Self::Ephemery => "ephemery",
+        }
+    }
+}
+
 #[derive(Subcommand)]
 enum PackageCommands {
     #[command(name = "list", about = "List packages available to install")]
@@ -75,6 +94,12 @@ enum PackageCommands {
     Install {
         #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to install")]
         name: String,
+        #[arg(
+            long = "network",
+            value_name = "NETWORK",
+            help = "Select the network for supported packages"
+        )]
+        network: Option<EthereumNetwork>,
     },
     #[command(about = "Delete a package and optionally remove its Docker images")]
     Delete {
@@ -288,7 +313,9 @@ impl PackageCommands {
         match self {
             PackageCommands::List => commands::get_packages().await,
             PackageCommands::Installed => commands::get_installed_packages().await,
-            PackageCommands::Install { name } => commands::install_package(name).await,
+            PackageCommands::Install { name, network } => {
+                commands::install_package(name, network.map(EthereumNetwork::as_str)).await
+            }
             PackageCommands::Delete {
                 name,
                 include_images,

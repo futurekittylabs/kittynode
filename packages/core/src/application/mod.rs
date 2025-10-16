@@ -44,7 +44,7 @@ pub use get_packages_runtime_state::get_packages_runtime_state;
 pub use get_server_url::get_server_url;
 pub use get_system_info::get_system_info;
 pub use init_kittynode::init_kittynode;
-pub use install_package::install_package;
+pub use install_package::{install_package, install_package_with_network};
 pub use is_docker_running::is_docker_running;
 pub use remove_capability::remove_capability;
 pub use resume_package::resume_package;

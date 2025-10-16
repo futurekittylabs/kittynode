@@ -16,6 +16,7 @@ pub use crate::application::get_server_url;
 pub use crate::application::get_system_info;
 pub use crate::application::init_kittynode;
 pub use crate::application::install_package;
+pub use crate::application::install_package_with_network;
 pub use crate::application::is_docker_running;
 pub use crate::application::remove_capability;
 pub use crate::application::resume_package;
