@@ -1,5 +1,5 @@
 use eyre::{Result, eyre};
-use std::collections::HashMap;
+use std::{collections::HashMap, iter};
 
 use crate::infra::package_config::PackageConfigStore;
 use crate::{
@@ -10,6 +10,25 @@ use crate::{
         file::kittynode_path,
     },
 };
+
+pub const ETHEREUM_EXECUTION_NETWORKS: &[&str] = &["hoodi", "mainnet", "sepolia"];
+
+pub fn supported_networks_iter() -> impl Iterator<Item = &'static str> {
+    ETHEREUM_EXECUTION_NETWORKS
+        .iter()
+        .copied()
+        .chain(iter::once(EPHEMERY_NETWORK_NAME))
+}
+
+pub fn supported_networks_display(delimiter: &str) -> String {
+    supported_networks_iter()
+        .collect::<Vec<_>>()
+        .join(delimiter)
+}
+
+pub fn is_supported_network(network: &str) -> bool {
+    supported_networks_iter().any(|value| value == network)
+}
 
 pub(crate) struct Ethereum;
 
@@ -39,7 +58,7 @@ impl PackageDefinition for Ethereum {
 
 impl Ethereum {
     pub(crate) fn get_containers(network: &str) -> Result<Vec<Container>> {
-        if !Self::is_supported_network(network) {
+        if !is_supported_network(network) {
             return Err(eyre!("Unsupported Ethereum network: {network}"));
         }
         let kittynode_path = kittynode_path()?;
@@ -281,9 +300,5 @@ impl Ethereum {
         }
 
         Ok(containers)
-    }
-
-    fn is_supported_network(network: &str) -> bool {
-        matches!(network, "mainnet" | "hoodi" | "sepolia") || network == EPHEMERY_NETWORK_NAME
     }
 }

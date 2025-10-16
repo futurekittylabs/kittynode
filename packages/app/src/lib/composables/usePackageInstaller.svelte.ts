@@ -9,7 +9,10 @@ export function usePackageInstaller() {
     return installingPackages.has(packageName);
   }
 
-  async function installPackage(packageName: string): Promise<boolean> {
+  async function installPackage(
+    packageName: string,
+    network?: string,
+  ): Promise<boolean> {
     if (!operationalStateStore.canInstall) {
       notifyError("Cannot install packages in the current operational state");
       return false;
@@ -35,7 +38,7 @@ export function usePackageInstaller() {
 
     installingPackages = new Set([...installingPackages, packageName]);
     try {
-      await packagesStore.installPackage(packageName);
+      await packagesStore.installPackage(packageName, network);
       notifySuccess(`Successfully installed ${packageName}`);
       return true;
     } catch (error) {

@@ -28,8 +28,8 @@ export const coreClient = {
     return invoke("get_installed_packages");
   },
 
-  installPackage(name: string): Promise<void> {
-    return invoke("install_package", { name });
+  installPackage(name: string, network?: string): Promise<void> {
+    return invoke("install_package", { name, network });
   },
 
   deletePackage(name: string, includeImages: boolean): Promise<void> {

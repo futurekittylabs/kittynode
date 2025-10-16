@@ -10,6 +10,12 @@ import { packageConfigStore } from "$stores/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
+import {
+  defaultEthereumNetwork,
+  ethereumNetworks,
+  ethereumNetworkValues,
+  formatEthereumNetworks,
+} from "$lib/constants/ethereumNetworks";
 import { createPackageRuntimeController } from "$lib/runtime/packageRuntime.svelte";
 import {
   Terminal,
@@ -44,13 +50,15 @@ let lastLoadedConfig: string | null = null;
 
 let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
-let selectedNetwork = $state("hoodi");
-let currentNetwork = $state("hoodi");
+let selectedNetwork = $state<string>(defaultEthereumNetwork);
+let currentNetwork = $state<string>(defaultEthereumNetwork);
 
-const networks = [
-  { value: "mainnet", label: "Mainnet" },
-  { value: "hoodi", label: "Hoodi" },
-];
+const networks = ethereumNetworks;
+const supportedNetworkValues: string[] = [...ethereumNetworkValues];
+const defaultNetworkLabel =
+  networks.find((option) => option.value === defaultEthereumNetwork)?.label ??
+  defaultEthereumNetwork;
+const supportedNetworksMessage = formatEthereumNetworks(", ");
 
 const logSources = {
   execution: {
@@ -68,11 +76,13 @@ const activeLogSource = $derived(
 );
 
 const networkTriggerContent = $derived(
-  networks.find((n) => n.value === selectedNetwork)?.label || "Hoodi",
+  networks.find((n) => n.value === selectedNetwork)?.label ||
+    defaultNetworkLabel,
 );
 
 const currentNetworkDisplay = $derived(
-  networks.find((n) => n.value === currentNetwork)?.label || "Hoodi",
+  networks.find((n) => n.value === currentNetwork)?.label ??
+    (!currentNetwork ? "Not configured" : `${currentNetwork} (unsupported)`),
 );
 
 const installedStatus = $derived(installedState.status);
@@ -116,9 +126,16 @@ async function loadConfigFor(name: string) {
 
   try {
     const config = await packageConfigStore.getConfig(name);
-    const network = config.values.network || "hoodi";
+    const network = config.values.network || defaultEthereumNetwork;
     currentNetwork = network;
-    selectedNetwork = network;
+    if (!supportedNetworkValues.includes(network)) {
+      notifyError(
+        `Network "${network}" is not supported. Please choose ${supportedNetworksMessage}.`,
+      );
+      selectedNetwork = defaultEthereumNetwork;
+    } else {
+      selectedNetwork = network;
+    }
     lastLoadedConfig = name;
   } catch (error) {
     notifyError("Failed to get package config", error);
@@ -197,8 +214,8 @@ $effect(() => {
     void loadConfigFor(name);
   } else {
     lastLoadedConfig = null;
-    selectedNetwork = "hoodi";
-    currentNetwork = "hoodi";
+    selectedNetwork = defaultEthereumNetwork;
+    currentNetwork = defaultEthereumNetwork;
   }
 });
 

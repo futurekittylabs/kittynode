@@ -53,8 +53,18 @@ pub async fn get_config() -> Result<Json<Config>, (StatusCode, String)> {
     api::get_config().map(Json).map_err(to_http_error)
 }
 
-pub async fn install_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::install_package(&name).await.map_err(to_http_error)?;
+#[derive(Default, Deserialize)]
+pub struct InstallPackageQuery {
+    network: Option<String>,
+}
+
+pub async fn install_package(
+    Path(name): Path<String>,
+    Query(params): Query<InstallPackageQuery>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    api::install_package_with_network(&name, params.network.as_deref())
+        .await
+        .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 

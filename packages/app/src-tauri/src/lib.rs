@@ -121,12 +121,17 @@ async fn start_docker_if_needed(
 #[tauri::command]
 async fn install_package(
     name: String,
+    network: Option<String>,
     client_state: State<'_, CoreClientManager>,
 ) -> Result<(), String> {
-    info!("Installing package: {}", name);
+    if let Some(ref network) = network {
+        info!("Installing package: {} on {}", name, network);
+    } else {
+        info!("Installing package: {}", name);
+    }
     let client = client_state.client();
     client
-        .install_package(&name)
+        .install_package(&name, network.as_deref())
         .await
         .map(|_| info!("Successfully installed package: {}", name))
         .map_err(|e| e.to_string())

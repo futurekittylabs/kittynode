@@ -16,6 +16,7 @@ pub use crate::application::get_server_url;
 pub use crate::application::get_system_info;
 pub use crate::application::init_kittynode;
 pub use crate::application::install_package;
+pub use crate::application::install_package_with_network;
 pub use crate::application::is_docker_running;
 pub use crate::application::remove_capability;
 pub use crate::application::resume_package;
@@ -33,6 +34,7 @@ pub use crate::application::{get_web_service_log_path, get_web_service_status};
 pub use crate::domain::web_service::DEFAULT_WEB_PORT;
 pub use crate::infra::docker::get_docker;
 pub use crate::infra::file::{kittynode_cli_path, kittynode_path};
+pub use crate::manifests::ethereum::supported_networks_display as ethereum_supported_networks_display;
 
 pub mod types;
 pub mod validator;

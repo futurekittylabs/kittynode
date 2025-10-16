@@ -7,6 +7,11 @@ import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
+import * as Select from "$lib/components/ui/select";
+import {
+  defaultEthereumNetwork,
+  ethereumNetworks,
+} from "$lib/constants/ethereumNetworks";
 import {
   Package2,
   Download,
@@ -19,6 +24,16 @@ import {
 const { isInstalling, installPackage } = usePackageInstaller();
 
 let searchQuery = $state("");
+let selectedEthereumNetwork = $state(defaultEthereumNetwork);
+
+const defaultEthereumNetworkLabel =
+  ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
+    ?.label ?? defaultEthereumNetwork;
+
+const selectedEthereumNetworkLabel = $derived(
+  ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
+    ?.label || defaultEthereumNetworkLabel,
+);
 
 const catalogState = $derived(packagesStore.catalogState);
 const installedState = $derived(packagesStore.installedState);
@@ -155,7 +170,7 @@ onMount(() => {
             </div>
           </Card.Header>
 
-          <Card.Footer>
+          <Card.Footer class="flex flex-col gap-3">
             {#if status === "installed"}
               <Button
                 size="sm"
@@ -167,11 +182,42 @@ onMount(() => {
                 Manage
               </Button>
             {:else if status === "available"}
+              {#if name === "ethereum"}
+                <div class="w-full space-y-1">
+                  <Select.Root
+                    type="single"
+                    bind:value={selectedEthereumNetwork}
+                    disabled={!operationalStateStore.canInstall ||
+                      isInstallingPackage}
+                  >
+                    <Select.Label class="text-xs font-medium text-muted-foreground">
+                      Network
+                    </Select.Label>
+                    <Select.Trigger class="w-full justify-between">
+                      <span class="text-sm">{selectedEthereumNetworkLabel}</span>
+                    </Select.Trigger>
+                    <Select.Content>
+                      <Select.Group>
+                        {#each ethereumNetworks as option}
+                          <Select.Item
+                            value={option.value}
+                            label={option.label}
+                          >
+                            {option.label}
+                          </Select.Item>
+                        {/each}
+                      </Select.Group>
+                    </Select.Content>
+                  </Select.Root>
+                </div>
+              {/if}
               <Button
                 size="sm"
                 variant="default"
                 onclick={async () => {
-                  const installed = await installPackage(name);
+                  const selectedNetwork =
+                    name === "ethereum" ? selectedEthereumNetwork : undefined;
+                  const installed = await installPackage(name, selectedNetwork);
                   if (installed) {
                     managePackage(name);
                   }
