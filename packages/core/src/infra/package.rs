@@ -12,7 +12,7 @@ use std::{
     fs,
     io::ErrorKind,
 };
-use tracing::info;
+use tracing::{info, warn};
 
 /// Retrieves a `HashMap` of all available packages.
 pub fn get_packages() -> Result<HashMap<String, Package>> {
@@ -212,12 +212,10 @@ pub async fn delete_package(
         info!("Removing file '{}'...", path);
         match fs::remove_file(path) {
             Ok(()) => info!("File '{}' removed successfully", path),
-            Err(err) if err.kind() == ErrorKind::PermissionDenied => {
-                info!(
-                    "Skipping removal of '{}' because permissions are insufficient",
-                    path
-                );
-            }
+            Err(err) if err.kind() == ErrorKind::PermissionDenied => warn!(
+                "Skipping removal of '{}' because permissions are insufficient",
+                path
+            ),
             Err(err) => return Err(err.into()),
         }
     }
@@ -225,12 +223,10 @@ pub async fn delete_package(
         info!("Removing directory '{}'...", path);
         match fs::remove_dir_all(path) {
             Ok(()) => info!("Directory '{}' removed successfully", path),
-            Err(err) if err.kind() == ErrorKind::PermissionDenied => {
-                info!(
-                    "Skipping removal of '{}' because permissions are insufficient",
-                    path
-                );
-            }
+            Err(err) if err.kind() == ErrorKind::PermissionDenied => warn!(
+                "Skipping removal of '{}' because permissions are insufficient",
+                path
+            ),
             Err(err) => return Err(err.into()),
         }
     }
