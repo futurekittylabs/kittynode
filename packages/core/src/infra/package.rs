@@ -10,6 +10,7 @@ use eyre::Result;
 use std::{
     collections::{HashMap, HashSet},
     fs,
+    io::ErrorKind,
 };
 use tracing::info;
 
@@ -209,13 +210,29 @@ pub async fn delete_package(
 
     for path in file_paths {
         info!("Removing file '{}'...", path);
-        fs::remove_file(path)?;
-        info!("File '{}' removed successfully", path);
+        match fs::remove_file(path) {
+            Ok(()) => info!("File '{}' removed successfully", path),
+            Err(err) if err.kind() == ErrorKind::PermissionDenied => {
+                info!(
+                    "Skipping removal of '{}' because permissions are insufficient",
+                    path
+                );
+            }
+            Err(err) => return Err(err.into()),
+        }
     }
     for path in directory_paths {
         info!("Removing directory '{}'...", path);
-        fs::remove_dir_all(path)?;
-        info!("Directory '{}' removed successfully", path);
+        match fs::remove_dir_all(path) {
+            Ok(()) => info!("Directory '{}' removed successfully", path),
+            Err(err) if err.kind() == ErrorKind::PermissionDenied => {
+                info!(
+                    "Skipping removal of '{}' because permissions are insufficient",
+                    path
+                );
+            }
+            Err(err) => return Err(err.into()),
+        }
     }
 
     for volume in volume_names {
