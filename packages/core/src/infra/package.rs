@@ -5,7 +5,7 @@ use crate::infra::docker::{
 };
 use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
 use crate::infra::file::kittynode_path;
-use crate::manifests::ethereum::Ethereum;
+use crate::manifests::ethereum::{self, Ethereum};
 use eyre::Result;
 use std::{
     collections::{HashMap, HashSet},
@@ -68,9 +68,11 @@ pub async fn install_package(package: &Package) -> Result<()> {
 
     if package.containers.is_empty() {
         if package.name == Ethereum::NAME {
+            let network_choices = ethereum::supported_networks_display("|");
             return Err(eyre::eyre!(
-                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <hoodi|mainnet|sepolia|ephemery>`",
-                Ethereum::NAME
+                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
+                Ethereum::NAME,
+                network_choices
             ));
         }
         return Err(eyre::eyre!(

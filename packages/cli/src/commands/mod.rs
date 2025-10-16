@@ -67,8 +67,9 @@ pub async fn get_installed_packages() -> Result<()> {
 
 pub async fn install_package(name: String, network: Option<&str>) -> Result<()> {
     if name == "ethereum" && network.is_none() {
+        let supported = api::ethereum_supported_networks_display("|");
         return Err(eyre!(
-            "Network must be provided when installing ethereum. Use --network <hoodi|mainnet|sepolia|ephemery>"
+            "Network must be provided when installing ethereum. Use --network <{supported}>"
         ));
     }
     api::install_package_with_network(&name, network)

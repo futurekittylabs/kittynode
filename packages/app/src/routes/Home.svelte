@@ -11,6 +11,10 @@ import { operationalStateStore } from "$stores/operationalState.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
+import {
+  defaultEthereumNetwork,
+  ethereumNetworks,
+} from "$lib/constants/ethereumNetworks";
 import * as Select from "$lib/components/ui/select";
 import { runtimeOverviewStore } from "$stores/runtimeOverview.svelte";
 import {
@@ -30,18 +34,15 @@ import { formatPackageName } from "$lib/utils";
 
 const { isInstalling, installPackage } = usePackageInstaller();
 
-let selectedEthereumNetwork = $state("hoodi");
+let selectedEthereumNetwork = $state(defaultEthereumNetwork);
 
-const ethereumNetworks = [
-  { value: "hoodi", label: "Hoodi" },
-  { value: "mainnet", label: "Mainnet" },
-  { value: "sepolia", label: "Sepolia" },
-  { value: "ephemery", label: "Ephemery" },
-];
+const defaultEthereumNetworkLabel =
+  ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
+    ?.label ?? defaultEthereumNetwork;
 
 const selectedEthereumNetworkLabel = $derived(
   ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
-    ?.label || "Hoodi",
+    ?.label || defaultEthereumNetworkLabel,
 );
 
 const catalogState = $derived(packagesStore.catalogState);

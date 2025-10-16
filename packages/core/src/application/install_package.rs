@@ -1,9 +1,6 @@
 use crate::domain::package::PackageDefinition;
-use crate::infra::{
-    ephemery::EPHEMERY_NETWORK_NAME, file::generate_jwt_secret, package,
-    package_config::PackageConfigStore,
-};
-use crate::manifests::ethereum::Ethereum;
+use crate::infra::{file::generate_jwt_secret, package, package_config::PackageConfigStore};
+use crate::manifests::ethereum::{self, Ethereum};
 use eyre::{Context, Result, eyre};
 use tracing::info;
 
@@ -19,11 +16,10 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
             ));
         }
 
-        let is_valid_network =
-            matches!(network, "hoodi" | "mainnet" | "sepolia") || network == EPHEMERY_NETWORK_NAME;
-        if !is_valid_network {
+        if !ethereum::is_supported_network(network) {
+            let supported = ethereum::supported_networks_display(", ");
             return Err(eyre!(
-                "Unsupported Ethereum network: {network}. Supported values: hoodi, mainnet, sepolia, ephemery"
+                "Unsupported Ethereum network: {network}. Supported values: {supported}"
             ));
         }
 

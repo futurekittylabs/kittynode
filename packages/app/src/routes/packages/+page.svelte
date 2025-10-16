@@ -9,6 +9,10 @@ import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
 import * as Select from "$lib/components/ui/select";
 import {
+  defaultEthereumNetwork,
+  ethereumNetworks,
+} from "$lib/constants/ethereumNetworks";
+import {
   Package2,
   Download,
   CircleCheck,
@@ -20,18 +24,15 @@ import {
 const { isInstalling, installPackage } = usePackageInstaller();
 
 let searchQuery = $state("");
-let selectedEthereumNetwork = $state("hoodi");
+let selectedEthereumNetwork = $state(defaultEthereumNetwork);
 
-const ethereumNetworks = [
-  { value: "hoodi", label: "Hoodi" },
-  { value: "mainnet", label: "Mainnet" },
-  { value: "sepolia", label: "Sepolia" },
-  { value: "ephemery", label: "Ephemery" },
-];
+const defaultEthereumNetworkLabel =
+  ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
+    ?.label ?? defaultEthereumNetwork;
 
 const selectedEthereumNetworkLabel = $derived(
   ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
-    ?.label || "Hoodi",
+    ?.label || defaultEthereumNetworkLabel,
 );
 
 const catalogState = $derived(packagesStore.catalogState);
