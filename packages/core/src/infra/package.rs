@@ -107,7 +107,7 @@ pub async fn stop_package(package: &Package) -> Result<()> {
     Ok(())
 }
 
-pub async fn resume_package(package: &Package) -> Result<()> {
+pub async fn start_package(package: &Package) -> Result<()> {
     let docker = get_docker_instance().await?;
 
     for container in &package.containers {

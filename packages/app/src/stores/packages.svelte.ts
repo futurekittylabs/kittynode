@@ -190,11 +190,11 @@ export const packagesStore = {
     }
   },
 
-  async resumePackage(name: string) {
+  async startPackage(name: string) {
     try {
-      await coreClient.resumePackage(name);
+      await coreClient.startPackage(name);
     } catch (e) {
-      console.error(`Failed to resume ${name}: ${e}`);
+      console.error(`Failed to start ${name}: ${e}`);
       throw e;
     }
   },

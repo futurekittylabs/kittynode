@@ -89,8 +89,8 @@ pub async fn stop_package(Path(name): Path<String>) -> Result<StatusCode, (Statu
     Ok(StatusCode::OK)
 }
 
-pub async fn resume_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::resume_package(&name).await.map_err(to_http_error)?;
+pub async fn start_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
+    api::start_package(&name).await.map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
@@ -202,7 +202,7 @@ pub fn app() -> Router {
         .route("/install_package/{name}", post(install_package))
         .route("/delete_package/{name}", post(delete_package))
         .route("/stop_package/{name}", post(stop_package))
-        .route("/resume_package/{name}", post(resume_package))
+        .route("/start_package/{name}", post(start_package))
         .route("/get_installed_packages", get(get_installed_packages))
         .route("/package_runtime", post(get_package_runtime_states))
         .route("/package_runtime/{name}", get(get_package_runtime_state))

@@ -104,11 +104,11 @@ pub async fn stop_package(name: String) -> Result<()> {
     Ok(())
 }
 
-pub async fn resume_package(name: String) -> Result<()> {
-    api::resume_package(&name)
+pub async fn start_package(name: String) -> Result<()> {
+    api::start_package(&name)
         .await
-        .wrap_err_with(|| format!("Failed to resume {name}"))?;
-    tracing::info!("resumed {name}");
+        .wrap_err_with(|| format!("Failed to start {name}"))?;
+    tracing::info!("started {name}");
     Ok(())
 }
 

@@ -170,16 +170,16 @@ async fn stop_package(
 }
 
 #[tauri::command]
-async fn resume_package(
+async fn start_package(
     name: String,
     client_state: State<'_, CoreClientManager>,
 ) -> Result<(), String> {
-    info!("Resuming package: {}", name);
+    info!("Starting package: {}", name);
     let client = client_state.client();
     client
-        .resume_package(&name)
+        .start_package(&name)
         .await
-        .map(|_| info!("Successfully resumed package: {}", name))
+        .map(|_| info!("Successfully started package: {}", name))
         .map_err(|e| e.to_string())
 }
 
@@ -360,7 +360,7 @@ pub fn run() -> Result<()> {
             install_package,
             delete_package,
             stop_package,
-            resume_package,
+            start_package,
             get_package_runtime_state,
             get_package_runtime_states,
             delete_kittynode,

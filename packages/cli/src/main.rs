@@ -113,9 +113,9 @@ enum PackageCommands {
         #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to stop")]
         name: String,
     },
-    #[command(about = "Resume containers for a previously stopped package")]
-    Resume {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to resume")]
+    #[command(about = "Start containers for a previously stopped package")]
+    Start {
+        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to start")]
         name: String,
     },
     #[command(about = "Manage package-specific configuration overrides")]
@@ -321,7 +321,7 @@ impl PackageCommands {
                 include_images,
             } => commands::delete_package(name, include_images).await,
             PackageCommands::Stop { name } => commands::stop_package(name).await,
-            PackageCommands::Resume { name } => commands::resume_package(name).await,
+            PackageCommands::Start { name } => commands::start_package(name).await,
             PackageCommands::Config { command } => command.execute().await,
         }
     }

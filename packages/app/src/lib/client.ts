@@ -40,8 +40,8 @@ export const coreClient = {
     return invoke("stop_package", { name });
   },
 
-  resumePackage(name: string): Promise<void> {
-    return invoke("resume_package", { name });
+  startPackage(name: string): Promise<void> {
+    return invoke("start_package", { name });
   },
 
   getPackageRuntimeState(name: string): Promise<PackageRuntimeState> {

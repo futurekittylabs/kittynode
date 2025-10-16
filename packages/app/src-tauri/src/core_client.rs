@@ -48,8 +48,8 @@ pub trait CoreClient: Send + Sync + std::any::Any {
     async fn delete_package(&self, name: &str, include_images: bool) -> Result<()>;
     /// Stop all containers for a package.
     async fn stop_package(&self, name: &str) -> Result<()>;
-    /// Resume previously stopped containers for a package.
-    async fn resume_package(&self, name: &str) -> Result<()>;
+    /// Start previously stopped containers for a package.
+    async fn start_package(&self, name: &str) -> Result<()>;
     /// Retrieve the runtime state for a package.
     async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState>;
     /// Remove Kittynode data from disk.
@@ -140,8 +140,8 @@ impl CoreClient for LocalCoreClient {
         api::stop_package(name).await
     }
 
-    async fn resume_package(&self, name: &str) -> Result<()> {
-        api::resume_package(name).await
+    async fn start_package(&self, name: &str) -> Result<()> {
+        api::start_package(name).await
     }
 
     async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState> {
@@ -341,8 +341,8 @@ impl CoreClient for HttpCoreClient {
             .await
     }
 
-    async fn resume_package(&self, name: &str) -> Result<()> {
-        self.post_unit(&format!("/resume_package/{name}"), Option::<&()>::None)
+    async fn start_package(&self, name: &str) -> Result<()> {
+        self.post_unit(&format!("/start_package/{name}"), Option::<&()>::None)
             .await
     }
 

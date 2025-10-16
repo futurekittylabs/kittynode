@@ -105,7 +105,7 @@ const canStopNode = $derived(
     operationalStateStore.canManage,
 );
 
-const canResumeNode = $derived(
+const canStartNode = $derived(
   runtime.lifecycle === "idle" &&
     runtime.status === "stopped" &&
     operationalStateStore.canManage,
@@ -162,8 +162,8 @@ async function stopNode() {
   }
 }
 
-async function resumeNode() {
-  if (!packageName || !canResumeNode) {
+async function startNode() {
+  if (!packageName || !canStartNode) {
     if (!operationalStateStore.canManage) {
       notifyError("Cannot manage packages in the current operational state");
     }
@@ -172,13 +172,13 @@ async function resumeNode() {
 
   try {
     const success = await runtime.performLifecycle("starting", () =>
-      packagesStore.resumePackage(packageName),
+      packagesStore.startPackage(packageName),
     );
     if (success) {
-      notifySuccess(`Resumed ${packageName}`);
+      notifySuccess(`Started ${packageName}`);
     }
   } catch (error) {
-    notifyError(`Failed to resume ${packageName}`, error);
+    notifyError(`Failed to start ${packageName}`, error);
   }
 }
 
@@ -433,11 +433,11 @@ onDestroy(() => {
                 size="sm"
                 variant="outline"
                 class="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/40 dark:text-emerald-200 dark:hover:bg-emerald-400/10"
-                onclick={resumeNode}
-                disabled={!canResumeNode}
+                onclick={startNode}
+                disabled={!canStartNode}
               >
                 <Play class="h-4 w-4 mr-1" />
-                Resume Node
+                Start Node
               </Button>
             {:else}
               <Button size="sm" variant="outline" disabled class="w-full">
