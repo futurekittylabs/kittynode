@@ -26,6 +26,8 @@ use std::{
 };
 use tokio_stream::StreamExt;
 use tracing::{error, info};
+
+pub const RESOURCE_PREFIX: &str = "kittynode-";
 pub async fn get_docker() -> Result<Docker> {
     get_docker_instance().await
 }

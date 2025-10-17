@@ -34,7 +34,12 @@ pub(crate) struct Ethereum;
 
 const ETHEREUM_NAME: &str = "ethereum";
 pub const LIGHTHOUSE_DATA_DIR: &str = "/root/.lighthouse";
-pub const LIGHTHOUSE_DATA_VOLUME: &str = "lighthouse-data";
+pub const LIGHTHOUSE_DATA_VOLUME: &str = "kittynode-lighthouse-data";
+const RETH_DATA_VOLUME: &str = "kittynode-rethdata";
+const ETHEREUM_NETWORK_RESOURCE: &str = "kittynode-ethereum-network";
+const RETH_NODE_CONTAINER_NAME: &str = "kittynode-reth-node";
+const LIGHTHOUSE_NODE_CONTAINER_NAME: &str = "kittynode-lighthouse-node";
+pub const LIGHTHOUSE_VALIDATOR_CONTAINER_NAME: &str = "kittynode-lighthouse-validator";
 
 impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
@@ -51,7 +56,7 @@ impl PackageDefinition for Ethereum {
         Ok(Package {
             name: ETHEREUM_NAME.to_string(),
             description: "This package installs an Ethereum node.".to_string(),
-            network_name: "ethereum-network".to_string(),
+            network_name: ETHEREUM_NETWORK_RESOURCE.to_string(),
             default_config,
             containers,
         })
@@ -150,7 +155,7 @@ impl Ethereum {
             "--execution-jwt".to_string(),
             lighthouse_jwt_path.clone(),
             "--execution-endpoint".to_string(),
-            "http://reth-node:8551".to_string(),
+            format!("http://{RETH_NODE_CONTAINER_NAME}:8551"),
         ]);
         if let Some(config) = &ephemery
             && !config.consensus_bootnodes.is_empty()
@@ -175,7 +180,7 @@ impl Ethereum {
 
         let mut containers = vec![
             Container {
-                name: "reth-node".to_string(),
+                name: RETH_NODE_CONTAINER_NAME.to_string(),
                 image: "ghcr.io/paradigmxyz/reth".to_string(),
                 cmd: reth_cmd,
                 port_bindings: HashMap::from([
@@ -202,14 +207,14 @@ impl Ethereum {
                     ),
                 ]),
                 volume_bindings: vec![Binding {
-                    source: "rethdata".to_string(),
+                    source: RETH_DATA_VOLUME.to_string(),
                     destination: format!("/root/.local/share/reth/{network}"),
                     options: None,
                 }],
                 file_bindings: reth_file_bindings,
             },
             Container {
-                name: "lighthouse-node".to_string(),
+                name: LIGHTHOUSE_NODE_CONTAINER_NAME.to_string(),
                 image: "sigp/lighthouse".to_string(),
                 cmd: lighthouse_cmd,
                 port_bindings: HashMap::from([
@@ -269,7 +274,7 @@ impl Ethereum {
             vc_cmd.extend([
                 "vc".to_string(),
                 "--beacon-nodes".to_string(),
-                "http://lighthouse-node:5052".to_string(),
+                format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"),
                 "--suggested-fee-recipient".to_string(),
                 fee.to_string(),
             ]);
@@ -284,7 +289,7 @@ impl Ethereum {
             }
 
             containers.push(Container {
-                name: "lighthouse-validator".to_string(),
+                name: LIGHTHOUSE_VALIDATOR_CONTAINER_NAME.to_string(),
                 image: "sigp/lighthouse".to_string(),
                 cmd: vc_cmd,
                 port_bindings: HashMap::new(),
