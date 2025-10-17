@@ -1,4 +1,4 @@
-use eyre::{Result, eyre};
+use eyre::{Context, Result, eyre};
 use std::{collections::HashMap, iter};
 
 use crate::infra::package_config::PackageConfigStore;
@@ -7,7 +7,7 @@ use crate::{
     domain::package::{Package, PackageConfig, PackageDefinition},
     infra::{
         ephemery::{EPHEMERY_CHECKPOINT_URLS, EPHEMERY_NETWORK_NAME, ensure_ephemery_config},
-        file::kittynode_path,
+        file::{generate_jwt_secret, kittynode_path},
     },
 };
 
@@ -63,8 +63,11 @@ impl Ethereum {
         if !is_supported_network(network) {
             return Err(eyre!("Unsupported Ethereum network: {network}"));
         }
+        generate_jwt_secret(ETHEREUM_NAME)
+            .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
         let kittynode_path = kittynode_path()?;
-        let jwt_path = kittynode_path.join("jwt.hex");
+        let package_path = PackageConfigStore::package_dir(&kittynode_path, ETHEREUM_NAME);
+        let jwt_path = package_path.join("jwt.hex");
 
         let ephemery = if network == EPHEMERY_NETWORK_NAME {
             Some(ensure_ephemery_config()?)
