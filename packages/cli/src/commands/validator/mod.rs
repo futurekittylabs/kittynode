@@ -35,7 +35,7 @@ use zeroize::Zeroizing;
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
-    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME,
+    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME, LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
     types::PackageConfig,
     validator::{
         EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
@@ -47,7 +47,7 @@ use kittynode_core::api::{
 };
 
 /// Lighthouse validator container name shared across the CLI.
-pub const VALIDATOR_CONTAINER_NAME: &str = "lighthouse-validator";
+pub const VALIDATOR_CONTAINER_NAME: &str = LIGHTHOUSE_VALIDATOR_CONTAINER_NAME;
 
 fn desired_supported_networks() -> Vec<&'static str> {
     const DESIRED: &[&str] = &[EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];

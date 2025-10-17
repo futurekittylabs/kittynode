@@ -32,10 +32,13 @@ pub use crate::application::update_package_config;
 pub use crate::application::web_service::validate_web_port;
 pub use crate::application::{get_web_service_log_path, get_web_service_status};
 pub use crate::domain::web_service::DEFAULT_WEB_PORT;
+pub use crate::infra::docker::RESOURCE_PREFIX;
 pub use crate::infra::docker::get_docker;
 pub use crate::infra::file::{kittynode_cli_path, kittynode_path};
 pub use crate::manifests::ethereum::supported_networks_display as ethereum_supported_networks_display;
-pub use crate::manifests::ethereum::{LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME};
+pub use crate::manifests::ethereum::{
+    LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME, LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
+};
 
 pub mod types;
 pub mod validator;

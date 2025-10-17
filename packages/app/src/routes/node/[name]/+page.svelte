@@ -59,15 +59,16 @@ const defaultNetworkLabel =
   networks.find((option) => option.value === defaultEthereumNetwork)?.label ??
   defaultEthereumNetwork;
 const supportedNetworksMessage = formatEthereumNetworks(", ");
+const RESOURCE_PREFIX = "kittynode-";
 
 const logSources = {
   execution: {
     description: "Execution client logs",
-    containerName: "reth-node",
+    containerName: `${RESOURCE_PREFIX}reth-node`,
   },
   consensus: {
     description: "Consensus client logs",
-    containerName: "lighthouse-node",
+    containerName: `${RESOURCE_PREFIX}lighthouse-node`,
   },
 } as const;
 
