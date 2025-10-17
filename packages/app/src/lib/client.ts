@@ -7,6 +7,7 @@ import type {
   PackageConfig,
   PackageRuntimeState,
   SystemInfo,
+  ValidatorRuntimeStatus,
 } from "$lib/types";
 
 export type DockerStartStatus =
@@ -103,6 +104,10 @@ export const coreClient = {
     names: string[],
   ): Promise<Record<string, PackageRuntimeState>> {
     return invoke("get_package_runtime_states", { names });
+  },
+
+  getValidatorRuntimeStatus(): Promise<ValidatorRuntimeStatus> {
+    return invoke("get_validator_runtime_status");
   },
 
   deleteKittynode(): Promise<void> {

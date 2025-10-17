@@ -4,6 +4,7 @@ use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
     Config, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    ValidatorRuntimeStatus,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -71,6 +72,8 @@ pub trait CoreClient: Send + Sync + std::any::Any {
         &self,
         names: &[String],
     ) -> Result<HashMap<String, PackageRuntimeState>>;
+    /// Retrieve the validator runtime status for Ethereum.
+    async fn get_validator_runtime_status(&self) -> Result<ValidatorRuntimeStatus>;
 }
 
 #[cfg(test)]
@@ -181,6 +184,10 @@ impl CoreClient for LocalCoreClient {
         names: &[String],
     ) -> Result<HashMap<String, PackageRuntimeState>> {
         api::get_packages_runtime_state(names).await
+    }
+
+    async fn get_validator_runtime_status(&self) -> Result<ValidatorRuntimeStatus> {
+        api::validator::get_validator_runtime_status().await
     }
 }
 
@@ -418,6 +425,10 @@ impl CoreClient for HttpCoreClient {
         self.post_json("/package_runtime", Some(&RuntimeStatesRequest { names }))
             .await
     }
+
+    async fn get_validator_runtime_status(&self) -> Result<ValidatorRuntimeStatus> {
+        self.get_json("/validator_runtime_status").await
+    }
 }
 
 pub struct CoreClientManager {
@@ -569,6 +580,10 @@ mod tests {
             .route("/add_capability/{name}", post(add_capability))
             .route("/install_package/{name}", post(install_package))
             .route("/package_runtime", post(package_runtime_states))
+            .route(
+                "/validator_runtime_status",
+                get(get_validator_runtime_status),
+            )
             .route("/start_docker_if_needed", post(start_docker_if_needed))
             .route("/is_docker_running", get(is_docker_running))
             .with_state(state);
@@ -608,6 +623,10 @@ mod tests {
             .map(|name| (name, PackageRuntimeState { running: true }))
             .collect();
         Json(states)
+    }
+
+    async fn get_validator_runtime_status() -> Json<ValidatorRuntimeStatus> {
+        Json(ValidatorRuntimeStatus::Running)
     }
 
     async fn start_docker_if_needed() -> Json<DockerStartStatus> {

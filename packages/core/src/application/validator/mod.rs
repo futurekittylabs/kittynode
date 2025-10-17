@@ -1,5 +1,6 @@
 mod input_validation;
 mod keygen;
+mod runtime;
 
 pub use input_validation::{
     normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
@@ -13,3 +14,4 @@ pub use keygen::{
     format_eth_from_gwei, generate_validator_files, generate_validator_files_with_progress,
     resolve_withdrawal_address,
 };
+pub use runtime::get_validator_runtime_status;

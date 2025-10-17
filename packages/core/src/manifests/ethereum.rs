@@ -35,11 +35,11 @@ pub(crate) struct Ethereum;
 const ETHEREUM_NAME: &str = "ethereum";
 pub const LIGHTHOUSE_DATA_DIR: &str = "/root/.lighthouse";
 pub const LIGHTHOUSE_DATA_VOLUME: &str = "kittynode-lighthouse-data";
+pub const LIGHTHOUSE_VALIDATOR_CONTAINER_NAME: &str = "kittynode-lighthouse-validator";
 const RETH_DATA_VOLUME: &str = "kittynode-rethdata";
 const ETHEREUM_NETWORK_RESOURCE: &str = "kittynode-ethereum-network";
 const RETH_NODE_CONTAINER_NAME: &str = "kittynode-reth-node";
 const LIGHTHOUSE_NODE_CONTAINER_NAME: &str = "kittynode-lighthouse-node";
-pub const LIGHTHOUSE_VALIDATOR_CONTAINER_NAME: &str = "kittynode-lighthouse-validator";
 
 impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
