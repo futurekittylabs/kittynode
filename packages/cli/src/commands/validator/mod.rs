@@ -545,9 +545,17 @@ fn handle_event(
 }
 
 fn render(frame: &mut Frame, state: &StartState) {
+    let status = state.status.as_deref().unwrap_or("");
+    let status_lines = if status.is_empty() {
+        0
+    } else {
+        status.lines().count()
+    };
+    let footer_height = (status_lines as u16).saturating_add(1);
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(1), Constraint::Length(1)])
+        .constraints([Constraint::Min(1), Constraint::Length(footer_height)])
         .split(frame.area());
     let body = chunks[0];
     let footer = chunks[1];
@@ -660,13 +668,18 @@ fn render(frame: &mut Frame, state: &StartState) {
         .alignment(ratatui::layout::Alignment::Left);
     frame.render_widget(paragraph, body);
 
-    let status = state.status.as_deref().unwrap_or("");
-    let foot_line = Line::from(vec![
-        Span::raw(status),
-        Span::raw(if status.is_empty() { "" } else { "  " }),
-        Span::styled("press q to quit", Style::default().fg(Color::DarkGray)),
-    ]);
-    frame.render_widget(Paragraph::new(foot_line), footer);
+    let mut footer_lines = Vec::new();
+
+    for line in status.lines() {
+        footer_lines.push(Line::from(line));
+    }
+
+    footer_lines.push(Line::from(vec![Span::styled(
+        "press q to quit",
+        Style::default().fg(Color::DarkGray),
+    )]));
+
+    frame.render_widget(Paragraph::new(footer_lines), footer);
 }
 
 fn option_lines(selected: usize, options: &[&str]) -> Vec<Line<'static>> {
