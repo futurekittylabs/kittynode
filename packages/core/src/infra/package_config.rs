@@ -36,11 +36,17 @@ impl PackageConfigStore {
         Ok(())
     }
 
+    pub(crate) fn package_dir(base_dir: &Path, package_name: &str) -> PathBuf {
+        base_dir.join("packages").join(package_name)
+    }
+
+    pub fn default_package_dir(package_name: &str) -> Result<PathBuf> {
+        let base_dir = kittynode_path()?;
+        Ok(Self::package_dir(&base_dir, package_name))
+    }
+
     pub(crate) fn config_file_path(base_dir: &Path, package_name: &str) -> PathBuf {
-        base_dir
-            .join("packages")
-            .join(package_name)
-            .join("config.toml")
+        Self::package_dir(base_dir, package_name).join("config.toml")
     }
 }
 

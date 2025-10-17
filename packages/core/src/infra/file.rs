@@ -1,6 +1,10 @@
+use crate::infra::package_config::PackageConfigStore;
 use eyre::{Context, Result};
 use rand::RngCore;
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use tracing::info;
 
 fn config_subdir_path(dir_name: &str) -> Result<PathBuf> {
@@ -17,7 +21,7 @@ pub fn kittynode_cli_path() -> Result<PathBuf> {
     config_subdir_path("kittynode-cli")
 }
 
-pub(crate) fn generate_jwt_secret_with_path(path: &PathBuf) -> Result<String> {
+pub(crate) fn generate_jwt_secret_with_path(path: &Path) -> Result<String> {
     if !path.exists() {
         info!("Creating directory at {:?}", path);
         fs::create_dir_all(path).wrap_err("Failed to create directory")?;
@@ -43,14 +47,22 @@ pub(crate) fn generate_jwt_secret_with_path(path: &PathBuf) -> Result<String> {
     Ok(secret)
 }
 
-pub(crate) fn generate_jwt_secret() -> Result<String> {
-    let path = kittynode_path()?;
+pub(crate) fn generate_jwt_secret(package_name: &str) -> Result<String> {
+    let path = PackageConfigStore::default_package_dir(package_name)?;
+    let jwt_file = path.join("jwt.hex");
+
+    if jwt_file.exists() {
+        info!("Reusing existing JWT secret at {:?}", jwt_file);
+        return fs::read_to_string(jwt_file).wrap_err("Failed to read existing JWT secret");
+    }
+
     generate_jwt_secret_with_path(&path)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use tempfile::tempdir;
 
     #[test]
