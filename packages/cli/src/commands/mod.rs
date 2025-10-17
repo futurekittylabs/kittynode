@@ -482,6 +482,10 @@ pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
 /// Launch the standalone updater installed by cargo-dist installers.
 /// This expects a `kittynode-cli-update` binary to be on PATH.
 pub fn run_updater() -> Result<()> {
+    if cfg!(windows) {
+        println!("Update kittynode-cli by entering the command `kittynode-cli-update`!");
+        return Ok(());
+    }
     match Command::new("kittynode-cli-update").status() {
         Ok(status) => {
             if status.success() {

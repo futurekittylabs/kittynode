@@ -85,8 +85,19 @@ async fn fetch_latest() -> Result<Option<String>> {
     Ok(result)
 }
 
+fn manual_update_command() -> &'static str {
+    if cfg!(windows) {
+        "kittynode-cli-update"
+    } else {
+        "kittynode update"
+    }
+}
+
 fn print_banner() {
-    eprintln!("✨ Update available, run `kittynode update` to upgrade ✨\n");
+    eprintln!(
+        "✨ Update available, run `{}` to upgrade ✨\n",
+        manual_update_command()
+    );
 }
 
 async fn write_cache(path: &PathBuf, version: String) {
@@ -150,7 +161,10 @@ pub async fn check_and_print_update() {
         }
         Err(_) => {
             // Expected: network timeout is a common occurrence, show user-facing message
-            eprintln!("Update check timed out. Run `kittynode update` to check manually.\n");
+            eprintln!(
+                "Update check timed out. Run `{}` to check manually.\n",
+                manual_update_command()
+            );
         }
     }
 }

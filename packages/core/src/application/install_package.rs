@@ -32,7 +32,7 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
             .wrap_err_with(|| format!("Failed to persist configuration for {name}"))?;
     }
 
-    generate_jwt_secret().wrap_err("Failed to generate JWT secret")?;
+    generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
 
     let package = package::get_package_by_name(name)?;
 

@@ -35,7 +35,7 @@ use zeroize::Zeroizing;
 #[cfg(target_os = "linux")]
 use kittynode_core::api::validator::swap_active;
 use kittynode_core::api::{
-    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME,
+    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME, LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
     types::PackageConfig,
     validator::{
         EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
@@ -47,7 +47,7 @@ use kittynode_core::api::{
 };
 
 /// Lighthouse validator container name shared across the CLI.
-pub const VALIDATOR_CONTAINER_NAME: &str = "lighthouse-validator";
+pub const VALIDATOR_CONTAINER_NAME: &str = LIGHTHOUSE_VALIDATOR_CONTAINER_NAME;
 
 fn desired_supported_networks() -> Vec<&'static str> {
     const DESIRED: &[&str] = &[EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];
@@ -343,7 +343,7 @@ enum Step {
     Done,
 }
 
-struct StartState {
+struct InitState {
     step: Step,
     docker_running: bool,
     network_index: usize,
@@ -354,7 +354,7 @@ struct StartState {
     aborted: bool,
 }
 
-impl StartState {
+impl InitState {
     fn new() -> Self {
         Self {
             step: Step::Docker,
@@ -373,8 +373,8 @@ impl StartState {
     }
 }
 
-pub async fn start() -> Result<()> {
-    tokio::task::block_in_place(run_start_blocking)
+pub async fn init() -> Result<()> {
+    tokio::task::block_in_place(run_init_blocking)
 }
 
 struct RawTerminalGuard;
@@ -390,7 +390,7 @@ impl Drop for RawTerminalGuard {
     }
 }
 
-fn run_start_blocking() -> Result<()> {
+fn run_init_blocking() -> Result<()> {
     let handle = Handle::current();
     let mut stdout = stdout();
     enable_raw_mode()?;
@@ -400,7 +400,7 @@ fn run_start_blocking() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     terminal.hide_cursor()?;
-    let mut state = StartState::new();
+    let mut state = InitState::new();
     let mut last_docker_check = Instant::now() - Duration::from_secs(2);
 
     loop {
@@ -442,7 +442,7 @@ fn run_start_blocking() -> Result<()> {
 
 fn handle_event(
     key: KeyEvent,
-    state: &mut StartState,
+    state: &mut InitState,
     handle: &Handle,
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
 ) -> Result<()> {
@@ -544,10 +544,18 @@ fn handle_event(
     Ok(())
 }
 
-fn render(frame: &mut Frame, state: &StartState) {
+fn render(frame: &mut Frame, state: &InitState) {
+    let status = state.status.as_deref().unwrap_or("");
+    let status_lines = if status.is_empty() {
+        0
+    } else {
+        status.lines().count()
+    };
+    let footer_height = (status_lines as u16).saturating_add(1);
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(1), Constraint::Length(1)])
+        .constraints([Constraint::Min(1), Constraint::Length(footer_height)])
         .split(frame.area());
     let body = chunks[0];
     let footer = chunks[1];
@@ -660,13 +668,18 @@ fn render(frame: &mut Frame, state: &StartState) {
         .alignment(ratatui::layout::Alignment::Left);
     frame.render_widget(paragraph, body);
 
-    let status = state.status.as_deref().unwrap_or("");
-    let foot_line = Line::from(vec![
-        Span::raw(status),
-        Span::raw(if status.is_empty() { "" } else { "  " }),
-        Span::styled("press q to quit", Style::default().fg(Color::DarkGray)),
-    ]);
-    frame.render_widget(Paragraph::new(foot_line), footer);
+    let mut footer_lines = Vec::new();
+
+    for line in status.lines() {
+        footer_lines.push(Line::from(line));
+    }
+
+    footer_lines.push(Line::from(vec![Span::styled(
+        "press q to quit",
+        Style::default().fg(Color::DarkGray),
+    )]));
+
+    frame.render_widget(Paragraph::new(footer_lines), footer);
 }
 
 fn option_lines(selected: usize, options: &[&str]) -> Vec<Line<'static>> {
