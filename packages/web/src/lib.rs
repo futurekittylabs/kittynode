@@ -9,6 +9,7 @@ use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    ValidatorRuntimeStatus,
 };
 use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
 use serde::Deserialize;
@@ -117,6 +118,14 @@ pub async fn get_package_runtime_states(
         .map_err(to_http_error)
 }
 
+pub async fn get_validator_runtime_status()
+-> Result<Json<ValidatorRuntimeStatus>, (StatusCode, String)> {
+    api::validator::get_validator_runtime_status()
+        .await
+        .map(Json)
+        .map_err(to_http_error)
+}
+
 pub async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
     api::get_installed_packages()
         .await
@@ -206,6 +215,10 @@ pub fn app() -> Router {
         .route("/get_installed_packages", get(get_installed_packages))
         .route("/package_runtime", post(get_package_runtime_states))
         .route("/package_runtime/{name}", get(get_package_runtime_state))
+        .route(
+            "/validator_runtime_status",
+            get(get_validator_runtime_status),
+        )
         .route("/is_docker_running", get(is_docker_running))
         .route("/init_kittynode", post(init_kittynode))
         .route("/delete_kittynode", post(delete_kittynode))

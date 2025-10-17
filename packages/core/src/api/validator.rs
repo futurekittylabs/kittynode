@@ -1,3 +1,4 @@
+pub use crate::application::validator::get_validator_runtime_status;
 #[cfg(target_os = "linux")]
 pub use crate::application::validator::swap_active;
 pub use crate::application::validator::{

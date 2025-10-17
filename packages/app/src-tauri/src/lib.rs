@@ -6,6 +6,7 @@ use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
     Config, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    ValidatorRuntimeStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -210,6 +211,18 @@ async fn get_package_runtime_states(
 }
 
 #[tauri::command]
+async fn get_validator_runtime_status(
+    client_state: State<'_, CoreClientManager>,
+) -> Result<ValidatorRuntimeStatus, String> {
+    debug!("Fetching validator runtime status");
+    let client = client_state.client();
+    client
+        .get_validator_runtime_status()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn delete_kittynode(client_state: State<'_, CoreClientManager>) -> Result<(), String> {
     info!("Deleting ~/.config/kittynode directory");
     let client = client_state.client();
@@ -363,6 +376,7 @@ pub fn run() -> Result<()> {
             start_package,
             get_package_runtime_state,
             get_package_runtime_states,
+            get_validator_runtime_status,
             delete_kittynode,
             system_info,
             init_kittynode,

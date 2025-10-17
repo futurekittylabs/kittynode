@@ -35,6 +35,7 @@ pub(crate) struct Ethereum;
 const ETHEREUM_NAME: &str = "ethereum";
 pub const LIGHTHOUSE_DATA_DIR: &str = "/root/.lighthouse";
 pub const LIGHTHOUSE_DATA_VOLUME: &str = "lighthouse-data";
+pub const LIGHTHOUSE_VALIDATOR_CONTAINER_NAME: &str = "lighthouse-validator";
 
 impl PackageDefinition for Ethereum {
     const NAME: &'static str = ETHEREUM_NAME;
@@ -281,7 +282,7 @@ impl Ethereum {
             }
 
             containers.push(Container {
-                name: "lighthouse-validator".to_string(),
+                name: LIGHTHOUSE_VALIDATOR_CONTAINER_NAME.to_string(),
                 image: "sigp/lighthouse".to_string(),
                 cmd: vc_cmd,
                 port_bindings: HashMap::new(),

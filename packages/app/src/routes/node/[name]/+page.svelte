@@ -2,6 +2,7 @@
 import { page } from "$app/state";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
+import { coreClient } from "$lib/client";
 import { packagesStore } from "$stores/packages.svelte";
 import { onDestroy, onMount } from "svelte";
 import DockerLogs from "$lib/components/DockerLogs.svelte";
@@ -17,6 +18,8 @@ import {
   formatEthereumNetworks,
 } from "$lib/constants/ethereumNetworks";
 import { createPackageRuntimeController } from "$lib/runtime/packageRuntime.svelte";
+import type { RuntimeStatus } from "$lib/runtime/packageRuntime.svelte";
+import type { ValidatorRuntimeStatus } from "$lib/types";
 import {
   Terminal,
   Trash2,
@@ -52,6 +55,10 @@ let activeLogType = $state<null | "execution" | "consensus">("execution");
 let configLoading = $state(false);
 let selectedNetwork = $state<string>(defaultEthereumNetwork);
 let currentNetwork = $state<string>(defaultEthereumNetwork);
+let validatorStatus = $state<ValidatorRuntimeStatus | null>(null);
+let validatorStatusLoading = $state(false);
+let validatorStatusError = $state<string | null>(null);
+let lastValidatorRuntimeStatus: RuntimeStatus | null = null;
 
 const networks = ethereumNetworks;
 const supportedNetworkValues: string[] = [...ethereumNetworkValues];
@@ -142,6 +149,44 @@ async function loadConfigFor(name: string) {
   }
 }
 
+async function loadValidatorStatus() {
+  if (packageName !== "ethereum" || !isInstalled) {
+    validatorStatus = null;
+    validatorStatusError = null;
+    validatorStatusLoading = false;
+    return;
+  }
+
+  validatorStatusLoading = true;
+  validatorStatusError = null;
+  try {
+    validatorStatus = await coreClient.getValidatorRuntimeStatus();
+  } catch (error) {
+    console.error("Failed to fetch validator runtime status", error);
+    validatorStatusError =
+      error instanceof Error ? error.message : String(error);
+  } finally {
+    validatorStatusLoading = false;
+  }
+}
+
+function describeValidatorStatus(
+  status: ValidatorRuntimeStatus | null,
+): string {
+  switch (status) {
+    case "running":
+      return "Running";
+    case "stopped":
+      return "Stopped";
+    case "notInstalled":
+      return "Validator container missing";
+    case "disabled":
+      return "Validator disabled";
+    default:
+      return "Unknown";
+  }
+}
+
 async function stopNode() {
   if (!packageName || !canStopNode) {
     if (!operationalStateStore.canManage) {
@@ -216,6 +261,32 @@ $effect(() => {
     lastLoadedConfig = null;
     selectedNetwork = defaultEthereumNetwork;
     currentNetwork = defaultEthereumNetwork;
+  }
+});
+
+$effect(() => {
+  if (packageName === "ethereum" && isInstalled) {
+    void loadValidatorStatus();
+  } else {
+    validatorStatus = null;
+    validatorStatusError = null;
+    validatorStatusLoading = false;
+  }
+});
+
+$effect(() => {
+  if (packageName !== "ethereum" || !isInstalled) {
+    lastValidatorRuntimeStatus = null;
+    return;
+  }
+
+  const currentStatus = runtime.status;
+  if (
+    currentStatus !== lastValidatorRuntimeStatus &&
+    (currentStatus === "running" || currentStatus === "stopped")
+  ) {
+    lastValidatorRuntimeStatus = currentStatus;
+    void loadValidatorStatus();
   }
 });
 
@@ -380,6 +451,29 @@ onDestroy(() => {
             </div>
           </Card.Content>
         </Card.Root>
+
+        {#if packageName === "ethereum"}
+          <Card.Root>
+            <Card.Header class="pb-3">
+              <Card.Title class="text-sm font-medium">Validator</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              {#if validatorStatusLoading}
+                <p class="text-sm text-muted-foreground">
+                  Checking validator status…
+                </p>
+              {:else if validatorStatusError}
+                <p class="text-sm text-destructive">
+                  Failed to load validator status
+                </p>
+              {:else}
+                <p class="text-sm font-medium">
+                  {describeValidatorStatus(validatorStatus)}
+                </p>
+              {/if}
+            </Card.Content>
+          </Card.Root>
+        {/if}
 
         <Card.Root>
           <Card.Header class="pb-3">
