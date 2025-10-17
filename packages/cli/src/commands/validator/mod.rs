@@ -343,7 +343,7 @@ enum Step {
     Done,
 }
 
-struct StartState {
+struct InitState {
     step: Step,
     docker_running: bool,
     network_index: usize,
@@ -354,7 +354,7 @@ struct StartState {
     aborted: bool,
 }
 
-impl StartState {
+impl InitState {
     fn new() -> Self {
         Self {
             step: Step::Docker,
@@ -373,8 +373,8 @@ impl StartState {
     }
 }
 
-pub async fn start() -> Result<()> {
-    tokio::task::block_in_place(run_start_blocking)
+pub async fn init() -> Result<()> {
+    tokio::task::block_in_place(run_init_blocking)
 }
 
 struct RawTerminalGuard;
@@ -390,7 +390,7 @@ impl Drop for RawTerminalGuard {
     }
 }
 
-fn run_start_blocking() -> Result<()> {
+fn run_init_blocking() -> Result<()> {
     let handle = Handle::current();
     let mut stdout = stdout();
     enable_raw_mode()?;
@@ -400,7 +400,7 @@ fn run_start_blocking() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     terminal.hide_cursor()?;
-    let mut state = StartState::new();
+    let mut state = InitState::new();
     let mut last_docker_check = Instant::now() - Duration::from_secs(2);
 
     loop {
@@ -442,7 +442,7 @@ fn run_start_blocking() -> Result<()> {
 
 fn handle_event(
     key: KeyEvent,
-    state: &mut StartState,
+    state: &mut InitState,
     handle: &Handle,
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
 ) -> Result<()> {
@@ -544,7 +544,7 @@ fn handle_event(
     Ok(())
 }
 
-fn render(frame: &mut Frame, state: &StartState) {
+fn render(frame: &mut Frame, state: &InitState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(1), Constraint::Length(1)])
