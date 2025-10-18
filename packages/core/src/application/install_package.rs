@@ -1,8 +1,12 @@
 use crate::domain::package::PackageDefinition;
-use crate::infra::{file::generate_jwt_secret, package, package_config::PackageConfigStore};
+use crate::infra::{
+    file::generate_jwt_secret,
+    package::{self, PackageInstallState},
+    package_config::PackageConfigStore,
+};
 use crate::manifests::ethereum::{self, Ethereum};
 use eyre::{Context, Result, eyre};
-use tracing::info;
+use tracing::{info, warn};
 
 pub async fn install_package(name: &str) -> Result<()> {
     install_package_with_network(name, None).await
@@ -35,6 +39,23 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
     generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
 
     let package = package::get_package_by_name(name)?;
+
+    match package::is_package_installed(&package).await? {
+        PackageInstallState::Installed => {
+            info!("Package '{name}' already installed; refreshing containers");
+        }
+        PackageInstallState::PartiallyInstalled { missing_containers } => {
+            let missing_list = if missing_containers.is_empty() {
+                "unknown".to_string()
+            } else {
+                missing_containers.join(", ")
+            };
+            warn!(
+                "Package '{name}' is partially installed. Missing containers: {missing_list}. Reinstalling to restore missing resources."
+            );
+        }
+        PackageInstallState::NotInstalled => {}
+    }
 
     package::install_package(&package).await?;
     info!("Package '{name}' installed successfully");
