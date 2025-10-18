@@ -1,4 +1,6 @@
-use crate::domain::package::{Package, PackageDefinition, PackageRuntimeState};
+use crate::domain::package::{
+    InstallStatus, Package, PackageDefinition, PackageState, RuntimeStatus,
+};
 use crate::infra::docker::{
     container_is_running, create_or_recreate_network, find_container, get_docker_instance,
     pull_and_start_container, remove_container, start_named_container, stop_named_container,
@@ -6,7 +8,8 @@ use crate::infra::docker::{
 use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
 use crate::infra::file::kittynode_path;
 use crate::manifests::ethereum::{self, Ethereum};
-use eyre::Result;
+use bollard::Docker;
+use eyre::{Context, Result};
 use std::{
     collections::{HashMap, HashSet},
     fs,
@@ -14,8 +17,10 @@ use std::{
 };
 use tracing::{info, warn};
 
-/// Retrieves a `HashMap` of all available packages.
-pub fn get_packages() -> Result<HashMap<String, Package>> {
+use crate::infra::package_config::PackageConfigStore;
+
+/// Retrieves the catalog of all available packages.
+pub fn get_package_catalog() -> Result<HashMap<String, Package>> {
     let mut packages = HashMap::new();
     packages.insert(Ethereum::NAME.to_string(), Ethereum::get_package()?);
     Ok(packages)
@@ -25,40 +30,29 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
 ///
 /// Lookup is case-sensitive; callers should use the canonical lowercase id.
 pub fn get_package_by_name(name: &str) -> Result<Package> {
-    let mut catalog = get_packages()?;
+    let mut catalog = get_package_catalog()?;
     catalog
         .remove(name)
         .ok_or_else(|| eyre::eyre!("Package '{}' not found", name))
 }
 
-/// Gets a list of installed packages by checking their container states
-pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Result<Vec<Package>> {
+/// Returns packages considered installed.
+///
+/// A package is installed when its config exists and all declared containers exist.
+pub async fn get_installed_packages() -> Result<Vec<Package>> {
+    let packages = get_package_catalog().wrap_err("Failed to retrieve packages")?;
     let docker = get_docker_instance().await?;
     let mut installed = Vec::new();
 
     for package in packages.values() {
-        if package.containers.is_empty() {
-            continue;
-        }
-
-        let mut all_containers_exist = true;
-
-        for container in &package.containers {
-            info!("Checking container '{}'...", container.name);
-            if find_container(&docker, &container.name).await?.is_empty() {
-                all_containers_exist = false;
-                break;
-            }
-        }
-
-        if all_containers_exist {
+        let state = get_package_with(&docker, package).await?;
+        if matches!(state.install, InstallStatus::Installed) {
             installed.push(package.clone());
         }
     }
 
     Ok(installed)
 }
-
 /// Installs a package using its current, concrete container definition.
 ///
 /// Callers are responsible for ensuring required configuration has been
@@ -118,25 +112,6 @@ pub async fn start_package(package: &Package) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRuntimeState> {
-    let docker = get_docker_instance().await?;
-    if package.containers.is_empty() {
-        return Ok(PackageRuntimeState { running: false });
-    }
-    let mut running = true;
-
-    for container in &package.containers {
-        let summaries = find_container(&docker, &container.name).await?;
-        let container_running = summaries.iter().any(container_is_running);
-
-        if !container_running {
-            running = false;
-        }
-    }
-
-    Ok(PackageRuntimeState { running })
 }
 
 /// Deletes a package and its associated resources.
@@ -233,13 +208,28 @@ pub async fn delete_package(
 
     for volume in volume_names {
         info!("Removing volume '{}'...", volume);
-        docker
+        match docker
             .remove_volume(
                 volume,
                 None::<bollard::query_parameters::RemoveVolumeOptions>,
             )
-            .await?;
-        info!("Volume '{}' removed successfully", volume);
+            .await
+        {
+            Ok(_) => info!("Volume '{}' removed successfully", volume),
+            Err(err) => {
+                let msg = err.to_string().to_lowercase();
+                let missing = msg.contains("no such volume")
+                    || (msg.contains("volume") && msg.contains("not found"));
+                if missing {
+                    warn!(
+                        "Skipping removal of volume '{}' because it does not exist",
+                        volume
+                    );
+                    continue;
+                }
+                return Err(err.into());
+            }
+        }
     }
 
     info!("Removing network '{}'...", package.network_name);
@@ -261,6 +251,57 @@ pub async fn delete_package(
     Ok(())
 }
 
+/// Computes full package state.
+pub async fn get_package(package: &Package) -> Result<PackageState> {
+    let docker = get_docker_instance().await?;
+    get_package_with(&docker, package).await
+}
+
+/// Internal helper to compute state using a provided Docker client.
+async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageState> {
+    let base = kittynode_path()?;
+    let cfg = PackageConfigStore::config_file_path(&base, package.name());
+    let config_present = cfg.exists();
+
+    let total = package.containers.len();
+    let mut missing = Vec::new();
+    let mut running_count = 0usize;
+
+    for c in &package.containers {
+        let summaries = find_container(docker, &c.name).await?;
+        if summaries.is_empty() {
+            missing.push(c.name.clone());
+            continue;
+        }
+        if summaries.iter().any(container_is_running) {
+            running_count += 1;
+        }
+    }
+
+    let install = if config_present && missing.is_empty() {
+        InstallStatus::Installed
+    } else if !config_present && missing.len() == total {
+        InstallStatus::NotInstalled
+    } else {
+        InstallStatus::PartiallyInstalled
+    };
+
+    let runtime = if total == 0 || running_count == 0 {
+        RuntimeStatus::NotRunning
+    } else if running_count == total {
+        RuntimeStatus::Running
+    } else {
+        RuntimeStatus::PartiallyRunning
+    };
+
+    Ok(PackageState {
+        install,
+        runtime,
+        config_present,
+        missing_containers: missing,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,7 +309,7 @@ mod tests {
     #[test]
     fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
         // Canonical key is lowercase
-        let catalog = get_packages().expect("catalog should load");
+        let catalog = get_package_catalog().expect("catalog should load");
         assert!(catalog.contains_key("ethereum"));
 
         // Exact lowercase match succeeds

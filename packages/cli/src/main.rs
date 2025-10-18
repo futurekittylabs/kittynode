@@ -83,14 +83,11 @@ impl EthereumNetwork {
 
 #[derive(Subcommand)]
 enum PackageCommands {
-    #[command(name = "list", about = "List packages available to install")]
+    #[command(name = "catalog", about = "List packages from the catalog")]
+    Catalog,
+    #[command(name = "list", about = "List packages currently installed")]
     List,
-    #[command(
-        name = "installed",
-        about = "Show packages currently installed on this Kittynode"
-    )]
-    Installed,
-    #[command(about = "Install a package from the Kittynode registry")]
+    #[command(about = "Install a package from the catalog")]
     Install {
         #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to install")]
         name: String,
@@ -311,8 +308,8 @@ impl Commands {
 impl PackageCommands {
     async fn execute(self) -> Result<()> {
         match self {
-            PackageCommands::List => commands::get_packages().await,
-            PackageCommands::Installed => commands::get_installed_packages().await,
+            PackageCommands::Catalog => commands::get_package_catalog().await,
+            PackageCommands::List => commands::get_installed_packages().await,
             PackageCommands::Install { name, network } => {
                 commands::install_package(name, network.map(EthereumNetwork::as_str)).await
             }
