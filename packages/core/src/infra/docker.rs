@@ -292,6 +292,8 @@ pub(crate) fn container_is_running(container: &ContainerSummary) -> bool {
     matches!(container.state, Some(ContainerSummaryStateEnum::RUNNING))
 }
 
+/// Pulls the referenced container image, creates the container with the provided
+/// bindings, starts it, and connects it to the given Docker network.
 pub(crate) async fn pull_and_start_container(
     docker: &Docker,
     container: &Container,

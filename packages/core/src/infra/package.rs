@@ -6,13 +6,28 @@ use crate::infra::docker::{
 use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
 use crate::infra::file::kittynode_path;
 use crate::manifests::ethereum::{self, Ethereum};
-use eyre::Result;
+use bollard::Docker;
+use eyre::{Context, Result};
 use std::{
     collections::{HashMap, HashSet},
     fs,
     io::ErrorKind,
 };
 use tracing::{info, warn};
+
+/// Represents whether the Docker resources for a package are fully present.
+#[derive(Debug, Clone)]
+pub enum PackageInstallState {
+    /// Every declared container for the package is present in Docker.
+    Installed,
+    /// Some containers are missing, leaving the package in an inconsistent state.
+    PartiallyInstalled {
+        /// Containers that were not found in Docker.
+        missing_containers: Vec<String>,
+    },
+    /// None of the required containers are present.
+    NotInstalled,
+}
 
 /// Retrieves a `HashMap` of all available packages.
 pub fn get_packages() -> Result<HashMap<String, Package>> {
@@ -31,32 +46,29 @@ pub fn get_package_by_name(name: &str) -> Result<Package> {
         .ok_or_else(|| eyre::eyre!("Package '{}' not found", name))
 }
 
-/// Gets a list of installed packages by checking their container states
-pub async fn get_installed_packages(packages: &HashMap<String, Package>) -> Result<Vec<Package>> {
+/// Returns every package whose containers currently exist in Docker.
+/// A package is included when each declared container has at least one matching Docker instance.
+pub async fn get_installed_packages() -> Result<Vec<Package>> {
+    let packages = get_packages().wrap_err("Failed to retrieve packages")?;
     let docker = get_docker_instance().await?;
     let mut installed = Vec::new();
 
     for package in packages.values() {
-        if package.containers.is_empty() {
-            continue;
-        }
-
-        let mut all_containers_exist = true;
-
-        for container in &package.containers {
-            info!("Checking container '{}'...", container.name);
-            if find_container(&docker, &container.name).await?.is_empty() {
-                all_containers_exist = false;
-                break;
-            }
-        }
-
-        if all_containers_exist {
-            installed.push(package.clone());
+        match package_install_state(&docker, package).await? {
+            PackageInstallState::Installed => installed.push(package.clone()),
+            PackageInstallState::PartiallyInstalled { .. } | PackageInstallState::NotInstalled => {}
         }
     }
 
     Ok(installed)
+}
+
+/// Reports whether all containers required by the package are present in Docker.
+/// Returns [`PackageInstallState::Installed`] when every container exists, [`PackageInstallState::NotInstalled`]
+/// when none exist, and [`PackageInstallState::PartiallyInstalled`] when only a subset is present.
+pub async fn is_package_installed(package: &Package) -> Result<PackageInstallState> {
+    let docker = get_docker_instance().await?;
+    package_install_state(&docker, package).await
 }
 
 /// Installs a package using its current, concrete container definition.
@@ -233,13 +245,28 @@ pub async fn delete_package(
 
     for volume in volume_names {
         info!("Removing volume '{}'...", volume);
-        docker
+        match docker
             .remove_volume(
                 volume,
                 None::<bollard::query_parameters::RemoveVolumeOptions>,
             )
-            .await?;
-        info!("Volume '{}' removed successfully", volume);
+            .await
+        {
+            Ok(_) => info!("Volume '{}' removed successfully", volume),
+            Err(err) => {
+                let msg = err.to_string().to_lowercase();
+                let missing = msg.contains("no such volume")
+                    || (msg.contains("volume") && msg.contains("not found"));
+                if missing {
+                    warn!(
+                        "Skipping removal of volume '{}' because it does not exist",
+                        volume
+                    );
+                    continue;
+                }
+                return Err(err.into());
+            }
+        }
     }
 
     info!("Removing network '{}'...", package.network_name);
@@ -259,6 +286,35 @@ pub async fn delete_package(
     }
 
     Ok(())
+}
+
+/// Inspects Docker for each declared container, noting missing names to decide whether the package is fully installed,
+/// partially installed, or absent.
+async fn package_install_state(docker: &Docker, package: &Package) -> Result<PackageInstallState> {
+    if package.containers.is_empty() {
+        return Ok(PackageInstallState::NotInstalled);
+    }
+
+    let mut missing = Vec::new();
+
+    for container in &package.containers {
+        info!("Checking container '{}'...", container.name);
+        if find_container(docker, &container.name).await?.is_empty() {
+            missing.push(container.name.clone());
+        }
+    }
+
+    if missing.is_empty() {
+        return Ok(PackageInstallState::Installed);
+    }
+
+    if missing.len() == package.containers.len() {
+        return Ok(PackageInstallState::NotInstalled);
+    }
+
+    Ok(PackageInstallState::PartiallyInstalled {
+        missing_containers: missing,
+    })
 }
 
 #[cfg(test)]
