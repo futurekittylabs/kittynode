@@ -30,6 +30,12 @@ export interface Binding {
   options?: string;
 }
 
-export interface PackageRuntimeState {
-  running: boolean;
+export type InstallStatus = "notInstalled" | "partiallyInstalled" | "installed";
+export type RuntimeStatus = "notRunning" | "partiallyRunning" | "running";
+
+export interface PackageState {
+  install: InstallStatus;
+  runtime: RuntimeStatus;
+  configPresent: boolean;
+  missingContainers: string[];
 }

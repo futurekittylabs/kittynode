@@ -2,7 +2,8 @@ pub mod validator;
 
 use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
-    Config, OperationalMode, OperationalState, Package, PackageConfig, SystemInfo, WebServiceStatus,
+    Config, OperationalMode, OperationalState, Package, PackageConfig, RuntimeStatus, SystemInfo,
+    WebServiceStatus,
 };
 use kittynode_core::api::{self, DEFAULT_WEB_PORT, validate_web_port};
 use std::collections::{HashMap, VecDeque};
@@ -19,8 +20,8 @@ macro_rules! writeln_string {
     }};
 }
 
-pub async fn get_packages() -> Result<()> {
-    let packages = api::get_packages()?;
+pub async fn get_package_catalog() -> Result<()> {
+    let packages = api::get_package_catalog()?;
     let mut entries: Vec<(&String, &Package)> = packages.iter().collect();
     entries.sort_by(|(a, _), (b, _)| a.cmp(b));
     for (_name, package) in entries {
@@ -32,7 +33,7 @@ pub async fn get_packages() -> Result<()> {
 pub async fn get_installed_packages() -> Result<()> {
     let packages = api::get_installed_packages().await?;
     let names: Vec<String> = packages.iter().map(|pkg| pkg.name().to_string()).collect();
-    let runtime_states = match api::get_packages_runtime_state(&names).await {
+    let runtime_states = match api::get_packages(&names).await {
         Ok(map) => map,
         Err(error) => {
             tracing::warn!(%error, "failed to retrieve runtime state information");
@@ -48,8 +49,8 @@ pub async fn get_installed_packages() -> Result<()> {
     for package in &packages {
         let state = runtime_states
             .get(package.name())
-            .map(|runtime| {
-                if runtime.running {
+            .map(|s| {
+                if s.runtime == RuntimeStatus::Running {
                     "running"
                 } else {
                     "stopped"

@@ -1,9 +1,5 @@
-use crate::domain::package::PackageDefinition;
-use crate::infra::{
-    file::generate_jwt_secret,
-    package::{self, PackageInstallState},
-    package_config::PackageConfigStore,
-};
+use crate::domain::package::{InstallStatus, PackageDefinition};
+use crate::infra::{file::generate_jwt_secret, package, package_config::PackageConfigStore};
 use crate::manifests::ethereum::{self, Ethereum};
 use eyre::{Context, Result, eyre};
 use tracing::{info, warn};
@@ -12,6 +8,10 @@ pub async fn install_package(name: &str) -> Result<()> {
     install_package_with_network(name, None).await
 }
 
+/// Installs a package, optionally selecting a network (e.g., for Ethereum).
+///
+/// If the package is partially installed, logs the precise reason (missing config and/or
+/// missing containers) before reinstalling.
 pub async fn install_package_with_network(name: &str, network: Option<&str>) -> Result<()> {
     if let Some(network) = network {
         if name != Ethereum::NAME {
@@ -40,21 +40,32 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
 
     let package = package::get_package_by_name(name)?;
 
-    match package::is_package_installed(&package).await? {
-        PackageInstallState::Installed => {
+    let state = package::get_package(&package).await?;
+    match state.install {
+        InstallStatus::Installed => {
             info!("Package '{name}' already installed; refreshing containers");
         }
-        PackageInstallState::PartiallyInstalled { missing_containers } => {
-            let missing_list = if missing_containers.is_empty() {
-                "unknown".to_string()
+        InstallStatus::PartiallyInstalled => {
+            let mut details = Vec::new();
+            if !state.config_present {
+                details.push("configuration missing".to_string());
+            }
+            if !state.missing_containers.is_empty() {
+                details.push(format!(
+                    "missing containers: {}",
+                    state.missing_containers.join(", ")
+                ));
+            }
+            let note = if details.is_empty() {
+                String::from("partial state detected")
             } else {
-                missing_containers.join(", ")
+                details.join(", ")
             };
             warn!(
-                "Package '{name}' is partially installed. Missing containers: {missing_list}. Reinstalling to restore missing resources."
+                "Package '{name}' is partially installed ({note}). Reinstalling to restore resources"
             );
         }
-        PackageInstallState::NotInstalled => {}
+        InstallStatus::NotInstalled => {}
     }
 
     package::install_package(&package).await?;

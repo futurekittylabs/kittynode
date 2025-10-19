@@ -8,7 +8,7 @@ use axum::{
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::types::{
-    Config, LogsQuery, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    Config, LogsQuery, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
 };
 use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
 use serde::Deserialize;
@@ -45,8 +45,8 @@ pub async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode, String
     api::get_capabilities().map(Json).map_err(to_http_error)
 }
 
-pub async fn get_packages() -> Result<Json<HashMap<String, Package>>, (StatusCode, String)> {
-    api::get_packages().map(Json).map_err(to_http_error)
+pub async fn get_package_catalog() -> Result<Json<HashMap<String, Package>>, (StatusCode, String)> {
+    api::get_package_catalog().map(Json).map_err(to_http_error)
 }
 
 pub async fn get_config() -> Result<Json<Config>, (StatusCode, String)> {
@@ -99,19 +99,19 @@ pub struct RuntimeStatesRequest {
     names: Vec<String>,
 }
 
-pub async fn get_package_runtime_state(
+pub async fn get_package(
     Path(name): Path<String>,
-) -> Result<Json<PackageRuntimeState>, (StatusCode, String)> {
-    api::get_package_runtime_state(&name)
+) -> Result<Json<PackageState>, (StatusCode, String)> {
+    api::get_package(&name)
         .await
         .map(Json)
         .map_err(to_http_error)
 }
 
-pub async fn get_package_runtime_states(
+pub async fn get_packages(
     Json(payload): Json<RuntimeStatesRequest>,
-) -> Result<Json<HashMap<String, PackageRuntimeState>>, (StatusCode, String)> {
-    api::get_packages_runtime_state(&payload.names)
+) -> Result<Json<HashMap<String, PackageState>>, (StatusCode, String)> {
+    api::get_packages(&payload.names)
         .await
         .map(Json)
         .map_err(to_http_error)
@@ -197,15 +197,15 @@ pub fn app() -> Router {
         .route("/add_capability/{name}", post(add_capability))
         .route("/remove_capability/{name}", post(remove_capability))
         .route("/get_capabilities", get(get_capabilities))
-        .route("/get_packages", get(get_packages))
+        .route("/get_package_catalog", get(get_package_catalog))
         .route("/get_config", get(get_config))
         .route("/install_package/{name}", post(install_package))
         .route("/delete_package/{name}", post(delete_package))
         .route("/stop_package/{name}", post(stop_package))
         .route("/start_package/{name}", post(start_package))
         .route("/get_installed_packages", get(get_installed_packages))
-        .route("/package_runtime", post(get_package_runtime_states))
-        .route("/package_runtime/{name}", get(get_package_runtime_state))
+        .route("/get_packages", post(get_packages))
+        .route("/get_package/{name}", get(get_package))
         .route("/is_docker_running", get(is_docker_running))
         .route("/init_kittynode", post(init_kittynode))
         .route("/delete_kittynode", post(delete_kittynode))

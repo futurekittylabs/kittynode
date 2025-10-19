@@ -1,4 +1,6 @@
-use crate::domain::package::{Package, PackageDefinition, PackageRuntimeState};
+use crate::domain::package::{
+    InstallStatus, Package, PackageDefinition, PackageState, RuntimeStatus,
+};
 use crate::infra::docker::{
     container_is_running, create_or_recreate_network, find_container, get_docker_instance,
     pull_and_start_container, remove_container, start_named_container, stop_named_container,
@@ -15,22 +17,10 @@ use std::{
 };
 use tracing::{info, warn};
 
-/// Represents whether the Docker resources for a package are fully present.
-#[derive(Debug, Clone)]
-pub enum PackageInstallState {
-    /// Every declared container for the package is present in Docker.
-    Installed,
-    /// Some containers are missing, leaving the package in an inconsistent state.
-    PartiallyInstalled {
-        /// Containers that were not found in Docker.
-        missing_containers: Vec<String>,
-    },
-    /// None of the required containers are present.
-    NotInstalled,
-}
+use crate::infra::package_config::PackageConfigStore;
 
-/// Retrieves a `HashMap` of all available packages.
-pub fn get_packages() -> Result<HashMap<String, Package>> {
+/// Retrieves the catalog of all available packages.
+pub fn get_package_catalog() -> Result<HashMap<String, Package>> {
     let mut packages = HashMap::new();
     packages.insert(Ethereum::NAME.to_string(), Ethereum::get_package()?);
     Ok(packages)
@@ -40,37 +30,29 @@ pub fn get_packages() -> Result<HashMap<String, Package>> {
 ///
 /// Lookup is case-sensitive; callers should use the canonical lowercase id.
 pub fn get_package_by_name(name: &str) -> Result<Package> {
-    let mut catalog = get_packages()?;
+    let mut catalog = get_package_catalog()?;
     catalog
         .remove(name)
         .ok_or_else(|| eyre::eyre!("Package '{}' not found", name))
 }
 
-/// Returns every package whose containers currently exist in Docker.
-/// A package is included when each declared container has at least one matching Docker instance.
+/// Returns packages considered installed.
+///
+/// A package is installed when its config exists and all declared containers exist.
 pub async fn get_installed_packages() -> Result<Vec<Package>> {
-    let packages = get_packages().wrap_err("Failed to retrieve packages")?;
+    let packages = get_package_catalog().wrap_err("Failed to retrieve packages")?;
     let docker = get_docker_instance().await?;
     let mut installed = Vec::new();
 
     for package in packages.values() {
-        match package_install_state(&docker, package).await? {
-            PackageInstallState::Installed => installed.push(package.clone()),
-            PackageInstallState::PartiallyInstalled { .. } | PackageInstallState::NotInstalled => {}
+        let state = get_package_with(&docker, package).await?;
+        if matches!(state.install, InstallStatus::Installed) {
+            installed.push(package.clone());
         }
     }
 
     Ok(installed)
 }
-
-/// Reports whether all containers required by the package are present in Docker.
-/// Returns [`PackageInstallState::Installed`] when every container exists, [`PackageInstallState::NotInstalled`]
-/// when none exist, and [`PackageInstallState::PartiallyInstalled`] when only a subset is present.
-pub async fn is_package_installed(package: &Package) -> Result<PackageInstallState> {
-    let docker = get_docker_instance().await?;
-    package_install_state(&docker, package).await
-}
-
 /// Installs a package using its current, concrete container definition.
 ///
 /// Callers are responsible for ensuring required configuration has been
@@ -130,25 +112,6 @@ pub async fn start_package(package: &Package) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub async fn get_package_runtime_state(package: &Package) -> Result<PackageRuntimeState> {
-    let docker = get_docker_instance().await?;
-    if package.containers.is_empty() {
-        return Ok(PackageRuntimeState { running: false });
-    }
-    let mut running = true;
-
-    for container in &package.containers {
-        let summaries = find_container(&docker, &container.name).await?;
-        let container_running = summaries.iter().any(container_is_running);
-
-        if !container_running {
-            running = false;
-        }
-    }
-
-    Ok(PackageRuntimeState { running })
 }
 
 /// Deletes a package and its associated resources.
@@ -288,31 +251,53 @@ pub async fn delete_package(
     Ok(())
 }
 
-/// Inspects Docker for each declared container, noting missing names to decide whether the package is fully installed,
-/// partially installed, or absent.
-async fn package_install_state(docker: &Docker, package: &Package) -> Result<PackageInstallState> {
-    if package.containers.is_empty() {
-        return Ok(PackageInstallState::NotInstalled);
-    }
+/// Computes full package state.
+pub async fn get_package(package: &Package) -> Result<PackageState> {
+    let docker = get_docker_instance().await?;
+    get_package_with(&docker, package).await
+}
 
+/// Internal helper to compute state using a provided Docker client.
+async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageState> {
+    let base = kittynode_path()?;
+    let cfg = PackageConfigStore::config_file_path(&base, package.name());
+    let config_present = cfg.exists();
+
+    let total = package.containers.len();
     let mut missing = Vec::new();
+    let mut running_count = 0usize;
 
-    for container in &package.containers {
-        info!("Checking container '{}'...", container.name);
-        if find_container(docker, &container.name).await?.is_empty() {
-            missing.push(container.name.clone());
+    for c in &package.containers {
+        let summaries = find_container(docker, &c.name).await?;
+        if summaries.is_empty() {
+            missing.push(c.name.clone());
+            continue;
+        }
+        if summaries.iter().any(container_is_running) {
+            running_count += 1;
         }
     }
 
-    if missing.is_empty() {
-        return Ok(PackageInstallState::Installed);
-    }
+    let install = if config_present && missing.is_empty() {
+        InstallStatus::Installed
+    } else if !config_present && missing.len() == total {
+        InstallStatus::NotInstalled
+    } else {
+        InstallStatus::PartiallyInstalled
+    };
 
-    if missing.len() == package.containers.len() {
-        return Ok(PackageInstallState::NotInstalled);
-    }
+    let runtime = if total == 0 || running_count == 0 {
+        RuntimeStatus::NotRunning
+    } else if running_count == total {
+        RuntimeStatus::Running
+    } else {
+        RuntimeStatus::PartiallyRunning
+    };
 
-    Ok(PackageInstallState::PartiallyInstalled {
+    Ok(PackageState {
+        install,
+        runtime,
+        config_present,
         missing_containers: missing,
     })
 }
@@ -324,7 +309,7 @@ mod tests {
     #[test]
     fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
         // Canonical key is lowercase
-        let catalog = get_packages().expect("catalog should load");
+        let catalog = get_package_catalog().expect("catalog should load");
         assert!(catalog.contains_key("ethereum"));
 
         // Exact lowercase match succeeds

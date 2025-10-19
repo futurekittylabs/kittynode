@@ -60,8 +60,38 @@ impl Package {
     }
 }
 
+/// Installation status derived from config presence and container existence.
+///
+/// - `Installed`: config exists and all declared containers exist
+/// - `PartiallyInstalled`: any partial artifact (config or some containers)
+/// - `NotInstalled`: clean state (no config and no declared containers present)
+#[derive(Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum InstallStatus {
+    NotInstalled,
+    PartiallyInstalled,
+    Installed,
+}
+
+/// Runtime status derived from Docker states of declared containers.
+///
+/// - `Running`: all declared containers are running
+/// - `PartiallyRunning`: some, but not all, are running
+/// - `NotRunning`: none are running (or none declared)
+#[derive(Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeStatus {
+    NotRunning,
+    PartiallyRunning,
+    Running,
+}
+
+/// Full package state.
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageRuntimeState {
-    pub running: bool,
+pub struct PackageState {
+    pub install: InstallStatus,
+    pub runtime: RuntimeStatus,
+    pub config_present: bool,
+    pub missing_containers: Vec<String>,
 }

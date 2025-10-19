@@ -93,7 +93,7 @@ export const packagesStore = {
     };
 
     try {
-      const result = await coreClient.getPackages();
+      const result = await coreClient.getPackageCatalog();
       catalogState = {
         status: "ready",
         packages: result,
@@ -199,22 +199,20 @@ export const packagesStore = {
     }
   },
 
-  async getPackageRuntimeState(name: string) {
+  async getPackage(name: string) {
     try {
-      return await coreClient.getPackageRuntimeState(name);
+      return await coreClient.getPackage(name);
     } catch (e) {
-      console.error(`Failed to fetch runtime state for ${name}: ${e}`);
+      console.error(`Failed to fetch package state for ${name}: ${e}`);
       throw e;
     }
   },
 
-  async getPackageRuntimeStates(names: string[]) {
+  async getPackages(names: string[]) {
     try {
-      return await coreClient.getPackageRuntimeStates(names);
+      return await coreClient.getPackages(names);
     } catch (e) {
-      console.error(
-        `Failed to fetch runtime states for [${names.join(", ")}] : ${e}`,
-      );
+      console.error(`Failed to fetch states for [${names.join(", ")}] : ${e}`);
       throw e;
     }
   },
