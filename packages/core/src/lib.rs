@@ -6,3 +6,4 @@ mod application;
 mod domain;
 mod infra;
 mod manifests;
+mod packages;

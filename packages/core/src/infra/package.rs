@@ -1,13 +1,12 @@
-use crate::domain::package::{
-    InstallStatus, Package, PackageDefinition, PackageState, RuntimeStatus,
-};
+use crate::domain::package::{InstallStatus, Package, PackageConfig, PackageState, RuntimeStatus};
 use crate::infra::docker::{
     container_is_running, create_or_recreate_network, find_container, get_docker_instance,
     pull_and_start_container, remove_container, start_named_container, stop_named_container,
 };
-use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
+use crate::infra::ephemery::{EPHEMERY_NETWORK_NAME, ensure_ephemery_config};
 use crate::infra::file::kittynode_path;
-use crate::manifests::ethereum::{self, Ethereum};
+use crate::manifests::ethereum;
+use crate::packages::ethereum::{config::Network, config_store, docker_plan};
 use bollard::{Docker, errors::Error as DockerError};
 use eyre::{Context, Result};
 use std::{
@@ -23,8 +22,22 @@ use crate::infra::package_config::PackageConfigStore;
 /// Retrieves the catalog of all available packages.
 pub fn get_package_catalog() -> Result<HashMap<String, Package>> {
     let mut packages = HashMap::new();
-    packages.insert(Ethereum::NAME.to_string(), Ethereum::get_package()?);
+    let ethereum_package = match config_store::load()? {
+        Some(cfg) => docker_plan::build_package(&cfg)?,
+        None => minimal_ethereum_package(),
+    };
+    packages.insert(ethereum::ETHEREUM_NAME.to_string(), ethereum_package);
     Ok(packages)
+}
+
+fn minimal_ethereum_package() -> Package {
+    Package {
+        name: ethereum::ETHEREUM_NAME.to_string(),
+        description: "This package installs an Ethereum node.".to_string(),
+        network_name: ethereum::ETHEREUM_NETWORK_RESOURCE.to_string(),
+        containers: Vec::new(),
+        default_config: PackageConfig::default(),
+    }
 }
 
 /// Retrieves a single package or returns a not-found error.
@@ -63,11 +76,11 @@ pub async fn install_package(package: &Package) -> Result<()> {
     let docker = get_docker_instance().await?;
 
     if package.containers.is_empty() {
-        if package.name == Ethereum::NAME {
+        if package.name() == ethereum::ETHEREUM_NAME {
             let network_choices = ethereum::supported_networks_display("|");
             return Err(eyre::eyre!(
                 "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
-                Ethereum::NAME,
+                ethereum::ETHEREUM_NAME,
                 network_choices
             ));
         }
@@ -77,7 +90,35 @@ pub async fn install_package(package: &Package) -> Result<()> {
         ));
     }
 
-    let containers = package.containers.clone();
+    let mut containers = package.containers.clone();
+
+    if package.name() == ethereum::ETHEREUM_NAME {
+        let cfg = config_store::load()?.ok_or_else(|| {
+            eyre::eyre!("Ethereum configuration missing; select a network before installing")
+        })?;
+        cfg.validate()
+            .wrap_err("Ethereum configuration is invalid")?;
+        if cfg.network == Network::Ephemery {
+            let ephemery =
+                ensure_ephemery_config().wrap_err("Failed to prepare Ephemery configuration")?;
+            if let Some(reth) = containers
+                .iter_mut()
+                .find(|container| container.name == ethereum::RETH_NODE_CONTAINER_NAME)
+                && !ephemery.execution_bootnodes.is_empty()
+            {
+                reth.cmd.push("--bootnodes".to_string());
+                reth.cmd.push(ephemery.execution_bootnodes.join(","));
+            }
+            if let Some(lighthouse) = containers
+                .iter_mut()
+                .find(|container| container.name == ethereum::LIGHTHOUSE_NODE_CONTAINER_NAME)
+                && !ephemery.consensus_bootnodes.is_empty()
+            {
+                lighthouse.cmd.push("--boot-nodes".to_string());
+                lighthouse.cmd.push(ephemery.consensus_bootnodes.join(","));
+            }
+        }
+    }
 
     info!("Creating network '{}'...", package.network_name);
     create_or_recreate_network(&docker, &package.network_name).await?;
@@ -245,7 +286,7 @@ pub async fn delete_package(
     }
 
     if purge_ephemery_cache
-        && package.name == Ethereum::NAME
+        && package.name() == ethereum::ETHEREUM_NAME
         && let Ok(root) = kittynode_path()
     {
         let root_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
@@ -347,21 +388,19 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
         }
     }
 
-    let install = if config_present && missing.is_empty() {
-        InstallStatus::Installed
-    } else if !config_present && missing.len() == total {
-        InstallStatus::NotInstalled
+    let leftovers = if !config_present && package.name() == ethereum::ETHEREUM_NAME {
+        detect_ethereum_leftovers(docker).await?
     } else {
-        InstallStatus::PartiallyInstalled
+        None
     };
 
-    let runtime = if total == 0 || running_count == 0 {
-        RuntimeStatus::NotRunning
-    } else if running_count == total {
-        RuntimeStatus::Running
-    } else {
-        RuntimeStatus::PartiallyRunning
-    };
+    let (install, runtime) = compute_state(
+        config_present,
+        total,
+        missing.len(),
+        running_count,
+        leftovers,
+    );
 
     Ok(PackageState {
         install,
@@ -369,6 +408,72 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
         config_present,
         missing_containers: missing,
     })
+}
+
+async fn detect_ethereum_leftovers(docker: &Docker) -> Result<Option<(usize, usize)>> {
+    let known_containers = [
+        ethereum::RETH_NODE_CONTAINER_NAME,
+        ethereum::LIGHTHOUSE_NODE_CONTAINER_NAME,
+        ethereum::LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
+    ];
+
+    let mut existing = 0usize;
+    let mut running = 0usize;
+
+    for name in known_containers {
+        let summaries = find_container(docker, name).await?;
+        if summaries.is_empty() {
+            continue;
+        }
+        existing += 1;
+        if summaries.iter().any(container_is_running) {
+            running += 1;
+        }
+    }
+
+    if existing == 0 {
+        Ok(None)
+    } else {
+        Ok(Some((existing, running)))
+    }
+}
+
+fn compute_state(
+    config_present: bool,
+    declared_total: usize,
+    missing_count: usize,
+    running_count: usize,
+    leftovers: Option<(usize, usize)>,
+) -> (InstallStatus, RuntimeStatus) {
+    let mut install = if config_present && missing_count == 0 {
+        InstallStatus::Installed
+    } else if !config_present && missing_count == declared_total {
+        InstallStatus::NotInstalled
+    } else {
+        InstallStatus::PartiallyInstalled
+    };
+
+    let mut runtime = if declared_total == 0 || running_count == 0 {
+        RuntimeStatus::NotRunning
+    } else if running_count == declared_total {
+        RuntimeStatus::Running
+    } else {
+        RuntimeStatus::PartiallyRunning
+    };
+
+    if let Some((existing, running)) = leftovers
+        && !config_present
+        && existing > 0
+    {
+        install = InstallStatus::PartiallyInstalled;
+        runtime = match running {
+            0 => RuntimeStatus::NotRunning,
+            n if n == existing => RuntimeStatus::Running,
+            _ => RuntimeStatus::PartiallyRunning,
+        };
+    }
+
+    (install, runtime)
 }
 
 #[cfg(test)]
@@ -439,5 +544,26 @@ mod tests {
             !jwt_path.exists(),
             "all artifacts in the package directory should be removed"
         );
+    }
+
+    #[test]
+    fn compute_state_no_config_clean_returns_not_installed() {
+        let (install, runtime) = compute_state(false, 0, 0, 0, None);
+        assert_eq!(install, InstallStatus::NotInstalled);
+        assert_eq!(runtime, RuntimeStatus::NotRunning);
+    }
+
+    #[test]
+    fn compute_state_no_config_with_leftovers_detects_partial_install() {
+        let (install, runtime) = compute_state(false, 0, 0, 0, Some((2, 1)));
+        assert_eq!(install, InstallStatus::PartiallyInstalled);
+        assert_eq!(runtime, RuntimeStatus::PartiallyRunning);
+    }
+
+    #[test]
+    fn compute_state_config_missing_container_reports_partial_install() {
+        let (install, runtime) = compute_state(true, 2, 1, 1, None);
+        assert_eq!(install, InstallStatus::PartiallyInstalled);
+        assert_eq!(runtime, RuntimeStatus::PartiallyRunning);
     }
 }

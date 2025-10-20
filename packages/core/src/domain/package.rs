@@ -1,13 +1,7 @@
 use crate::domain::container::Container;
-use eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-
-pub(crate) trait PackageDefinition {
-    const NAME: &'static str;
-    fn get_package() -> Result<Package>;
-}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -65,7 +59,7 @@ impl Package {
 /// - `Installed`: config exists and all declared containers exist
 /// - `PartiallyInstalled`: any partial artifact (config or some containers)
 /// - `NotInstalled`: clean state (no config and no declared containers present)
-#[derive(Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InstallStatus {
     NotInstalled,
@@ -78,7 +72,7 @@ pub enum InstallStatus {
 /// - `Running`: all declared containers are running
 /// - `PartiallyRunning`: some, but not all, are running
 /// - `NotRunning`: none are running (or none declared)
-#[derive(Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum RuntimeStatus {
     NotRunning,

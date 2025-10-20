@@ -1,6 +1,10 @@
-use crate::domain::package::{InstallStatus, PackageDefinition};
-use crate::infra::{file::generate_jwt_secret, package, package_config::PackageConfigStore};
-use crate::manifests::ethereum::{self, Ethereum};
+use crate::domain::package::InstallStatus;
+use crate::infra::{file::generate_jwt_secret, package};
+use crate::manifests::ethereum;
+use crate::packages::ethereum::{
+    config::{EthereumConfig, Network, Validator},
+    config_store,
+};
 use eyre::{Context, Result, eyre};
 use tracing::{info, warn};
 
@@ -14,7 +18,7 @@ pub async fn install_package(name: &str) -> Result<()> {
 /// missing containers) before reinstalling.
 pub async fn install_package_with_network(name: &str, network: Option<&str>) -> Result<()> {
     if let Some(network) = network {
-        if name != Ethereum::NAME {
+        if name != ethereum::ETHEREUM_NAME {
             return Err(eyre!(
                 "Package '{name}' does not support selecting a network"
             ));
@@ -27,12 +31,20 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
             ));
         }
 
-        let mut config = PackageConfigStore::load(name)
-            .wrap_err_with(|| format!("Failed to load configuration for {name}"))?;
+        let parsed_network: Network = network
+            .parse()
+            .wrap_err_with(|| format!("Failed to parse Ethereum network '{network}'"))?;
+        let mut config = config_store::load()
+            .wrap_err_with(|| format!("Failed to load configuration for {name}"))?
+            .unwrap_or_else(|| EthereumConfig {
+                network: parsed_network,
+                validator: Validator::default(),
+            });
+        config.network = parsed_network;
         config
-            .values
-            .insert("network".to_string(), network.to_string());
-        PackageConfigStore::save(name, &config)
+            .validate()
+            .wrap_err_with(|| format!("Invalid Ethereum configuration for {name}"))?;
+        config_store::save(&config)
             .wrap_err_with(|| format!("Failed to persist configuration for {name}"))?;
     }
 

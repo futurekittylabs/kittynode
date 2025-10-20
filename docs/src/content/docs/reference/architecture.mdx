@@ -89,13 +89,15 @@ Kittynode supports remote access. This means you can setup and monitor your node
 
 ## Package lifecycle
 
-Package installs are declarative:
+Package installs follow a typed Config → Plan → Runtime flow:
 
-1. A manifest returns a `Package` with default configuration and container definitions.
-2. `infra::package::install_package` creates the Docker network, pulls images, and starts the containers.
-3. `infra::package::delete_package` stops containers, removes Docker resources, and cleans any files that were mounted.
+1. **Config**: Operators edit TOML files stored under `~/.config/kittynode/packages/<name>/config.toml`. Each package owns a strongly typed config struct that rejects unknown fields and validates required values (for example, Ethereum validators must provide a fee recipient when enabled).
+2. **Plan**: Pure builders convert the validated config into a `Package` definition. Plans describe the desired network, containers, ports, and mounts without touching the filesystem or Docker.
+3. **Runtime**: `infra::package::install_package` performs the side effects. It prepares any runtime assets (like Ephemery metadata), injects environment-specific flags, creates the Docker network, pulls images, and starts containers. `infra::package::delete_package` tears resources down and cleans mounted files.
 
-Because the manifests are normal Rust code, adding a new stack mainly means writing one manifest and any matching UI strings.
+`kittynode package list` compares the current plan against Docker to classify packages as **NOT_INSTALLED**, **PARTIALLY_INSTALLED**, or **INSTALLED**. When a config is missing but Docker resources remain, we flag the package as partially installed and report the runtime status so operators can decide whether to clean up leftovers or restore configuration.
+
+Because plans are normal Rust code, adding a new stack mainly means writing a config type, a plan builder, and any matching UI strings.
 
 ## Operational state
 
