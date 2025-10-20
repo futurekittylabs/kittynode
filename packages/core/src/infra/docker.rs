@@ -3,6 +3,7 @@ use crate::domain::container::{Binding, Container, PortBinding};
 use bollard::API_DEFAULT_VERSION;
 use bollard::{
     Docker,
+    errors::Error as DockerError,
     models::{
         ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest,
         PortBinding as DockerPortBinding,
@@ -206,27 +207,26 @@ pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &s
             Ok(_) => {
                 info!("Removed existing network: '{}'", network_name);
             }
-            Err(err) => {
-                let msg = err.to_string().to_lowercase();
-                let in_use = msg.contains("active endpoints") || msg.contains("in use");
-                let missing = msg.contains("no such network")
-                    || (msg.contains("network") && msg.contains("not found"));
-
-                if in_use {
+            Err(err) => match err {
+                DockerError::DockerResponseServerError {
+                    status_code: 409, ..
+                } => {
                     info!(
                         "Network '{}' has active endpoints; preserving existing network instead of recreating",
                         network_name
                     );
                     needs_creation = false;
-                } else if missing {
+                }
+                DockerError::DockerResponseServerError {
+                    status_code: 404, ..
+                } => {
                     info!(
                         "Network '{}' was reported missing during removal; creating a fresh network",
                         network_name
                     );
-                } else {
-                    return Err(err.into());
                 }
-            }
+                err => return Err(err.into()),
+            },
         }
     }
 

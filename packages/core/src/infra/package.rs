@@ -8,7 +8,7 @@ use crate::infra::docker::{
 use crate::infra::ephemery::EPHEMERY_NETWORK_NAME;
 use crate::infra::file::kittynode_path;
 use crate::manifests::ethereum::{self, Ethereum};
-use bollard::Docker;
+use bollard::{Docker, errors::Error as DockerError};
 use eyre::{Context, Result};
 use std::{
     collections::{HashMap, HashSet},
@@ -216,19 +216,16 @@ pub async fn delete_package(
             .await
         {
             Ok(_) => info!("Volume '{}' removed successfully", volume),
-            Err(err) => {
-                let msg = err.to_string().to_lowercase();
-                let missing = msg.contains("no such volume")
-                    || (msg.contains("volume") && msg.contains("not found"));
-                if missing {
-                    warn!(
-                        "Skipping removal of volume '{}' because it does not exist",
-                        volume
-                    );
-                    continue;
-                }
-                return Err(err.into());
+            Err(DockerError::DockerResponseServerError {
+                status_code: 404, ..
+            }) => {
+                warn!(
+                    "Skipping removal of volume '{}' because it does not exist",
+                    volume
+                );
+                continue;
             }
+            Err(err) => return Err(err.into()),
         }
     }
 
