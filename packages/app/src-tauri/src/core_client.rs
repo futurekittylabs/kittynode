@@ -3,7 +3,7 @@ use eyre::{Context, Result};
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
-    Config, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    Config, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -23,9 +23,8 @@ fn normalize_base_url(server_url: &str) -> Option<String> {
 
 #[async_trait]
 pub trait CoreClient: Send + Sync + std::any::Any {
-    /// Retrieve the current package catalog from the core. Implementations may call the
-    /// core directly (local) or proxy the HTTP API (remote) but must return the same data shape.
-    async fn get_packages(&self) -> Result<HashMap<String, Package>>;
+    /// Retrieve the current package catalog from the core.
+    async fn get_package_catalog(&self) -> Result<HashMap<String, Package>>;
     /// List the enabled capabilities.
     async fn get_capabilities(&self) -> Result<Vec<String>>;
     /// Enable a capability on the node.
@@ -50,8 +49,8 @@ pub trait CoreClient: Send + Sync + std::any::Any {
     async fn stop_package(&self, name: &str) -> Result<()>;
     /// Start previously stopped containers for a package.
     async fn start_package(&self, name: &str) -> Result<()>;
-    /// Retrieve the runtime state for a package.
-    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState>;
+    /// Retrieve the full state for a package.
+    async fn get_package(&self, name: &str) -> Result<PackageState>;
     /// Remove Kittynode data from disk.
     async fn delete_kittynode(&self) -> Result<()>;
     /// Initialize Kittynode configuration and directories.
@@ -66,11 +65,8 @@ pub trait CoreClient: Send + Sync + std::any::Any {
     async fn start_docker_if_needed(&self) -> Result<DockerStartStatus>;
     /// Report the operational capabilities (install/manage, diagnostics, etc.).
     async fn get_operational_state(&self) -> Result<OperationalState>;
-    /// Retrieve runtime states for multiple packages in a single request.
-    async fn get_package_runtime_states(
-        &self,
-        names: &[String],
-    ) -> Result<HashMap<String, PackageRuntimeState>>;
+    /// Retrieve states for multiple packages in a single request.
+    async fn get_packages(&self, names: &[&str]) -> Result<HashMap<String, PackageState>>;
 }
 
 #[cfg(test)]
@@ -96,8 +92,8 @@ pub struct LocalCoreClient;
 
 #[async_trait]
 impl CoreClient for LocalCoreClient {
-    async fn get_packages(&self) -> Result<HashMap<String, Package>> {
-        api::get_packages()
+    async fn get_package_catalog(&self) -> Result<HashMap<String, Package>> {
+        api::get_package_catalog()
     }
 
     async fn get_capabilities(&self) -> Result<Vec<String>> {
@@ -144,8 +140,8 @@ impl CoreClient for LocalCoreClient {
         api::start_package(name).await
     }
 
-    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState> {
-        api::get_package_runtime_state(name).await
+    async fn get_package(&self, name: &str) -> Result<PackageState> {
+        api::get_package(name).await
     }
 
     async fn delete_kittynode(&self) -> Result<()> {
@@ -176,11 +172,8 @@ impl CoreClient for LocalCoreClient {
         api::get_operational_state().await
     }
 
-    async fn get_package_runtime_states(
-        &self,
-        names: &[String],
-    ) -> Result<HashMap<String, PackageRuntimeState>> {
-        api::get_packages_runtime_state(names).await
+    async fn get_packages(&self, names: &[&str]) -> Result<HashMap<String, PackageState>> {
+        api::get_packages(names).await
     }
 }
 
@@ -281,8 +274,8 @@ impl HttpCoreClient {
 
 #[async_trait]
 impl CoreClient for HttpCoreClient {
-    async fn get_packages(&self) -> Result<HashMap<String, Package>> {
-        self.get_json("/get_packages").await
+    async fn get_package_catalog(&self) -> Result<HashMap<String, Package>> {
+        self.get_json("/get_package_catalog").await
     }
 
     async fn get_capabilities(&self) -> Result<Vec<String>> {
@@ -346,8 +339,8 @@ impl CoreClient for HttpCoreClient {
             .await
     }
 
-    async fn get_package_runtime_state(&self, name: &str) -> Result<PackageRuntimeState> {
-        self.get_json(&format!("/package_runtime/{name}")).await
+    async fn get_package(&self, name: &str) -> Result<PackageState> {
+        self.get_json(&format!("/get_package/{name}")).await
     }
 
     async fn delete_kittynode(&self) -> Result<()> {
@@ -406,16 +399,13 @@ impl CoreClient for HttpCoreClient {
             })
     }
 
-    async fn get_package_runtime_states(
-        &self,
-        names: &[String],
-    ) -> Result<HashMap<String, PackageRuntimeState>> {
+    async fn get_packages(&self, names: &[&str]) -> Result<HashMap<String, PackageState>> {
         #[derive(Serialize)]
         struct RuntimeStatesRequest<'a> {
-            names: &'a [String],
+            names: &'a [&'a str],
         }
 
-        self.post_json("/package_runtime", Some(&RuntimeStatesRequest { names }))
+        self.post_json("/get_packages", Some(&RuntimeStatesRequest { names }))
             .await
     }
 }
@@ -524,10 +514,8 @@ mod tests {
         );
         client.add_capability("beta").await?;
         client.install_package("ok", None).await?;
-        let states = client
-            .get_package_runtime_states(&["alpha".to_string()])
-            .await?;
-        assert!(states.get("alpha").is_some_and(|state| state.running));
+        let states = client.get_packages(&["alpha"]).await?;
+        assert!(states.contains_key("alpha"));
         assert_eq!(
             client.start_docker_if_needed().await?,
             DockerStartStatus::Running
@@ -568,7 +556,7 @@ mod tests {
             .route("/get_capabilities", get(get_capabilities))
             .route("/add_capability/{name}", post(add_capability))
             .route("/install_package/{name}", post(install_package))
-            .route("/package_runtime", post(package_runtime_states))
+            .route("/get_packages", post(get_packages))
             .route("/start_docker_if_needed", post(start_docker_if_needed))
             .route("/is_docker_running", get(is_docker_running))
             .with_state(state);
@@ -599,13 +587,23 @@ mod tests {
         }
     }
 
-    async fn package_runtime_states(
+    async fn get_packages(
         Json(payload): Json<RuntimeStatesRequest>,
-    ) -> Json<StdHashMap<String, PackageRuntimeState>> {
+    ) -> Json<StdHashMap<String, PackageState>> {
         let states = payload
             .names
             .into_iter()
-            .map(|name| (name, PackageRuntimeState { running: true }))
+            .map(|name| {
+                (
+                    name,
+                    PackageState {
+                        install: kittynode_core::api::types::InstallStatus::Installed,
+                        runtime: kittynode_core::api::types::RuntimeStatus::Running,
+                        config_present: true,
+                        missing_containers: vec![],
+                    },
+                )
+            })
             .collect();
         Json(states)
     }

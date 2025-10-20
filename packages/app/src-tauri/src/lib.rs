@@ -5,7 +5,7 @@ use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
 use kittynode_core::api::types::{
-    Config, OperationalState, Package, PackageConfig, PackageRuntimeState, SystemInfo,
+    Config, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -44,11 +44,14 @@ async fn fetch_latest_manifest(url: String) -> Result<LatestManifest, String> {
 }
 
 #[tauri::command]
-async fn get_packages(
+async fn get_package_catalog(
     client_state: State<'_, CoreClientManager>,
 ) -> Result<HashMap<String, Package>, String> {
     let client = client_state.client();
-    client.get_packages().await.map_err(|e| e.to_string())
+    client
+        .get_package_catalog()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -184,27 +187,25 @@ async fn start_package(
 }
 
 #[tauri::command]
-async fn get_package_runtime_state(
+async fn get_package(
     name: String,
     client_state: State<'_, CoreClientManager>,
-) -> Result<PackageRuntimeState, String> {
-    debug!("Fetching runtime state for package: {}", name);
+) -> Result<PackageState, String> {
+    debug!("Fetching package state: {}", name);
     let client = client_state.client();
-    client
-        .get_package_runtime_state(&name)
-        .await
-        .map_err(|e| e.to_string())
+    client.get_package(&name).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn get_package_runtime_states(
+async fn get_packages(
     names: Vec<String>,
     client_state: State<'_, CoreClientManager>,
-) -> Result<HashMap<String, PackageRuntimeState>, String> {
-    debug!("Fetching runtime state for packages: {:?}", names);
+) -> Result<HashMap<String, PackageState>, String> {
+    debug!("Fetching package states: {:?}", names);
     let client = client_state.client();
+    let name_refs: Vec<&str> = names.iter().map(|name| name.as_str()).collect();
     client
-        .get_package_runtime_states(&names)
+        .get_packages(&name_refs)
         .await
         .map_err(|e| e.to_string())
 }
@@ -353,7 +354,7 @@ pub fn run() -> Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             fetch_latest_manifest,
-            get_packages,
+            get_package_catalog,
             get_installed_packages,
             is_docker_running,
             start_docker_if_needed,
@@ -361,8 +362,8 @@ pub fn run() -> Result<()> {
             delete_package,
             stop_package,
             start_package,
-            get_package_runtime_state,
-            get_package_runtime_states,
+            get_package,
+            get_packages,
             delete_kittynode,
             system_info,
             init_kittynode,

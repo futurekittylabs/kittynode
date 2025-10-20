@@ -7,7 +7,7 @@ use tempfile::tempdir;
 fn get_packages_outputs_known_package() {
     let mut cmd = Command::cargo_bin("kittynode").unwrap();
     let output = cmd
-        .args(["package", "list"])
+        .args(["package", "catalog"])
         .assert()
         .success()
         .get_output()

@@ -5,7 +5,7 @@ import type {
   OperationalState,
   Package,
   PackageConfig,
-  PackageRuntimeState,
+  PackageState,
   SystemInfo,
 } from "$lib/types";
 
@@ -20,8 +20,8 @@ export interface LatestManifest {
 }
 
 export const coreClient = {
-  getPackages(): Promise<Record<string, Package>> {
-    return invoke("get_packages");
+  getPackageCatalog(): Promise<Record<string, Package>> {
+    return invoke("get_package_catalog");
   },
 
   getInstalledPackages(): Promise<Package[]> {
@@ -44,8 +44,8 @@ export const coreClient = {
     return invoke("start_package", { name });
   },
 
-  getPackageRuntimeState(name: string): Promise<PackageRuntimeState> {
-    return invoke("get_package_runtime_state", { name });
+  getPackage(name: string): Promise<PackageState> {
+    return invoke("get_package", { name });
   },
 
   getContainerLogs(
@@ -99,10 +99,8 @@ export const coreClient = {
     return invoke("update_package_config", { name, config });
   },
 
-  getPackageRuntimeStates(
-    names: string[],
-  ): Promise<Record<string, PackageRuntimeState>> {
-    return invoke("get_package_runtime_states", { names });
+  getPackages(names: string[]): Promise<Record<string, PackageState>> {
+    return invoke("get_packages", { names });
   },
 
   deleteKittynode(): Promise<void> {

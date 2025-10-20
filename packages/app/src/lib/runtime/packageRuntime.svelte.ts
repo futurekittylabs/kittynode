@@ -15,13 +15,11 @@ async function requestStatus(name: string): Promise<RuntimeStatus> {
 
   const request = (async () => {
     try {
-      const result = await packagesStore.getPackageRuntimeStates([name]);
-      const runtime = result[name];
-      const status: RuntimeStatus = runtime
-        ? runtime.running
-          ? "running"
-          : "stopped"
-        : "unknown";
+      const result = await packagesStore.getPackages([name]);
+      const state = result[name];
+      const runtime = state?.runtime;
+      const status: RuntimeStatus =
+        runtime === "running" ? "running" : runtime ? "stopped" : "unknown";
       statusCache.set(name, status);
       return status;
     } catch (error) {
@@ -43,16 +41,14 @@ export async function fetchRuntimeStatuses(
     return {};
   }
 
-  const runtimeMap = await packagesStore.getPackageRuntimeStates(packageNames);
+  const runtimeMap = await packagesStore.getPackages(packageNames);
   const result: Record<string, RuntimeStatus> = {};
 
   for (const name of packageNames) {
-    const runtime = runtimeMap[name];
-    const status: RuntimeStatus = runtime
-      ? runtime.running
-        ? "running"
-        : "stopped"
-      : "unknown";
+    const state = runtimeMap[name];
+    const runtime = state?.runtime;
+    const status: RuntimeStatus =
+      runtime === "running" ? "running" : runtime ? "stopped" : "unknown";
     statusCache.set(name, status);
     result[name] = status;
   }

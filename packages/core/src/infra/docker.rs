@@ -3,6 +3,7 @@ use crate::domain::container::{Binding, Container, PortBinding};
 use bollard::API_DEFAULT_VERSION;
 use bollard::{
     Docker,
+    errors::Error as DockerError,
     models::{
         ContainerCreateBody, EndpointSettings, NetworkConnectRequest, NetworkCreateRequest,
         PortBinding as DockerPortBinding,
@@ -199,10 +200,38 @@ pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &s
         .iter()
         .any(|n| n.name.as_deref() == Some(network_name));
 
+    let mut needs_creation = true;
     if network_exists {
         // Tear down the existing bridge to guarantee a clean reconfiguration.
-        docker.remove_network(network_name).await?;
-        info!("Removed existing network: '{}'", network_name);
+        match docker.remove_network(network_name).await {
+            Ok(_) => {
+                info!("Removed existing network: '{}'", network_name);
+            }
+            Err(err) => match err {
+                DockerError::DockerResponseServerError {
+                    status_code: 409, ..
+                } => {
+                    info!(
+                        "Network '{}' has active endpoints; preserving existing network instead of recreating",
+                        network_name
+                    );
+                    needs_creation = false;
+                }
+                DockerError::DockerResponseServerError {
+                    status_code: 404, ..
+                } => {
+                    info!(
+                        "Network '{}' was reported missing during removal; creating a fresh network",
+                        network_name
+                    );
+                }
+                err => return Err(err.into()),
+            },
+        }
+    }
+
+    if !needs_creation {
+        return Ok(());
     }
 
     let network_config = NetworkCreateRequest {
@@ -292,6 +321,8 @@ pub(crate) fn container_is_running(container: &ContainerSummary) -> bool {
     matches!(container.state, Some(ContainerSummaryStateEnum::RUNNING))
 }
 
+/// Pulls the referenced container image, creates the container with the provided
+/// bindings, starts it, and connects it to the given Docker network.
 pub(crate) async fn pull_and_start_container(
     docker: &Docker,
     container: &Container,
