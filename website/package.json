@@ -27,7 +27,7 @@
     "shiki": "^3.13.0",
     "svelte": "^5.40.1",
     "svelte-check": "^4.3.3",
-    "svelte-toolbelt": "^0.9.3",
+    "svelte-toolbelt": "^0.10.6",
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^3.1.1",
     "tailwindcss": "^4.1.14",
