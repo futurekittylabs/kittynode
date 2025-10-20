@@ -208,9 +208,9 @@ pub(crate) async fn create_or_recreate_network(docker: &Docker, network_name: &s
                 info!("Removed existing network: '{}'", network_name);
             }
             Err(err) => match err {
-                DockerError::DockerResponseServerError {
-                    status_code: 409, ..
-                } => {
+                DockerError::DockerResponseServerError { status_code, .. }
+                    if status_code == 409 || status_code == 403 =>
+                {
                     info!(
                         "Network '{}' has active endpoints; preserving existing network instead of recreating",
                         network_name
