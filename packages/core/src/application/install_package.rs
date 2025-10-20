@@ -36,16 +36,13 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
             .wrap_err_with(|| format!("Failed to persist configuration for {name}"))?;
     }
 
-    generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
-
     let package = package::get_package_by_name(name)?;
 
     let state = package::get_package(&package).await?;
     match state.install {
         InstallStatus::Installed => {
-            warn!(
-                "Package '{name}' already installed; refreshing containers to resolve potential drift"
-            );
+            info!("Package '{name}' already installed; skipping reinstall");
+            return Ok(());
         }
         InstallStatus::PartiallyInstalled => {
             let mut details = Vec::new();
@@ -64,11 +61,17 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
                 details.join(", ")
             };
             warn!(
-                "Package '{name}' is partially installed ({note}). Reinstalling to restore resources"
+                "Package '{name}' is partially installed ({note}). Cleaning up before reinstalling"
             );
+            package::delete_package(&package, false, false)
+                .await
+                .wrap_err_with(|| format!("Failed to clean up partial installation for {name}"))?;
         }
         InstallStatus::NotInstalled => {}
     }
+
+    generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
+    let package = package::get_package_by_name(name)?;
 
     package::install_package(&package).await?;
     info!("Package '{name}' installed successfully");

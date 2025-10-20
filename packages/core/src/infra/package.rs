@@ -230,8 +230,18 @@ pub async fn delete_package(
     }
 
     info!("Removing network '{}'...", package.network_name);
-    docker.remove_network(&package.network_name).await?;
-    info!("Network '{}' removed successfully", package.network_name);
+    match docker.remove_network(&package.network_name).await {
+        Ok(_) => info!("Network '{}' removed successfully", package.network_name),
+        Err(DockerError::DockerResponseServerError {
+            status_code: 404, ..
+        }) => {
+            warn!(
+                "Skipping removal of network '{}' because it does not exist",
+                package.network_name
+            );
+        }
+        Err(err) => return Err(err.into()),
+    }
 
     if purge_ephemery_cache
         && package.name == Ethereum::NAME
