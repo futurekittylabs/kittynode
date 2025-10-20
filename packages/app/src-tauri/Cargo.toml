@@ -30,7 +30,7 @@ tauri-plugin-http = "2.5.2"
 tauri-plugin-os = "2.3.1"
 tauri-plugin-process = "2.3.0"
 tauri-plugin-shell = "2.3.1"
-tokio = "1.47.1"
+tokio = "1.48.0"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.20"
 
