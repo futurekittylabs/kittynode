@@ -14,8 +14,9 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     io::ErrorKind,
+    path::Path,
 };
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::infra::package_config::PackageConfigStore;
 
@@ -255,6 +256,67 @@ pub async fn delete_package(
         }
     }
 
+    if purge_ephemery_cache && let Ok(config_root) = kittynode_path() {
+        remove_package_config_artifacts(&config_root, package.name())?;
+    }
+
+    Ok(())
+}
+
+fn remove_package_config_artifacts(base_dir: &Path, package_name: &str) -> Result<()> {
+    let config_path = PackageConfigStore::config_file_path(base_dir, package_name);
+    if config_path.exists() {
+        info!(
+            "Removing package configuration '{}'...",
+            config_path.display()
+        );
+        match fs::remove_file(&config_path) {
+            Ok(()) => info!(
+                "Package configuration '{}' removed successfully",
+                config_path.display()
+            ),
+            Err(err) => {
+                if err.kind() == ErrorKind::PermissionDenied {
+                    error!(
+                        "Failed to remove '{}' because permissions are insufficient",
+                        config_path.display()
+                    );
+                }
+                return Err(err).wrap_err_with(|| {
+                    format!(
+                        "Failed to remove package configuration '{}'",
+                        config_path.display()
+                    )
+                });
+            }
+        }
+    }
+
+    let package_dir = PackageConfigStore::package_dir(base_dir, package_name);
+    if package_dir.exists() {
+        info!("Removing package directory '{}'...", package_dir.display());
+        match fs::remove_dir_all(&package_dir) {
+            Ok(()) => info!(
+                "Package directory '{}' removed successfully",
+                package_dir.display()
+            ),
+            Err(err) => {
+                if err.kind() == ErrorKind::PermissionDenied {
+                    error!(
+                        "Failed to remove '{}' because permissions are insufficient",
+                        package_dir.display()
+                    );
+                }
+                return Err(err).wrap_err_with(|| {
+                    format!(
+                        "Failed to remove package directory '{}'",
+                        package_dir.display()
+                    )
+                });
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -312,6 +374,8 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
@@ -328,5 +392,52 @@ mod tests {
         // Non-existent package should report a not found error
         let missing = get_package_by_name("does-not-exist");
         assert!(missing.is_err());
+    }
+
+    #[test]
+    fn remove_package_config_artifacts_removes_directory_when_empty() {
+        let temp_dir = tempdir().expect("failed to create temp dir");
+        let base_dir = temp_dir.path().join(".config").join("kittynode");
+        let package_dir = PackageConfigStore::package_dir(&base_dir, "ethereum");
+        fs::create_dir_all(&package_dir).expect("failed to create package dir");
+        let config_path = package_dir.join("config.toml");
+        fs::write(&config_path, "network = \"ephemery\"").expect("failed to write config");
+
+        remove_package_config_artifacts(&base_dir, "ethereum")
+            .expect("config artifacts should be removed");
+
+        assert!(
+            !config_path.exists(),
+            "config file should be deleted during removal"
+        );
+        assert!(!package_dir.exists(), "package directory should be deleted");
+    }
+
+    #[test]
+    fn remove_package_config_artifacts_removes_directory_when_non_empty() {
+        let temp_dir = tempdir().expect("failed to create temp dir");
+        let base_dir = temp_dir.path().join(".config").join("kittynode");
+        let package_dir = PackageConfigStore::package_dir(&base_dir, "ethereum");
+        fs::create_dir_all(&package_dir).expect("failed to create package dir");
+        let config_path = package_dir.join("config.toml");
+        let jwt_path = package_dir.join("jwt.hex");
+        fs::write(&config_path, "network = \"ephemery\"").expect("failed to write config");
+        fs::write(&jwt_path, "abc123").expect("failed to write jwt secret");
+
+        remove_package_config_artifacts(&base_dir, "ethereum")
+            .expect("config artifacts should be removed");
+
+        assert!(
+            !config_path.exists(),
+            "config file should be deleted during removal"
+        );
+        assert!(
+            !package_dir.exists(),
+            "package directory should be deleted even when other artifacts are present"
+        );
+        assert!(
+            !jwt_path.exists(),
+            "all artifacts in the package directory should be removed"
+        );
     }
 }
