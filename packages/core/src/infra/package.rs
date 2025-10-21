@@ -207,27 +207,33 @@ pub async fn delete_package(
         }
     }
 
-    for volume in volume_names {
-        info!("Removing volume '{}'...", volume);
-        match docker
-            .remove_volume(
-                volume,
-                None::<bollard::query_parameters::RemoveVolumeOptions>,
-            )
-            .await
-        {
-            Ok(_) => info!("Volume '{}' removed successfully", volume),
-            Err(DockerError::DockerResponseServerError {
-                status_code: 404, ..
-            }) => {
-                warn!(
-                    "Skipping removal of volume '{}' because it does not exist",
-                    volume
-                );
-                continue;
+    // Preserve persistent data (e.g., Lighthouse keystores) during config restarts.
+    // Only remove named volumes on explicit uninstalls/purges.
+    if purge_ephemery_cache {
+        for volume in volume_names {
+            info!("Removing volume '{}'...", volume);
+            match docker
+                .remove_volume(
+                    volume,
+                    None::<bollard::query_parameters::RemoveVolumeOptions>,
+                )
+                .await
+            {
+                Ok(_) => info!("Volume '{}' removed successfully", volume),
+                Err(DockerError::DockerResponseServerError {
+                    status_code: 404, ..
+                }) => {
+                    warn!(
+                        "Skipping removal of volume '{}' because it does not exist",
+                        volume
+                    );
+                    continue;
+                }
+                Err(err) => return Err(err.into()),
             }
-            Err(err) => return Err(err.into()),
         }
+    } else {
+        info!("Preserving named volumes during config update");
     }
 
     info!("Removing network '{}'...", package.network_name);
