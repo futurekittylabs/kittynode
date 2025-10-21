@@ -4,19 +4,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    commit-message:
-      prefix: chore
+    ignore:
+      # our lighthouse fork depends on this for proper keygen functionality
+      # we can remove this once we implement keygen in house
+      - dependency-name: "alloy-primitives"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    commit-message:
-      prefix: chore
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    commit-message:
-      prefix: chore
