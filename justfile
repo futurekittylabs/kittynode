@@ -29,6 +29,17 @@ icons:
   mv tmp/ios/* packages/app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
   rm -rf tmp
 
+# optimize homepage screenshots for the website hero
+optimize-homepage-images:
+  bunx sharp-cli -i screenshots/app-light.png -o website/static/images/kittynode-app-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/app-light.png -o website/static/images/kittynode-app-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/app-dark.png -o website/static/images/kittynode-app-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/app-dark.png -o website/static/images/kittynode-app-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/cli-light.png -o website/static/images/kittynode-cli-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/cli-light.png -o website/static/images/kittynode-cli-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/cli-dark.png -o website/static/images/kittynode-cli-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
+  bunx sharp-cli -i screenshots/cli-dark.png -o website/static/images/kittynode-cli-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+
 # install dev tools
 install-dev-tools:
   cargo install cargo-edit cargo-llvm-cov cargo-nextest just tauri-cli

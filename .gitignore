@@ -34,3 +34,6 @@ tmp
 
 # Nix
 .direnv
+
+# Local screenshot images used to generate optimized homepage images
+screenshots
