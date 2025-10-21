@@ -87,13 +87,16 @@ $: {
             <img src={src(screenshotId, "light")} alt={screenshot.alt} width={width} height={screenshot.height} loading="eager" decoding="async" class="h-full w-full object-cover" />
           </picture>
         {:else}
-          <div class="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
-            <img src="/black-kitty.gif" alt="Animated kitty" width="160" height="120" class="nyan-cat w-[min(200px,40vw)]" />
-            <p class="text-lg">
-              Join the <a href="https://discord.kittynode.com" class="link">Kittynode Discord</a> to request access!
-            </p>
-            <p class="text-lg">
-              (or just send a message to <a href="https://farcaster.xyz/dionysuz.eth" class="link">dionysuz.eth</a>)
+          <div class="flex h-full flex-col items-center justify-center gap-4 p-6 text-center sm:gap-6 sm:p-8">
+            <img
+              src="/black-kitty.gif"
+              alt="Animated kitty"
+              width="160"
+              height="120"
+              class="nyan-cat w-[clamp(96px,34vw,160px)]"
+            />
+            <p class="text-[clamp(1rem,3vw,1.2rem)]">
+              Join the <a href="https://discord.kittynode.com" class="link">Kittynode Discord</a> and send a message to get access!
             </p>
           </div>
         {/if}
