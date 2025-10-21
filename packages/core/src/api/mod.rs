@@ -18,6 +18,7 @@ pub use crate::application::init_kittynode;
 pub use crate::application::install_package;
 pub use crate::application::install_package_with_network;
 pub use crate::application::is_docker_running;
+pub use crate::application::is_validator_installed;
 pub use crate::application::remove_capability;
 pub use crate::application::set_auto_start_docker;
 pub use crate::application::set_onboarding_completed;

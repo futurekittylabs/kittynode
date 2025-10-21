@@ -149,6 +149,13 @@ pub async fn get_system_info() -> Result<Json<SystemInfo>, (StatusCode, String)>
     api::get_system_info().map(Json).map_err(to_http_error)
 }
 
+pub async fn is_validator_installed() -> Result<Json<bool>, (StatusCode, String)> {
+    api::is_validator_installed()
+        .await
+        .map(Json)
+        .map_err(to_http_error)
+}
+
 pub async fn get_container_logs(
     Path(container_name): Path<String>,
     Query(params): Query<LogsQuery>,
@@ -211,6 +218,7 @@ pub fn app() -> Router {
         .route("/init_kittynode", post(init_kittynode))
         .route("/delete_kittynode", post(delete_kittynode))
         .route("/get_system_info", get(get_system_info))
+        .route("/is_validator_installed", get(is_validator_installed))
         .route("/logs/{container_name}", get(get_container_logs))
         .route("/get_package_config/{name}", get(get_package_config))
         .route("/update_package_config/{name}", post(update_package_config))

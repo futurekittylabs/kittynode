@@ -10,6 +10,7 @@ import { packageConfigStore } from "$stores/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
+import { coreClient } from "$lib/client";
 import {
   defaultEthereumNetwork,
   ethereumNetworks,
@@ -48,10 +49,13 @@ const packageStatus = $derived(
 const runtime = createPackageRuntimeController();
 let lastLoadedConfig: string | null = null;
 
-let activeLogType = $state<null | "execution" | "consensus">("execution");
+let activeLogType = $state<null | "execution" | "consensus" | "validator">(
+  "execution",
+);
 let configLoading = $state(false);
 let selectedNetwork = $state<string>(defaultEthereumNetwork);
 let currentNetwork = $state<string>(defaultEthereumNetwork);
+let isValidatorInstalled = $state(false);
 
 const networks = ethereumNetworks;
 const supportedNetworkValues: string[] = [...ethereumNetworkValues];
@@ -70,11 +74,25 @@ const logSources = {
     description: "Consensus client logs",
     containerName: `${RESOURCE_PREFIX}lighthouse-node`,
   },
+  validator: {
+    description: "Validator client logs",
+    containerName: `${RESOURCE_PREFIX}lighthouse-validator`,
+  },
 } as const;
 
 const activeLogSource = $derived(
-  activeLogType ? logSources[activeLogType] : null,
+  activeLogType === "validator" && !isValidatorInstalled
+    ? null
+    : activeLogType
+      ? logSources[activeLogType]
+      : null,
 );
+
+$effect(() => {
+  if (!isValidatorInstalled && activeLogType === "validator") {
+    activeLogType = null;
+  }
+});
 
 const networkTriggerContent = $derived(
   networks.find((n) => n.value === selectedNetwork)?.label ||
@@ -116,8 +134,16 @@ async function handleDeletePackage(name: string) {
   await deletePackage(name, { redirectToDashboard: true });
 }
 
-function toggleLogs(logType: "execution" | "consensus") {
+function toggleLogs(logType: "execution" | "consensus" | "validator") {
   activeLogType = activeLogType === logType ? null : logType;
+}
+
+async function refreshValidatorInstalled() {
+  try {
+    isValidatorInstalled = await coreClient.isValidatorInstalled();
+  } catch (error) {
+    console.error("Failed to check validator status", error);
+  }
 }
 
 async function loadConfigFor(name: string) {
@@ -157,6 +183,7 @@ async function stopNode() {
     );
     if (success) {
       notifySuccess(`Stopped ${packageName}`);
+      await refreshValidatorInstalled();
     }
   } catch (error) {
     notifyError(`Failed to stop ${packageName}`, error);
@@ -177,6 +204,7 @@ async function startNode() {
     );
     if (success) {
       notifySuccess(`Started ${packageName}`);
+      await refreshValidatorInstalled();
     }
   } catch (error) {
     notifyError(`Failed to start ${packageName}`, error);
@@ -213,10 +241,12 @@ $effect(() => {
 
   if (name) {
     void loadConfigFor(name);
+    void refreshValidatorInstalled();
   } else {
     lastLoadedConfig = null;
     selectedNetwork = defaultEthereumNetwork;
     currentNetwork = defaultEthereumNetwork;
+    isValidatorInstalled = false;
   }
 });
 
@@ -224,6 +254,7 @@ onMount(async () => {
   operationalStateStore.startPolling();
   await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages({ force: true });
+  await refreshValidatorInstalled();
 });
 
 onDestroy(() => {
@@ -509,7 +540,16 @@ onDestroy(() => {
               </div>
               <Button
                 type="submit"
-                disabled={configLoading || selectedNetwork === currentNetwork}
+                disabled={
+                  configLoading ||
+                  selectedNetwork === currentNetwork ||
+                  isValidatorInstalled
+                }
+                title={
+                  isValidatorInstalled
+                    ? "Stop the validator before updating configuration"
+                    : undefined
+                }
                 size="sm"
               >
                 {configLoading ? "Updating..." : "Update Configuration"}
@@ -577,6 +617,15 @@ onDestroy(() => {
             >
               {activeLogType === "consensus" ? "Hide" : "Show"} Consensus Logs
             </Button>
+            {#if isValidatorInstalled}
+              <Button
+                size="sm"
+                variant={activeLogType === "validator" ? "default" : "outline"}
+                onclick={() => toggleLogs("validator")}
+              >
+                {activeLogType === "validator" ? "Hide" : "Show"} Validator Logs
+              </Button>
+            {/if}
           </div>
 
           {#if activeLogSource}

@@ -55,6 +55,10 @@ export const coreClient = {
     return invoke("get_container_logs", { containerName, tailLines });
   },
 
+  isValidatorInstalled(): Promise<boolean> {
+    return invoke("is_validator_installed");
+  },
+
   getOperationalState(): Promise<OperationalState> {
     return invoke("get_operational_state");
   },

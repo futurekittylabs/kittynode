@@ -41,6 +41,8 @@ pub trait CoreClient: Send + Sync + std::any::Any {
         container_name: &str,
         tail_lines: Option<usize>,
     ) -> Result<Vec<String>>;
+    /// Determine whether the validator container is present.
+    async fn is_validator_installed(&self) -> Result<bool>;
     /// Install a package via the core.
     async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()>;
     /// Delete a package, optionally removing images.
@@ -122,6 +124,10 @@ impl CoreClient for LocalCoreClient {
         tail_lines: Option<usize>,
     ) -> Result<Vec<String>> {
         api::get_container_logs(container_name, tail_lines).await
+    }
+
+    async fn is_validator_installed(&self) -> Result<bool> {
+        api::is_validator_installed().await
     }
 
     async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()> {
@@ -310,6 +316,10 @@ impl CoreClient for HttpCoreClient {
             path = format!("{}?tail={}", path, tail);
         }
         self.get_json(&path).await
+    }
+
+    async fn is_validator_installed(&self) -> Result<bool> {
+        self.get_json("/is_validator_installed").await
     }
 
     async fn install_package(&self, name: &str, network: Option<&str>) -> Result<()> {
@@ -559,6 +569,7 @@ mod tests {
             .route("/get_packages", post(get_packages))
             .route("/start_docker_if_needed", post(start_docker_if_needed))
             .route("/is_docker_running", get(is_docker_running))
+            .route("/is_validator_installed", get(is_validator_installed))
             .with_state(state);
 
         let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -620,5 +631,9 @@ mod tests {
             2 => StatusCode::SERVICE_UNAVAILABLE.into_response(),
             _ => (StatusCode::IM_A_TEAPOT, "teapot").into_response(),
         }
+    }
+
+    async fn is_validator_installed() -> Json<bool> {
+        Json(true)
     }
 }
