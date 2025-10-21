@@ -70,11 +70,7 @@ $: {
         </Tabs.Root>
       </div>
 
-      <div
-        class="relative w-full overflow-hidden rounded-[calc(var(--radius)+0.5rem)] border border-border bg-card"
-        aria-live="polite"
-        style="aspect-ratio: 960 / 783"
-      >
+      <div class="relative w-full" aria-live="polite" style="aspect-ratio: 960 / 783">
         {#if screenshot && screenshotId}
           <picture class="h-full w-full">
             <source media="(prefers-color-scheme: dark)" srcset={srcset(screenshotId, "dark")} sizes={sizes} />
