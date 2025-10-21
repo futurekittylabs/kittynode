@@ -31,6 +31,8 @@ pub struct EphemeryConfig {
 
 pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
     let base_dir = kittynode_path()?
+        .join("packages")
+        .join("ethereum")
         .join("networks")
         .join(EPHEMERY_NETWORK_NAME);
     fs::create_dir_all(&base_dir).wrap_err("Failed to prepare Ephemery network directory")?;

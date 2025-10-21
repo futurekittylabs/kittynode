@@ -248,7 +248,11 @@ pub async fn delete_package(
         && package.name == Ethereum::NAME
         && let Ok(root) = kittynode_path()
     {
-        let root_dir = root.join("networks").join(EPHEMERY_NETWORK_NAME);
+        let root_dir = root
+            .join("packages")
+            .join("ethereum")
+            .join("networks")
+            .join(EPHEMERY_NETWORK_NAME);
         if root_dir.exists() {
             info!("Removing directory '{}'...", root_dir.display());
             fs::remove_dir_all(&root_dir)?;
