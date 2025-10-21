@@ -10,12 +10,12 @@ const screenshots = {
   app: {
     label: "Desktop",
     alt: "Kittynode desktop app dashboard",
-    height: 740,
+    height: 602,
   },
   cli: {
     label: "Terminal",
     alt: "Kittynode command-line interface overview",
-    height: 783,
+    height: 602,
   },
 } as const;
 
@@ -31,6 +31,9 @@ const srcset = (id: keyof typeof screenshots, theme: "light" | "dark") =>
   `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
 const sizes = "(min-width: 1024px) 46vw, 96vw";
 const width = 960;
+const fallbackHeight = Math.max(
+  ...Object.values(screenshots).map(({ height }) => height),
+);
 const isScreenshot = (id: FrontendId): id is keyof typeof screenshots =>
   id !== "mobile";
 
@@ -38,18 +41,20 @@ let active: FrontendId = "app";
 let screenshotId: keyof typeof screenshots | null = "app";
 let screenshot: (typeof screenshots)[keyof typeof screenshots] | null =
   screenshots.app;
+let aspectRatio: string = `${width} / ${fallbackHeight}`;
 
 $: {
   screenshotId = isScreenshot(active) ? active : null;
   screenshot = screenshotId ? screenshots[screenshotId] : null;
+  aspectRatio = `${width} / ${screenshot?.height ?? fallbackHeight}`;
 }
 </script>
 
 <div class="hero">
   <div class="grid w-full gap-10 text-left lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
     <div class="flex flex-col gap-6">
-      <h1 class="text-balance font-medium leading-tight tracking-tight text-[clamp(2.45rem,3vw+1rem,3.5rem)]">Run the world computer</h1>
-      <p class="text-[clamp(1.15rem,1.1vw+0.35rem,1.35rem)] text-muted-foreground">Kittynode is a control center for world computer operators.</p>
+      <h1 class="text-balance font-medium leading-tight tracking-tight text-[clamp(2.25rem,2.6vw+1rem,3.25rem)]">Run the world computer</h1>
+      <p class="text-[clamp(1.05rem,1vw+0.3rem,1.25rem)] text-muted-foreground">Kittynode is a control center for world computer operators.</p>
       <div class="flex flex-col items-start gap-4">
         <Button href="/download" size="lg" class="gap-2">
           Get started
@@ -70,7 +75,11 @@ $: {
         </Tabs.Root>
       </div>
 
-      <div class="relative w-full" aria-live="polite" style="aspect-ratio: 960 / 783">
+      <div
+        class="relative w-full overflow-hidden rounded-sm border border-border bg-muted/40"
+        aria-live="polite"
+        style:aspect-ratio={aspectRatio}
+      >
         {#if screenshot && screenshotId}
           <picture class="h-full w-full">
             <source media="(prefers-color-scheme: dark)" srcset={srcset(screenshotId, "dark")} sizes={sizes} />
