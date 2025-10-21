@@ -89,8 +89,11 @@ $: {
         {:else}
           <div class="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
             <img src="/black-kitty.gif" alt="Animated kitty" width="160" height="120" class="nyan-cat w-[min(200px,40vw)]" />
-            <p class="text-lg font-medium text-foreground">
-              Join the Kittynode <a href="https://discord.kittynode.com" class="text-primary underline">Discord</a> to request access!
+            <p class="text-lg">
+              Join the <a href="https://discord.kittynode.com" class="link">Kittynode Discord</a> to request access!
+            </p>
+            <p class="text-lg">
+              (or just send a message to <a href="https://farcaster.xyz/dionysuz.eth" class="link">dionysuz.eth</a>)
             </p>
           </div>
         {/if}
