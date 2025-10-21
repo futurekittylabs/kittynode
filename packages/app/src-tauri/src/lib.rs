@@ -249,6 +249,17 @@ async fn get_container_logs(
 }
 
 #[tauri::command]
+async fn is_validator_installed(
+    client_state: State<'_, CoreClientManager>,
+) -> Result<bool, String> {
+    let client = client_state.client();
+    client
+        .is_validator_installed()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_package_config(
     name: String,
     client_state: State<'_, CoreClientManager>,
@@ -371,6 +382,7 @@ pub fn run() -> Result<()> {
             remove_capability,
             get_capabilities,
             get_container_logs,
+            is_validator_installed,
             get_package_config,
             update_package_config,
             get_operational_state,
