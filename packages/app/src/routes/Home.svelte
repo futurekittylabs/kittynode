@@ -397,7 +397,7 @@ onDestroy(() => {
         <Card.Content>
           <p class="text-sm text-muted-foreground">
             Docker needs to be running to view and manage packages. Please start
-            Docker Desktop and return to this page.
+            Docker and return to this page.
           </p>
         </Card.Content>
       </Card.Root>

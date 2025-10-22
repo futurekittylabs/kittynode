@@ -6,7 +6,7 @@ use tracing::{error, info};
 use std::path::Path;
 
 pub async fn start_docker() -> Result<()> {
-    info!("Attempting to start Docker Desktop");
+    info!("Attempting to start Docker");
 
     #[cfg(target_os = "macos")]
     {
@@ -15,10 +15,10 @@ pub async fn start_docker() -> Result<()> {
             .arg("Docker")
             .spawn()
             .map_err(|e| {
-                error!("Failed to start Docker Desktop on macOS: {}", e);
-                eyre!("Failed to start Docker Desktop: {}. Please ensure Docker Desktop is installed.", e)
+                error!("Failed to start Docker on macOS: {}", e);
+                eyre!("Failed to start Docker: {e}. Please ensure Docker is installed.")
             })?;
-        info!("Docker Desktop start command sent on macOS");
+        info!("Docker start command sent on macOS");
     }
 
     #[cfg(target_os = "linux")]
@@ -41,16 +41,16 @@ pub async fn start_docker() -> Result<()> {
 
         for (cmd, args) in attempts {
             if Command::new(cmd).args(&args).spawn().is_ok() {
-                info!("Started Docker Desktop using: {} {:?}", cmd, args);
+                info!("Started Docker using: {} {:?}", cmd, args);
                 started = true;
                 break;
             }
         }
 
         if !started {
-            error!("Failed to start Docker Desktop on Linux after trying all methods");
+            error!("Failed to start Docker on Linux after trying all methods");
             return Err(eyre!(
-                "Failed to start Docker Desktop. Please ensure Docker Desktop is installed and try starting it manually."
+                "Failed to start Docker. Please ensure Docker is installed and try starting it manually."
             ));
         }
     }
@@ -84,7 +84,7 @@ pub async fn start_docker() -> Result<()> {
                     .is_ok()
                 {
                     started = true;
-                    info!("Started Docker Desktop from: {}", expanded_path);
+                    info!("Started Docker from: {}", expanded_path);
                     break;
                 }
             }
@@ -101,16 +101,16 @@ pub async fn start_docker() -> Result<()> {
                         .is_ok()
                     {
                         started = true;
-                        info!("Started Docker Desktop using PATH");
+                        info!("Started Docker using PATH");
                     }
                 }
             }
         }
 
         if !started {
-            error!("Failed to start Docker Desktop on Windows");
+            error!("Failed to start Docker on Windows");
             return Err(eyre!(
-                "Failed to start Docker Desktop. Please ensure Docker Desktop is installed and try starting it manually."
+                "Failed to start Docker. Please ensure Docker is installed and try starting it manually."
             ));
         }
     }

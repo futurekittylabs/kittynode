@@ -363,7 +363,7 @@ onDestroy(() => {
         <Terminal class="size-4" />
         <Alert.Title>Docker is not running</Alert.Title>
         <Alert.Description>
-          Start Docker Desktop to manage this node.
+          Start Docker to manage this node.
         </Alert.Description>
       </Alert.Root>
     {:else if installedStatus === "error"}
@@ -386,7 +386,7 @@ onDestroy(() => {
         <Terminal class="size-4" />
         <Alert.Title>Docker is not available</Alert.Title>
         <Alert.Description>
-          Start Docker Desktop to manage this node.
+          Start Docker to manage this node.
         </Alert.Description>
       </Alert.Root>
     {:else if packageStatus === "unknown"}
