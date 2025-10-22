@@ -298,11 +298,11 @@ async function initKittynode() {
         {:else if currentStep === 2}
           <a
             class="link inline-flex items-center gap-1 text-base font-medium"
-            href="https://www.docker.com/products/docker-desktop"
+            href="https://docs.kittynode.com/guides/set-up-docker"
             target="_blank"
             rel="noreferrer noopener"
           >
-            Download Docker Desktop
+            Set up Docker
             <ArrowUpRight class="h-4 w-4" />
           </a>
         {/if}
