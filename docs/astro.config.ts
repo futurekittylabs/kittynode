@@ -95,6 +95,10 @@ export default defineConfig({
             {
               label: "Set up validator",
               slug: "guides/set-up-validator",
+              badge: {
+                text: "New",
+                variant: "accent",
+              },
             },
           ],
         },
