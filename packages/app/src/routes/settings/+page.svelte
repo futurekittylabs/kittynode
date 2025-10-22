@@ -377,7 +377,7 @@ async function checkForUpdates() {
         Docker
       </Card.Title>
       <Card.Description>
-        Control how Kittynode interacts with Docker Desktop
+        Control how Kittynode interacts with Docker
       </Card.Description>
     </Card.Header>
     <Card.Content>
@@ -387,7 +387,7 @@ async function checkForUpdates() {
             Auto-start Docker
           </p>
           <p class="text-xs text-muted-foreground">
-            Start Docker Desktop when Kittynode launches
+            Start Docker when Kittynode launches
           </p>
         </div>
         {#if configLoading && !configInitialized}

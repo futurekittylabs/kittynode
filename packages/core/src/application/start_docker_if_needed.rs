@@ -116,7 +116,7 @@ pub async fn start_docker_if_needed() -> Result<DockerStartStatus> {
         evaluation
     };
 
-    info!("Starting Docker Desktop via auto-start preference");
+    info!("Starting Docker via auto-start preference");
     match start_docker().await {
         Ok(()) => Ok(evaluation.status),
         Err(err) => {
