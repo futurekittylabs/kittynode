@@ -25,17 +25,26 @@ async function fetchLogs() {
       return;
     }
 
+    const preserveScroll =
+      logsElement && !shouldAutoScroll ? logsElement.scrollTop : null;
+    const autoScroll = shouldAutoScroll;
+
     rawLogs = combinedLogs;
     logsHtml = convert.toHtml(combinedLogs);
 
     // Schedule scroll after render if we should auto scroll
-    if (shouldAutoScroll) {
-      queueMicrotask(() => {
-        if (logsElement) {
-          logsElement.scrollTop = logsElement.scrollHeight;
-        }
-      });
-    }
+    queueMicrotask(() => {
+      if (!logsElement) return;
+
+      if (autoScroll) {
+        logsElement.scrollTop = logsElement.scrollHeight;
+        return;
+      }
+
+      if (preserveScroll !== null) {
+        logsElement.scrollTop = preserveScroll;
+      }
+    });
   } catch (error) {
     console.error("Failed to fetch logs:", error);
   }
