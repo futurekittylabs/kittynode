@@ -81,10 +81,19 @@ const logSources = {
   },
 } as const;
 
+const availableLogTypes = $derived(
+  LOG_TYPES.filter((type) => type !== "validator" || isValidatorInstalled),
+);
+
 const activeLogSources = $derived(
   LOG_TYPES.filter((type) => activeLogTypes.includes(type))
     .filter((type) => type !== "validator" || isValidatorInstalled)
     .map((type) => ({ type, ...logSources[type] })),
+);
+
+const allLogsActive = $derived(
+  availableLogTypes.length > 0 &&
+    availableLogTypes.every((type) => activeLogTypes.includes(type)),
 );
 
 $effect(() => {
@@ -148,6 +157,19 @@ function toggleLogs(logType: LogType) {
       [...activeLogTypes, logType].includes(type) &&
       (type !== "validator" || isValidatorInstalled),
   );
+}
+
+function toggleAllLogs() {
+  if (!availableLogTypes.length) {
+    return;
+  }
+
+  if (allLogsActive) {
+    activeLogTypes = [];
+    return;
+  }
+
+  activeLogTypes = [...availableLogTypes];
 }
 
 async function refreshValidatorInstalled() {
@@ -644,6 +666,13 @@ onDestroy(() => {
                 {activeLogTypes.includes("validator") ? "Hide" : "Show"} Validator Logs
               </Button>
             {/if}
+            <Button
+              size="sm"
+              variant={allLogsActive ? "default" : "outline"}
+              onclick={toggleAllLogs}
+            >
+              {allLogsActive ? "Hide" : "Show"} All Logs
+            </Button>
           </div>
 
           {#if activeLogSources.length}
