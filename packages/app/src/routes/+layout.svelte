@@ -43,32 +43,43 @@ const installedNodes = $derived(
 const remoteServerUrl = $derived(serverUrlStore.serverUrl);
 const lastRemoteServerUrl = $derived(serverUrlStore.lastServerUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
-const hasRemoteHistory = $derived(
-  remoteConnected || lastRemoteServerUrl !== "",
-);
-const showRemoteBanner = $derived(hasRemoteHistory);
+const showRemoteBanner = $derived(lastRemoteServerUrl !== "");
 let remoteBannerLoading = $state(false);
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
 });
 
+async function updateRemoteConnection(
+  endpoint: string,
+  successMessage: string,
+  errorMessage: string,
+) {
+  remoteBannerLoading = true;
+  try {
+    await appConfigStore.setServerUrl(endpoint);
+    await operationalStateStore.refresh();
+    refetchStores();
+    notifySuccess(successMessage);
+    return true;
+  } catch (error) {
+    notifyError(errorMessage, error);
+    return false;
+  } finally {
+    remoteBannerLoading = false;
+  }
+}
+
 async function handleRemoteDisconnect() {
   if (remoteBannerLoading) {
     return;
   }
 
-  remoteBannerLoading = true;
-  try {
-    await appConfigStore.setServerUrl("");
-    await operationalStateStore.refresh();
-    refetchStores();
-    notifySuccess("Disconnected from remote");
-  } catch (e) {
-    notifyError("Failed to disconnect from remote", e);
-  } finally {
-    remoteBannerLoading = false;
-  }
+  await updateRemoteConnection(
+    "",
+    "Disconnected from remote",
+    "Failed to disconnect from remote",
+  );
 }
 
 async function handleRemoteConnect() {
@@ -76,23 +87,16 @@ async function handleRemoteConnect() {
     return;
   }
 
-  const lastRemote = serverUrlStore.lastServerUrl;
-  if (!lastRemote) {
+  if (!lastRemoteServerUrl) {
     notifyError("No remote server available to connect");
     return;
   }
 
-  remoteBannerLoading = true;
-  try {
-    await appConfigStore.setServerUrl(lastRemote);
-    await operationalStateStore.refresh();
-    refetchStores();
-    notifySuccess("Connected to remote");
-  } catch (e) {
-    notifyError("Failed to connect to remote", e);
-  } finally {
-    remoteBannerLoading = false;
-  }
+  await updateRemoteConnection(
+    lastRemoteServerUrl,
+    "Connected to remote",
+    "Failed to connect to remote",
+  );
 }
 
 const navigationItems = [
