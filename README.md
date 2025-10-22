@@ -14,11 +14,6 @@ Download Kittynode at [kittynode.com](https://kittynode.com).
 
 View the documentation at [docs.kittynode.com](https://docs.kittynode.com).
 
-## Contribute
-
-- [AGENTS.md](AGENTS.md) - Development guidelines and setup
-- [Architecture](./docs/src/content/docs/reference/architecture.mdx) - System architecture overview
-
 ## Community
 
 - [Discord](https://discord.gg/kittynode)
