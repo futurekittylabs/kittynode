@@ -92,6 +92,10 @@ export default defineConfig({
               label: "Set up Docker",
               slug: "guides/set-up-docker",
             },
+            {
+              label: "Set up validator",
+              slug: "guides/set-up-validator",
+            },
           ],
         },
         {
