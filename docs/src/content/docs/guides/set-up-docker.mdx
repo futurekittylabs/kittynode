@@ -1,0 +1,97 @@
+---
+title: Set up Docker
+description: Install Docker on Linux, macOS, or Windows.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Use Docker to run your node operations locally or on a remote server. This guide covers our recommended setups for each platform.
+
+<Tabs>
+  <TabItem label="Linux">
+    <Steps>
+
+    1. Uninstall any conflicting packages:
+
+        ```bash
+        for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
+        ```
+
+    2. Install Docker:
+
+        ```bash
+        sudo apt-get update
+        sudo apt-get install ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        ```
+
+    3. Verify Docker is installed:
+
+        ```bash
+        sudo docker run hello-world
+        ```
+
+    4. Add your user to the docker group:
+
+        ```bash
+        sudo usermod -aG docker $USER
+        newgrp docker
+        ```
+
+    </Steps>
+  </TabItem>
+  <TabItem label="macOS">
+    <Steps>
+
+    1. Install Colima and the Docker client with Homebrew:
+
+        ```bash
+        brew install colima docker
+        ```
+
+        If you prefer another package manager, follow the [Colima install docs](https://github.com/abiosoft/colima#installation).
+
+    2. Start Colima with default settings:
+
+        ```bash
+        colima start
+        ```
+
+        :::note
+        After the initial start, configure `--cpu` and `--memory` to match your workload. See the [Colima docs](https://github.com/abiosoft/colima#usage) for guidance.
+        :::
+
+    3. Confirm Docker works:
+
+        ```bash
+        docker info
+        docker run hello-world
+        ```
+
+    4. We prefer Colima for lightweight local development and because it's awesome. If you need a graphical UI or Kubernetes features, install [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/).
+
+    </Steps>
+  </TabItem>
+  <TabItem label="Windows">
+    <Steps>
+
+    1. Install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/). The installer enables WSL 2 and the Docker backend automatically.
+
+    2. Open PowerShell and verify Docker works:
+
+        ```powershell
+        docker version
+        docker run hello-world
+        ```
+
+    </Steps>
+  </TabItem>
+</Tabs>

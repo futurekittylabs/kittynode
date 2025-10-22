@@ -325,7 +325,7 @@ pub fn keygen(preselected_network: Option<&str>) -> Result<Option<KeygenSummary>
     }))
 }
 
-const DOCKER_DOCS_URL: &str = "https://docs.docker.com/get-docker/";
+const DOCKER_DOCS_URL: &str = "https://docs.kittynode.com/guides/set-up-docker";
 const NETWORK_OPTIONS: [&str; 3] = [EPHEMERY_NETWORK_NAME, "hoodi", "sepolia"];
 const EXECUTION_OPTIONS: [&str; 1] = ["reth (only option, others coming soon)"];
 const CONSENSUS_OPTIONS: [&str; 1] = ["lighthouse (only option, others coming soon)"];

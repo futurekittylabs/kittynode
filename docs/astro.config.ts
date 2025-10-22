@@ -88,6 +88,10 @@ export default defineConfig({
               label: "Run Ethereum",
               slug: "guides/run-ethereum",
             },
+            {
+              label: "Set up Docker",
+              slug: "guides/set-up-docker",
+            },
           ],
         },
         {
