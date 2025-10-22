@@ -1,6 +1,6 @@
 mod core_client;
 
-use crate::core_client::CoreClientManager;
+use crate::core_client::{CoreClientManager, HttpCoreClient};
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::DockerStartStatus;
@@ -285,6 +285,12 @@ async fn update_package_config(
 }
 
 #[tauri::command]
+async fn check_remote_health(endpoint: String) -> Result<(), String> {
+    let client = HttpCoreClient::new(&endpoint).map_err(|e| e.to_string())?;
+    client.health_check().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_operational_state(
     client_state: State<'_, CoreClientManager>,
 ) -> Result<OperationalState, String> {
@@ -391,6 +397,7 @@ pub fn run() -> Result<()> {
             get_config,
             set_auto_start_docker,
             set_server_url,
+            check_remote_health,
             restart_app
         ])
         .run(tauri::generate_context!())

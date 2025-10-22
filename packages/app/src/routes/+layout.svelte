@@ -9,7 +9,6 @@ import Splash from "./Splash.svelte";
 import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
-import { coreClient } from "$lib/client";
 import { formatPackageName } from "$lib/utils";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import { Button } from "$lib/components/ui/button";
@@ -31,6 +30,7 @@ import { page } from "$app/state";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
 import { notifySuccess, notifyError } from "$utils/notify";
 import { refetchStores } from "$utils/refetchStores";
+import { coreClient } from "$lib/client";
 
 const { children } = $props();
 
@@ -45,6 +45,8 @@ const lastRemoteServerUrl = $derived(serverUrlStore.lastServerUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
 const showRemoteBanner = $derived(lastRemoteServerUrl !== "");
 let remoteBannerLoading = $state(false);
+const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
+const remoteHelpDescription = `Follow the Set up validator guide: ${validatorGuideUrl}`;
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
@@ -58,6 +60,9 @@ async function setRemote(endpoint: string) {
   remoteBannerLoading = true;
   const connectAction = endpoint !== "";
   try {
+    if (connectAction) {
+      await coreClient.checkRemoteHealth(endpoint);
+    }
     await appConfigStore.setServerUrl(endpoint);
     await operationalStateStore.refresh();
     refetchStores();
@@ -70,6 +75,7 @@ async function setRemote(endpoint: string) {
         ? "Failed to connect to remote"
         : "Failed to disconnect from remote",
       error,
+      connectAction ? { description: remoteHelpDescription } : undefined,
     );
   } finally {
     remoteBannerLoading = false;
