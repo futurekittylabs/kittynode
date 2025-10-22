@@ -33,6 +33,9 @@ function formatReleaseDate(pubDate: string | undefined): string {
 const appReleaseDate = formatReleaseDate(appPubDate);
 const cliReleaseDate = formatReleaseDate(cliPubDate);
 
+const appVersionLabel = `kittynode-app@${appVersion}`;
+const cliVersionLabel = `kittynode-cli@${cliVersion}`;
+
 const downloads = [
   {
     name: "Linux",
@@ -87,99 +90,111 @@ const downloads = [
 </script>
 
 <div class="mt-16">
-  <div class="mb-4 text-center">
-    <h1 class="text-2xl font-semibold mb-2">Download Kittynode App</h1>
-    <p class="text-sm text-muted-foreground">
-      <a href={changelogUrl} class="link">Version {appVersion}</a>
-      {#if appReleaseDate}
-        • {appReleaseDate}
-      {/if}
+  <div class="mb-8 text-center">
+    <h1 class="text-2xl font-semibold mb-2">Install Kittynode</h1>
+    <p class="mx-auto max-w-2xl text-sm text-muted-foreground">
+      We recommend the desktop app for most users! The CLI app is great for users that want to run a node remotely (e.g., on a dedicated Linux server) or prefer the simplicity of a CLI.
     </p>
-  </div>
-  <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
-    A desktop app for securely operating Ethereum.
-  </p>
-  <div class="grid gap-4 min-[900px]:grid-cols-3">
-    {#each downloads as info}
-      <div class="rounded-lg border bg-card p-5">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-1.5 rounded-md bg-muted">
-            <svelte:component this={info.icon} class="h-5 w-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-medium">{info.name}</h2>
-            <p class="text-xs text-muted-foreground">{info.requirements}</p>
-          </div>
-        </div>
-        <div class="space-y-2">
-          {#if info.primary}
-            <Button
-              href={info.primary.url}
-              size="sm"
-              class="w-full gap-2"
-              variant="default"
-            >
-              <Download class="h-3.5 w-3.5" />
-              {info.primary.label}
-            </Button>
-          {/if}
-          {#if info.options && info.options.length > 0}
-            {#if info.options.length > 1}
-              <div class="flex gap-2">
-                {#each info.options as option}
-                  <Button
-                    href={option.url}
-                    size="sm"
-                    variant="outline"
-                    class="flex-1 gap-2"
-                  >
-                    <Download class="h-3.5 w-3.5" />
-                    {option.label}
-                  </Button>
-                {/each}
-              </div>
-            {:else}
-              {#each info.options as option}
-                <Button href={option.url} size="sm" class="w-full gap-2" variant="outline">
-                  <Download class="h-3.5 w-3.5" />
-                  {option.label}
-                </Button>
-              {/each}
-            {/if}
-          {/if}
-        </div>
-      </div>
-    {/each}
   </div>
 
-  <div class="my-16">
-    <div class="mb-4 text-center">
-      <h1 class="text-2xl font-semibold mb-2">Install Kittynode CLI</h1>
-      <p class="text-sm text-muted-foreground">
-        <a href={changelogUrl} class="link">Version {cliVersion}</a>
-        {#if cliReleaseDate}
-          • {cliReleaseDate}
-        {/if}
-      </p>
-    </div>
-    <p class="mx-auto mb-6 max-w-2xl text-center text-sm text-muted-foreground">
-      A CLI app for securely operating Ethereum.
-    </p>
-    <Tabs.Root value="linux/macos">
-      <Tabs.List>
-        <Tabs.Trigger value="linux/macos">Linux / macOS</Tabs.Trigger>
-        <Tabs.Trigger value="windows">Windows</Tabs.Trigger>
-      </Tabs.List>
-      <Tabs.Content value="linux/macos">
-        <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
-          <Code.CopyButton variant="secondary" />
-        </Code.Root>
-      </Tabs.Content>
-      <Tabs.Content value="windows">
-        <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
-          <Code.CopyButton variant="secondary" />
-        </Code.Root>
-      </Tabs.Content>
-    </Tabs.Root>
-  </div>
+  <Tabs.Root value="desktop">
+    <Tabs.List class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
+      <Tabs.Trigger value="desktop" class="px-4">Desktop</Tabs.Trigger>
+      <Tabs.Trigger value="cli" class="px-4">Command line</Tabs.Trigger>
+    </Tabs.List>
+
+    <Tabs.Content value="desktop" class="space-y-8">
+      <div>
+        <div class="mb-7 text-center">
+          <p class="text-base font-medium">
+            <a href={changelogUrl} class="link">{appVersionLabel}</a>
+            {#if appReleaseDate}
+              • {appReleaseDate}
+            {/if}
+          </p>
+        </div>
+        <div class="grid gap-4 min-[900px]:grid-cols-3">
+          {#each downloads as info}
+            <div class="rounded-lg border bg-card p-5">
+              <div class="mb-4 flex items-center gap-3">
+                <div class="rounded-md bg-muted p-1.5">
+                  <svelte:component this={info.icon} class="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 class="text-base font-medium">{info.name}</h3>
+                  <p class="text-xs text-muted-foreground">{info.requirements}</p>
+                </div>
+              </div>
+              <div class="space-y-2">
+                {#if info.primary}
+                  <Button
+                    href={info.primary.url}
+                    size="sm"
+                    class="w-full gap-2"
+                    variant="default"
+                  >
+                    <Download class="h-3.5 w-3.5" />
+                    {info.primary.label}
+                  </Button>
+                {/if}
+                {#if info.options && info.options.length > 0}
+                  {#if info.options.length > 1}
+                    <div class="flex gap-2">
+                      {#each info.options as option}
+                        <Button
+                          href={option.url}
+                          size="sm"
+                          variant="outline"
+                          class="flex-1 gap-2"
+                        >
+                          <Download class="h-3.5 w-3.5" />
+                          {option.label}
+                        </Button>
+                      {/each}
+                    </div>
+                  {:else}
+                    {#each info.options as option}
+                      <Button href={option.url} size="sm" class="w-full gap-2" variant="outline">
+                        <Download class="h-3.5 w-3.5" />
+                        {option.label}
+                      </Button>
+                    {/each}
+                  {/if}
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </Tabs.Content>
+
+    <Tabs.Content value="cli" class="space-y-8">
+      <div>
+        <div class="mb-7 text-center">
+          <p class="text-base font-medium">
+            <a href={changelogUrl} class="link">{cliVersionLabel}</a>
+            {#if cliReleaseDate}
+              • {cliReleaseDate}
+            {/if}
+          </p>
+        </div>
+        <Tabs.Root value="linux/macos">
+          <Tabs.List class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
+            <Tabs.Trigger value="linux/macos" class="px-4">Linux / macOS</Tabs.Trigger>
+            <Tabs.Trigger value="windows" class="px-4">Windows</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="linux/macos">
+            <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
+              <Code.CopyButton variant="secondary" />
+            </Code.Root>
+          </Tabs.Content>
+          <Tabs.Content value="windows">
+            <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
+              <Code.CopyButton variant="secondary" />
+            </Code.Root>
+          </Tabs.Content>
+        </Tabs.Root>
+      </div>
+    </Tabs.Content>
+  </Tabs.Root>
 </div>

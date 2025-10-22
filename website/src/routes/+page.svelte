@@ -13,7 +13,7 @@ const screenshots = {
     height: 602,
   },
   cli: {
-    label: "Terminal",
+    label: "Command line",
     alt: "Kittynode command-line interface overview",
     height: 602,
   },
