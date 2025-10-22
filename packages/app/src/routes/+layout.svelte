@@ -12,6 +12,7 @@ import { Toaster } from "svelte-sonner";
 import { coreClient } from "$lib/client";
 import { formatPackageName } from "$lib/utils";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
+import { Button } from "$lib/components/ui/button";
 import * as Sidebar from "$lib/components/ui/sidebar";
 import {
   House,
@@ -21,11 +22,15 @@ import {
   Activity,
   MessageCircleMore,
   Globe,
+  Unlink,
+  Link2,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
 import { page } from "$app/state";
 import { serverUrlStore } from "$stores/serverUrl.svelte";
+import { notifySuccess, notifyError } from "$utils/notify";
+import { refetchStores } from "$utils/refetchStores";
 
 const { children } = $props();
 
@@ -36,11 +41,59 @@ const installedNodes = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
 const remoteServerUrl = $derived(serverUrlStore.serverUrl);
-const showRemoteBanner = $derived(remoteServerUrl !== "");
+const lastRemoteServerUrl = $derived(serverUrlStore.lastServerUrl);
+const remoteConnected = $derived(remoteServerUrl !== "");
+const hasRemoteHistory = $derived(
+  remoteConnected || lastRemoteServerUrl !== "",
+);
+const showRemoteBanner = $derived(hasRemoteHistory);
+let remoteBannerLoading = $state(false);
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
 });
+
+async function handleRemoteDisconnect() {
+  if (remoteBannerLoading) {
+    return;
+  }
+
+  remoteBannerLoading = true;
+  try {
+    await appConfigStore.setServerUrl("");
+    await operationalStateStore.refresh();
+    refetchStores();
+    notifySuccess("Disconnected from remote");
+  } catch (e) {
+    notifyError("Failed to disconnect from remote", e);
+  } finally {
+    remoteBannerLoading = false;
+  }
+}
+
+async function handleRemoteConnect() {
+  if (remoteBannerLoading) {
+    return;
+  }
+
+  const lastRemote = serverUrlStore.lastServerUrl;
+  if (!lastRemote) {
+    notifyError("No remote server available to connect");
+    return;
+  }
+
+  remoteBannerLoading = true;
+  try {
+    await appConfigStore.setServerUrl(lastRemote);
+    await operationalStateStore.refresh();
+    refetchStores();
+    notifySuccess("Connected to remote");
+  } catch (e) {
+    notifyError("Failed to connect to remote", e);
+  } finally {
+    remoteBannerLoading = false;
+  }
+}
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -98,7 +151,7 @@ onMount(async () => {
 </script>
 
 <ModeWatcher />
-<Toaster position="top-right" richColors theme={mode.current} />
+<Toaster position="bottom-right" richColors theme={mode.current} />
 {#if checkingOnboarding}
   <!-- Show nothing while checking onboarding status -->
 {:else if !onboardingCompleted && !initializedStore.initialized}
@@ -206,12 +259,42 @@ onMount(async () => {
     <Sidebar.Inset>
       {#if showRemoteBanner}
         <div
-          class="flex items-center gap-3 border-b border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground md:rounded-t-xl"
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground md:flex-nowrap md:rounded-t-xl"
           role="status"
           aria-live="polite"
         >
-          <Globe class="h-5 w-5 text-primary dark:text-primary-foreground" />
-          <span class="leading-tight">Connected to remote Kittynode</span>
+          <div class="flex min-w-0 items-center gap-2">
+            <Globe class="h-5 w-5 shrink-0 text-primary dark:text-primary-foreground" />
+            <span class="leading-tight">
+              {remoteConnected ? "Remote connected" : "Remote disconnected"}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            class="gap-2"
+            onclick={remoteConnected ? handleRemoteDisconnect : handleRemoteConnect}
+            disabled={remoteBannerLoading}
+            aria-label={
+              remoteConnected ? "Disconnect from remote server" : "Connect to remote server"
+            }
+          >
+            {#if remoteBannerLoading}
+              <span
+                class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                aria-hidden="true"
+              ></span>
+            {:else}
+              {#if remoteConnected}
+                <Unlink class="h-4 w-4 shrink-0" />
+              {:else}
+                <Link2 class="h-4 w-4 shrink-0" />
+              {/if}
+            {/if}
+            <span class="hidden sm:inline">
+              {remoteConnected ? "Disconnect" : "Connect"}
+            </span>
+          </Button>
         </div>
       {/if}
       <!-- Desktop header with always-visible sidebar toggle -->
