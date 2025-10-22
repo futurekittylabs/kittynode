@@ -3,24 +3,30 @@ import { onMount, onDestroy } from "svelte";
 import { coreClient } from "$lib/client";
 import Convert from "ansi-to-html";
 
-const convert = new Convert();
-
 let {
   containerName,
   tailLines,
 }: { containerName: string; tailLines: number | null } = $props();
 
-let logs: string[] = $state([]);
+const convert = new Convert();
+let rawLogs = "";
+let logsHtml = $state("");
 let logsElement: HTMLDivElement;
 let shouldAutoScroll = $state(true);
 let polling: NodeJS.Timeout;
+const hasLogs = $derived(Boolean(logsHtml.length));
 
 async function fetchLogs() {
   try {
     const newLogs = await coreClient.getContainerLogs(containerName, tailLines);
 
-    // Convert ANSI escape sequences to HTML
-    logs = newLogs.map((log) => convert.toHtml(log));
+    const combinedLogs = newLogs.join("\n");
+    if (combinedLogs === rawLogs) {
+      return;
+    }
+
+    rawLogs = combinedLogs;
+    logsHtml = convert.toHtml(combinedLogs);
 
     // Schedule scroll after render if we should auto scroll
     if (shouldAutoScroll) {
@@ -65,14 +71,12 @@ function handleScroll(e: Event) {
     <div
       class="flex min-w-0 flex-col gap-2 p-4 font-mono text-sm leading-6 text-muted-foreground"
     >
-      {#if logs.length === 0}
+      {#if !hasLogs}
         <div class="text-muted-foreground">No logs available</div>
       {:else}
-        {#each logs as log}
-          <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {@html log}
-          </div>
-        {/each}
+        <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+          {@html logsHtml}
+        </div>
       {/if}
     </div>
   </div>

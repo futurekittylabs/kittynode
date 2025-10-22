@@ -49,9 +49,10 @@ const packageStatus = $derived(
 const runtime = createPackageRuntimeController();
 let lastLoadedConfig: string | null = null;
 
-let activeLogType = $state<null | "execution" | "consensus" | "validator">(
-  "execution",
-);
+const LOG_TYPES = ["execution", "consensus", "validator"] as const;
+type LogType = (typeof LOG_TYPES)[number];
+
+let activeLogTypes = $state<LogType[]>(["execution"]);
 let configLoading = $state(false);
 let selectedNetwork = $state<string>(defaultEthereumNetwork);
 let currentNetwork = $state<string>(defaultEthereumNetwork);
@@ -80,17 +81,15 @@ const logSources = {
   },
 } as const;
 
-const activeLogSource = $derived(
-  activeLogType === "validator" && !isValidatorInstalled
-    ? null
-    : activeLogType
-      ? logSources[activeLogType]
-      : null,
+const activeLogSources = $derived(
+  LOG_TYPES.filter((type) => activeLogTypes.includes(type))
+    .filter((type) => type !== "validator" || isValidatorInstalled)
+    .map((type) => ({ type, ...logSources[type] })),
 );
 
 $effect(() => {
-  if (!isValidatorInstalled && activeLogType === "validator") {
-    activeLogType = null;
+  if (!isValidatorInstalled && activeLogTypes.includes("validator")) {
+    activeLogTypes = activeLogTypes.filter((type) => type !== "validator");
   }
 });
 
@@ -134,8 +133,21 @@ async function handleDeletePackage(name: string) {
   await deletePackage(name, { redirectToDashboard: true });
 }
 
-function toggleLogs(logType: "execution" | "consensus" | "validator") {
-  activeLogType = activeLogType === logType ? null : logType;
+function toggleLogs(logType: LogType) {
+  if (logType === "validator" && !isValidatorInstalled) {
+    return;
+  }
+
+  if (activeLogTypes.includes(logType)) {
+    activeLogTypes = activeLogTypes.filter((type) => type !== logType);
+    return;
+  }
+
+  activeLogTypes = LOG_TYPES.filter(
+    (type): type is LogType =>
+      [...activeLogTypes, logType].includes(type) &&
+      (type !== "validator" || isValidatorInstalled),
+  );
 }
 
 async function refreshValidatorInstalled() {
@@ -605,45 +617,47 @@ onDestroy(() => {
           <div class="flex flex-wrap gap-2">
             <Button
               size="sm"
-              variant={activeLogType === "execution" ? "default" : "outline"}
+              variant={activeLogTypes.includes("execution")
+                ? "default"
+                : "outline"}
               onclick={() => toggleLogs("execution")}
             >
-              {activeLogType === "execution" ? "Hide" : "Show"} Execution Logs
+              {activeLogTypes.includes("execution") ? "Hide" : "Show"} Execution Logs
             </Button>
             <Button
               size="sm"
-              variant={activeLogType === "consensus" ? "default" : "outline"}
+              variant={activeLogTypes.includes("consensus")
+                ? "default"
+                : "outline"}
               onclick={() => toggleLogs("consensus")}
             >
-              {activeLogType === "consensus" ? "Hide" : "Show"} Consensus Logs
+              {activeLogTypes.includes("consensus") ? "Hide" : "Show"} Consensus Logs
             </Button>
             {#if isValidatorInstalled}
               <Button
                 size="sm"
-                variant={activeLogType === "validator" ? "default" : "outline"}
+                variant={activeLogTypes.includes("validator")
+                  ? "default"
+                  : "outline"}
                 onclick={() => toggleLogs("validator")}
               >
-                {activeLogType === "validator" ? "Hide" : "Show"} Validator Logs
+                {activeLogTypes.includes("validator") ? "Hide" : "Show"} Validator Logs
               </Button>
             {/if}
           </div>
 
-          {#if activeLogSource}
-            <div class="space-y-2">
-              <div class="text-sm text-muted-foreground">
-                {activeLogSource.description}:
+          {#if activeLogSources.length}
+            {#each activeLogSources as source (source.type)}
+              <div class="space-y-2">
+                <div class="text-sm text-muted-foreground">
+                  {source.description}:
+                </div>
+                <DockerLogs
+                  containerName={source.containerName}
+                  tailLines={1000}
+                />
               </div>
-              <DockerLogs
-                containerName={activeLogSource.containerName}
-                tailLines={1000}
-              />
-            </div>
-          {:else}
-            <div
-              class="rounded-lg border border-dashed bg-muted/30 py-10 text-center text-muted-foreground"
-            >
-              Select a log type to view real-time logs
-            </div>
+            {/each}
           {/if}
         </Card.Content>
       </Card.Root>
