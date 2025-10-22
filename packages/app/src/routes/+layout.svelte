@@ -55,6 +55,10 @@ async function updateRemoteConnection(
   successMessage: string,
   errorMessage: string,
 ) {
+  if (remoteBannerLoading) {
+    return false;
+  }
+
   remoteBannerLoading = true;
   try {
     await appConfigStore.setServerUrl(endpoint);
@@ -70,23 +74,14 @@ async function updateRemoteConnection(
   }
 }
 
-async function handleRemoteDisconnect() {
-  if (remoteBannerLoading) {
-    return;
-  }
-
-  await updateRemoteConnection(
+const handleRemoteDisconnect = () =>
+  updateRemoteConnection(
     "",
     "Disconnected from remote",
     "Failed to disconnect from remote",
   );
-}
 
 async function handleRemoteConnect() {
-  if (remoteBannerLoading) {
-    return;
-  }
-
   if (!lastRemoteServerUrl) {
     notifyError("No remote server available to connect");
     return;
