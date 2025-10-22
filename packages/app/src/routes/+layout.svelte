@@ -50,36 +50,33 @@ $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
 });
 
-async function updateRemoteConnection(
-  endpoint: string,
-  successMessage: string,
-  errorMessage: string,
-) {
+async function setRemote(endpoint: string) {
   if (remoteBannerLoading) {
-    return false;
+    return;
   }
 
   remoteBannerLoading = true;
+  const connectAction = endpoint !== "";
   try {
     await appConfigStore.setServerUrl(endpoint);
     await operationalStateStore.refresh();
     refetchStores();
-    notifySuccess(successMessage);
-    return true;
+    notifySuccess(
+      connectAction ? "Connected to remote" : "Disconnected from remote",
+    );
   } catch (error) {
-    notifyError(errorMessage, error);
-    return false;
+    notifyError(
+      connectAction
+        ? "Failed to connect to remote"
+        : "Failed to disconnect from remote",
+      error,
+    );
   } finally {
     remoteBannerLoading = false;
   }
 }
 
-const handleRemoteDisconnect = () =>
-  updateRemoteConnection(
-    "",
-    "Disconnected from remote",
-    "Failed to disconnect from remote",
-  );
+const handleRemoteDisconnect = () => setRemote("");
 
 async function handleRemoteConnect() {
   if (!lastRemoteServerUrl) {
@@ -87,11 +84,7 @@ async function handleRemoteConnect() {
     return;
   }
 
-  await updateRemoteConnection(
-    lastRemoteServerUrl,
-    "Connected to remote",
-    "Failed to connect to remote",
-  );
+  await setRemote(lastRemoteServerUrl);
 }
 
 const navigationItems = [
