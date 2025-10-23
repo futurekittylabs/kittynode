@@ -8,12 +8,8 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 This guide covers the Kittynode validator workflow: prepare your machines, run `kittynode validator init`, submit deposits, monitor remotely, and exit when you are done.
 
-:::caution
-Kittynode is in alpha and intended for testnets only. Do not follow this process on mainnet yet.
-:::
-
 :::note
-You need two machines: a dedicated validator host that stays online, and the computer where you run the Kittynode desktop app. Connect both with [Tailscale](https://tailscale.com/) so the app can securely reach the remote web service.
+You only need one machine to run your Ethereum validator with `kittynode validator init`, but this guide will show you how to use another machine to monitor your validator with [Tailscale](https://tailscale.com/).
 :::
 
 ## Prepare your machines
@@ -35,7 +31,7 @@ You need two machines: a dedicated validator host that stays online, and the com
       </TabItem>
     </Tabs>
 
-2. Install and sign in to [Tailscale](https://tailscale.com/) on each machine. Note the remote host's Tailscale name or IP.
+2. Install and sign in to [Tailscale](https://tailscale.com/) on each machine. Note the MagicDNS or Tailscale IP.
 
 3. On the remote host, [set up Docker](https://docs.kittynode.com/guides/set-up-docker) and confirm it's running.
 
@@ -99,7 +95,7 @@ After the deposits land on-chain your validator(s) will enter the activation que
 
 </Steps>
 
-## Unstake your validator
+## Exit your validator
 
 When you are ready to exit:
 
