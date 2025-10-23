@@ -6,12 +6,6 @@ description: Initialize a remote Kittynode validator, submit deposits, monitor i
 import { Steps } from '@astrojs/starlight/components';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-export function launchpadUrl(network) {
-  return network === "ephemery"
-    ? "https://ephemery.dev/"
-    : `https://${network}.launchpad.ethereum.org`;
-}
-
 This guide covers the Kittynode validator workflow: prepare your machines, run `kittynode validator init`, submit deposits, monitor remotely, and exit when you are done.
 
 :::caution
@@ -71,17 +65,17 @@ Submit the deposit data for every validator you created. Use the launchpad that 
 
 <Tabs>
   <TabItem label="Hoodi">
-    - Open [{launchpadUrl('hoodi')}]({launchpadUrl('hoodi')}).
+    - Open <https://hoodi.launchpad.ethereum.org>.
     - Upload the `deposit_data-*.json` file.
     - Follow the instructions to submit the deposit.
   </TabItem>
   <TabItem label="Sepolia">
-    - Open [{launchpadUrl('sepolia')}]({launchpadUrl('sepolia')}).
+    - Open <https://sepolia.launchpad.ethereum.org>.
     - Upload the `deposit_data-*.json` file.
     - Follow the instructions to submit the deposit.
   </TabItem>
   <TabItem label="Ephemery">
-    - Open [{launchpadUrl('ephemery')}]({launchpadUrl('ephemery')}).
+    - Open <https://ephemery.dev/>.
     - Upload the `deposit_data-*.json` file.
     - Follow the instructions to submit the deposit.
   </TabItem>
