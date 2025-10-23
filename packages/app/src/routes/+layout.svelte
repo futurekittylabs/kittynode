@@ -11,6 +11,8 @@ import { updates } from "$stores/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { coreClient } from "$lib/client";
 import { formatPackageName } from "$lib/utils";
+import { packageConfigStore } from "$stores/packageConfig.svelte";
+//
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -45,6 +47,7 @@ const lastRemoteServerUrl = $derived(serverUrlStore.lastServerUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
 const showRemoteBanner = $derived(lastRemoteServerUrl !== "");
 let remoteBannerLoading = $state(false);
+let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);
@@ -134,6 +137,23 @@ onMount(async () => {
   await operationalStateStore.refresh();
   await packagesStore.loadInstalledPackages();
 
+  // Load Ethereum network label once for display in sidebar
+  try {
+    const cfg = await packageConfigStore.getConfig("ethereum");
+    const network = cfg.values.network;
+    if (network) {
+      if (network === "hoodi") ethereumNetworkLabel = "Hoodi";
+      else if (network === "mainnet") ethereumNetworkLabel = "Mainnet";
+      else if (network === "sepolia") ethereumNetworkLabel = "Sepolia";
+      else if (network === "ephemery") ethereumNetworkLabel = "Ephemery";
+      else ethereumNetworkLabel = network;
+    } else {
+      ethereumNetworkLabel = null;
+    }
+  } catch (e) {
+    ethereumNetworkLabel = null;
+  }
+
   try {
     await updates.getUpdate();
   } catch (e) {
@@ -196,7 +216,11 @@ onMount(async () => {
                     {#snippet child({ props })}
                       <a href={`/node/${pkg.name}`} {...props}>
                         <Activity class="h-4 w-4" />
-                        <span>{formatPackageName(pkg.name)}</span>
+                        <span>
+                          {pkg.name === "ethereum" && ethereumNetworkLabel
+                            ? `${formatPackageName(pkg.name)} (${ethereumNetworkLabel})`
+                            : formatPackageName(pkg.name)}
+                        </span>
                       </a>
                     {/snippet}
                   </Sidebar.MenuButton>

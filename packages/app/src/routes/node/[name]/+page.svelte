@@ -41,6 +41,7 @@ const packageName = $derived(page.params.name || "");
 const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
+//
 const installedState = $derived(packagesStore.installedState);
 const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
@@ -115,7 +116,6 @@ const currentNetworkDisplay = $derived(
 const installedStatus = $derived(installedState.status);
 const isInstalled = $derived(packageStatus === "installed");
 const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
-
 const statusKind = $derived(
   runtime.lifecycle === "stopping"
     ? "stopping"
@@ -174,7 +174,9 @@ function toggleAllLogs() {
 
 async function refreshValidatorInstalled() {
   try {
-    isValidatorInstalled = await coreClient.isValidatorInstalled();
+    const installed = await coreClient.isValidatorInstalled();
+    isValidatorInstalled = installed;
+    //
   } catch (error) {
     console.error("Failed to check validator status", error);
   }
@@ -189,6 +191,7 @@ async function loadConfigFor(name: string) {
     const config = await packageConfigStore.getConfig(name);
     const network = config.values.network || defaultEthereumNetwork;
     currentNetwork = network;
+    //
     if (!supportedNetworkValues.includes(network)) {
       notifyError(
         `Network "${network}" is not supported. Please choose ${supportedNetworksMessage}.`,
@@ -256,6 +259,7 @@ async function updateConfig() {
       },
     });
     currentNetwork = selectedNetwork;
+    //
     lastLoadedConfig = packageName;
     notifySuccess("Configuration updated successfully");
   } catch (error) {
@@ -281,6 +285,7 @@ $effect(() => {
     selectedNetwork = defaultEthereumNetwork;
     currentNetwork = defaultEthereumNetwork;
     isValidatorInstalled = false;
+    //
   }
 });
 
@@ -303,10 +308,14 @@ onDestroy(() => {
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight">
-          {formatPackageName(pkg.name)}
+          {formatPackageName(pkg.name)}{#if currentNetworkDisplay} ({currentNetworkDisplay}){/if}
         </h2>
         <p class="text-muted-foreground">
-          Manage your {formatPackageName(pkg.name)} node
+          {#if pkg.name === "ethereum" && isValidatorInstalled}
+            Manage your {formatPackageName(pkg.name)} validator
+          {:else}
+            Manage your {formatPackageName(pkg.name)} node
+          {/if}
         </p>
       </div>
       {#if isInstalled}
