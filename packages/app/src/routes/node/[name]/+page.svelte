@@ -308,7 +308,7 @@ onDestroy(() => {
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight">
-          {formatPackageName(pkg.name)}{#if currentNetworkDisplay} ({currentNetworkDisplay}){/if}
+          {formatPackageName(pkg.name)}{#if pkg.name === "ethereum"} ({currentNetworkDisplay}){/if}
         </h2>
         <p class="text-muted-foreground">
           {#if pkg.name === "ethereum" && isValidatorInstalled}
