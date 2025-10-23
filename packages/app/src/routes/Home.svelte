@@ -158,7 +158,10 @@ onMount(async () => {
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();
-    await packagesStore.loadInstalledPackages();
+    const state = operationalStateStore.state;
+    if (serverUrlStore.serverUrl !== "" || state?.dockerRunning) {
+      await packagesStore.loadInstalledPackages();
+    }
   }
 });
 
@@ -255,6 +258,15 @@ onDestroy(() => {
         <Card.Content>
           <p class="text-sm text-muted-foreground">
             Checking installed packages...
+          </p>
+        </Card.Content>
+      </Card.Root>
+    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+      <Card.Root>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">
+            Docker needs to be running to manage installed nodes. Start Docker
+            Desktop to continue.
           </p>
         </Card.Content>
       </Card.Root>
@@ -407,6 +419,21 @@ onDestroy(() => {
           >
             Retry
           </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+      <Card.Root>
+        <Card.Header>
+          <Card.Title class="flex items-center space-x-2">
+            <Info class="h-5 w-5" />
+            <span>Docker Required</span>
+          </Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">
+            Docker needs to be running to view and manage packages. Please start
+            Docker and return to this page.
+          </p>
         </Card.Content>
       </Card.Root>
     {:else if installedState.status === "error"}

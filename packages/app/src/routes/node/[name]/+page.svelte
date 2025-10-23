@@ -274,7 +274,12 @@ $effect(() => {
 onMount(async () => {
   operationalStateStore.startPolling();
   await operationalStateStore.refresh();
-  await packagesStore.loadInstalledPackages({ force: true });
+  {
+    const state = operationalStateStore.state;
+    if (state?.mode === "remote" || state?.dockerRunning) {
+      await packagesStore.loadInstalledPackages({ force: true });
+    }
+  }
   await refreshValidatorInstalled();
 });
 
@@ -394,6 +399,14 @@ onDestroy(() => {
           </Button>
         </Card.Content>
       </Card.Root>
+    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+      <Alert.Root>
+        <Terminal class="size-4" />
+        <Alert.Title>Docker is not available</Alert.Title>
+        <Alert.Description>
+          Start Docker to manage this node.
+        </Alert.Description>
+      </Alert.Root>
     {:else if packageStatus === "unknown"}
       <Card.Root>
         <Card.Content>

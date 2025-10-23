@@ -51,9 +51,11 @@ let remoteBannerLoading = $state(false);
 let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
-  // Reload installed packages whenever the remote endpoint changes
-  serverUrlStore.serverUrl;
-  void packagesStore.loadInstalledPackages({ force: true });
+  const state = operationalStateStore.state;
+  const endpoint = serverUrlStore.serverUrl;
+  if (endpoint !== "" || state?.dockerRunning) {
+    void packagesStore.loadInstalledPackages({ force: true });
+  }
 });
 
 async function setRemote(endpoint: string) {

@@ -61,7 +61,12 @@ onMount(() => {
   operationalStateStore.startPolling();
   void operationalStateStore.refresh();
   packagesStore.loadPackages();
-  packagesStore.loadInstalledPackages();
+  {
+    const state = operationalStateStore.state;
+    if (state?.mode === "remote" || state?.dockerRunning) {
+      packagesStore.loadInstalledPackages();
+    }
+  }
 
   return () => {
     operationalStateStore.stopPolling();
@@ -115,6 +120,21 @@ onMount(() => {
         >
           Retry
         </Button>
+      </Card.Content>
+    </Card.Root>
+  {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+    <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
+      <Card.Header>
+        <Card.Title class="flex items-center space-x-2">
+          <CircleAlert class="h-5 w-5 text-yellow-500" />
+          <span>Docker Required</span>
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <p class="text-sm">
+          Docker needs to be running to install packages. Please start Docker
+          Desktop.
+        </p>
       </Card.Content>
     </Card.Root>
   {:else if catalogState.status !== "ready" || installedState.status === "loading" || installedState.status === "idle"}
