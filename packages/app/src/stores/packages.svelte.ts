@@ -143,5 +143,4 @@ export const packagesStore = {
       throw e;
     }
   },
-  // No context reconciliation here; caller triggers reload when needed.
 };
