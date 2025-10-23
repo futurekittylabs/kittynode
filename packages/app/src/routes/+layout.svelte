@@ -146,17 +146,15 @@ onMount(async () => {
   try {
     const cfg = await packageConfigStore.getConfig("ethereum");
     const network = cfg.values.network;
-    if (network) {
-      if (network === "hoodi") ethereumNetworkLabel = "Hoodi";
-      else if (network === "mainnet") ethereumNetworkLabel = "Mainnet";
-      else if (network === "sepolia") ethereumNetworkLabel = "Sepolia";
-      else if (network === "ephemery") ethereumNetworkLabel = "Ephemery";
-      else ethereumNetworkLabel = network;
-    } else {
-      ethereumNetworkLabel = null;
+    if (typeof network === "string") {
+      const trimmedNetwork = network.trim();
+      if (trimmedNetwork) {
+        ethereumNetworkLabel =
+          trimmedNetwork[0].toUpperCase() + trimmedNetwork.slice(1);
+      }
     }
   } catch (e) {
-    ethereumNetworkLabel = null;
+    console.error(`Failed to load Ethereum network label: ${e}`);
   }
 
   try {
