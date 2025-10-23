@@ -17,6 +17,7 @@ import {
 } from "$lib/constants/ethereumNetworks";
 import * as Select from "$lib/components/ui/select";
 import { runtimeOverviewStore } from "$stores/runtimeOverview.svelte";
+import { coreClient } from "$lib/client";
 import {
   Package2,
   Settings2,
@@ -26,11 +27,12 @@ import {
   Cpu,
   ArrowRight,
   Download,
-  PauseCircle,
-  Loader2,
+  CirclePause,
+  LoaderCircle,
   CircleAlert,
 } from "@lucide/svelte";
 import { formatPackageName } from "$lib/utils";
+import { packageConfigStore } from "$stores/packageConfig.svelte";
 
 const { isInstalling, installPackage } = usePackageInstaller();
 
@@ -63,6 +65,49 @@ const installedPackageCount = $derived(
 const installedPackagesList = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
+let ethereumNetworkLabel = $state<string | null>(null);
+let ethereumValidatorInstalled = $state<boolean | null>(null);
+
+$effect(() => {
+  if (installedState.status !== "ready") {
+    ethereumNetworkLabel = null;
+    return;
+  }
+  const hasEth = installedPackagesList.some((p) => p.name === "ethereum");
+  if (!hasEth) {
+    ethereumNetworkLabel = null;
+    ethereumValidatorInstalled = null;
+    return;
+  }
+  (async () => {
+    try {
+      const cfg = await packageConfigStore.getConfig("ethereum");
+      const network = cfg.values.network;
+      if (network) {
+        if (network === "hoodi") ethereumNetworkLabel = "Hoodi";
+        else if (network === "mainnet") ethereumNetworkLabel = "Mainnet";
+        else if (network === "sepolia") ethereumNetworkLabel = "Sepolia";
+        else if (network === "ephemery") ethereumNetworkLabel = "Ephemery";
+        else ethereumNetworkLabel = network;
+      } else {
+        ethereumNetworkLabel = null;
+      }
+    } catch (e) {
+      ethereumNetworkLabel = null;
+    }
+
+    // Fetch validator installed status once when we can manage
+    try {
+      if (operationalStateStore.canManage) {
+        ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
+      } else {
+        ethereumValidatorInstalled = null;
+      }
+    } catch (e) {
+      ethereumValidatorInstalled = null;
+    }
+  })();
+});
 
 const runtimeStatuses = $derived(runtimeOverviewStore.statuses);
 const runtimeStatusesLoading = $derived(runtimeOverviewStore.loading);
@@ -255,11 +300,11 @@ onDestroy(() => {
                     {#if runtimeStatus === "running"}
                       <Activity class="w-5 h-5 text-green-500 mt-0.5" />
                     {:else if runtimeStatus === "stopped"}
-                      <PauseCircle
+                      <CirclePause
                         class="w-5 h-5 text-amber-500 dark:text-amber-200 mt-0.5"
                       />
                     {:else if runtimeStatus === "checking"}
-                      <Loader2
+                      <LoaderCircle
                         class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin"
                       />
                     {:else}
@@ -270,10 +315,16 @@ onDestroy(() => {
                   </div>
                   <div class="min-w-0">
                     <Card.Title class="text-base">
-                      {formatPackageName(pkg.name)}
+                      {pkg.name === "ethereum" && ethereumNetworkLabel
+                        ? `${formatPackageName(pkg.name)} (${ethereumNetworkLabel})`
+                        : formatPackageName(pkg.name)}
                     </Card.Title>
                     <Card.Description class="mt-1">
-                      Manage your {formatPackageName(pkg.name)} node.
+                      {#if pkg.name === "ethereum" && ethereumValidatorInstalled}
+                        Manage your {formatPackageName(pkg.name)} validator.
+                      {:else}
+                        Manage your {formatPackageName(pkg.name)} node.
+                      {/if}
                     </Card.Description>
                   </div>
                 </div>
@@ -305,7 +356,7 @@ onDestroy(() => {
                   <div
                     class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0"
                   >
-                    <Loader2
+                    <LoaderCircle
                       class="h-3 w-3 animate-spin text-muted-foreground"
                     />
                     <span class="text-xs font-medium text-muted-foreground"
