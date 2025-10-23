@@ -96,13 +96,9 @@ $effect(() => {
       ethereumNetworkLabel = null;
     }
 
-    // Fetch validator installed status once when we can manage
+    // Fetch validator installed status once; ignore errors
     try {
-      if (operationalStateStore.canManage) {
-        ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
-      } else {
-        ethereumValidatorInstalled = null;
-      }
+      ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
     } catch (e) {
       ethereumValidatorInstalled = null;
     }
@@ -259,15 +255,6 @@ onDestroy(() => {
         <Card.Content>
           <p class="text-sm text-muted-foreground">
             Checking installed packages...
-          </p>
-        </Card.Content>
-      </Card.Root>
-    {:else if installedState.status === "unavailable"}
-      <Card.Root>
-        <Card.Content>
-          <p class="text-sm text-muted-foreground">
-            Docker needs to be running to manage installed nodes. Start Docker
-            Desktop to continue.
           </p>
         </Card.Content>
       </Card.Root>
@@ -435,21 +422,6 @@ onDestroy(() => {
           >
             Retry
           </Button>
-        </Card.Content>
-      </Card.Root>
-    {:else if installedState.status === "unavailable"}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center space-x-2">
-            <Info class="h-5 w-5" />
-            <span>Docker Required</span>
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <p class="text-sm text-muted-foreground">
-            Docker needs to be running to view and manage packages. Please start
-            Docker and return to this page.
-          </p>
         </Card.Content>
       </Card.Root>
     {:else if catalogState.status !== "ready" || installedState.status !== "ready"}

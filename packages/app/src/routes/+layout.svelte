@@ -51,7 +51,9 @@ let remoteBannerLoading = $state(false);
 let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
-  packagesStore.handleOperationalStateChange(operationalStateStore.state);
+  // Reload installed packages whenever the remote endpoint changes
+  serverUrlStore.serverUrl;
+  void packagesStore.loadInstalledPackages({ force: true });
 });
 
 async function setRemote(endpoint: string) {
@@ -66,7 +68,6 @@ async function setRemote(endpoint: string) {
       await coreClient.checkRemoteHealth(endpoint);
     }
     await appConfigStore.setServerUrl(endpoint);
-    await operationalStateStore.refresh();
     refetchStores();
     notifySuccess(
       connectAction ? "Connected to remote" : "Disconnected from remote",

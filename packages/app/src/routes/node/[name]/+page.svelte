@@ -126,15 +126,11 @@ const statusKind = $derived(
 );
 
 const canStopNode = $derived(
-  runtime.lifecycle === "idle" &&
-    runtime.status === "running" &&
-    operationalStateStore.canManage,
+  runtime.lifecycle === "idle" && runtime.status === "running",
 );
 
 const canStartNode = $derived(
-  runtime.lifecycle === "idle" &&
-    runtime.status === "stopped" &&
-    operationalStateStore.canManage,
+  runtime.lifecycle === "idle" && runtime.status === "stopped",
 );
 
 async function handleDeletePackage(name: string) {
@@ -205,12 +201,7 @@ async function loadConfigFor(name: string) {
 }
 
 async function stopNode() {
-  if (!packageName || !canStopNode) {
-    if (!operationalStateStore.canManage) {
-      notifyError("Cannot manage packages in the current operational state");
-    }
-    return;
-  }
+  if (!packageName || !canStopNode) return;
 
   try {
     const success = await runtime.performLifecycle("stopping", () =>
@@ -226,12 +217,7 @@ async function stopNode() {
 }
 
 async function startNode() {
-  if (!packageName || !canStartNode) {
-    if (!operationalStateStore.canManage) {
-      notifyError("Cannot manage packages in the current operational state");
-    }
-    return;
-  }
+  if (!packageName || !canStartNode) return;
 
   try {
     const success = await runtime.performLifecycle("starting", () =>
@@ -408,14 +394,6 @@ onDestroy(() => {
           </Button>
         </Card.Content>
       </Card.Root>
-    {:else if installedStatus === "unavailable"}
-      <Alert.Root>
-        <Terminal class="size-4" />
-        <Alert.Title>Docker is not available</Alert.Title>
-        <Alert.Description>
-          Start Docker to manage this node.
-        </Alert.Description>
-      </Alert.Root>
     {:else if packageStatus === "unknown"}
       <Card.Root>
         <Card.Content>
