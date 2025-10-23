@@ -154,7 +154,7 @@ onMount(async () => {
       }
     }
   } catch (e) {
-    console.error(`Failed to load Ethereum network label: ${e}`);
+    notifyError(`Failed to load Ethereum network label: ${e}`);
   }
 
   try {
