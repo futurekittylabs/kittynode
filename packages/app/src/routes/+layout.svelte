@@ -46,7 +46,7 @@ const remoteConnected = $derived(remoteServerUrl !== "");
 const showRemoteBanner = $derived(lastRemoteServerUrl !== "");
 let remoteBannerLoading = $state(false);
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
-const remoteHelpDescription = `Follow the Set up validator guide: ${validatorGuideUrl}`;
+const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 
 $effect(() => {
   packagesStore.handleOperationalStateChange(operationalStateStore.state);

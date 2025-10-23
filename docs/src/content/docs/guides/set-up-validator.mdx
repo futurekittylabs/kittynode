@@ -37,13 +37,13 @@ You need two machines: a dedicated validator host that stays online, and the com
 
 2. Install and sign in to [Tailscale](https://tailscale.com/) on each machine. Note the remote host's Tailscale name or IP.
 
-3. On the remote host, install Docker and confirm it is running. The [Set up Docker](https://docs.kittynode.com/guides/set-up-docker) guide has the steps.
+3. On the remote host, [set up Docker](https://docs.kittynode.com/guides/set-up-docker) and confirm it's running.
 
 </Steps>
 
 ## Initialize the validator
 
-Run the guided setup on the remote machine. The workflow provisions clients, configures networking, and imports keys.
+Run the guided validator setup on the remote machine:
 
 ```bash
 kittynode validator init
@@ -54,8 +54,8 @@ During this flow you will:
 - Choose the target network (Hoodi, Sepolia, or Ephemery).
 - Pick how many validators to run and, if desired, enable 0x02 compounding validators.
 - Confirm the withdrawal address.
-- Generate validator keys. Kittynode saves the keystores and deposit data in the directory you pick.
-- Import the keys into Lighthouse and start the clients.
+- Generate validator keys.
+- Import the keys and start the clients.
 
 When the flow reaches the final steps screen it prints the path to your `deposit_data-*.json` file. Keep that file handy—you will upload it in the next section.
 
@@ -87,17 +87,15 @@ After the deposits land on-chain your validator(s) will enter the activation que
 
 <Steps>
 
-1. On the remote machine, start the Kittynode web service if it is not already running:
+1. On the remote machine, start the Kittynode web service:
 
     ```bash
     kittynode web start
     ```
 
-2. On your desktop machine, open the Kittynode app, go to **Settings → Remote server**, and paste the remote URL (for example `http://tailscale-name:3000`).
+2. On your desktop machine, open the Kittynode app, go to **Settings → Remote server**, and paste the remote URL (for example `http://<insert-tailscale-name-here>:3000`).
 
 3. Click **Connect**. The app checks the remote `/health` endpoint before saving the connection.
-
-4. Once connected, the dashboard and system info pages load remote data. If the check fails, confirm Tailscale is connected, Docker is running, and the web service is listening on the expected port.
 
 </Steps>
 
@@ -121,5 +119,3 @@ When you are ready to exit:
 3. After the exit and withdrawal balance finalize, transfer the funds by following the [Ethereum withdrawal docs](https://ethereum.org/en/staking/withdrawals).
 
 </Steps>
-
-With these steps you can take a validator from key generation to activation, and back out safely when you need to unstake.

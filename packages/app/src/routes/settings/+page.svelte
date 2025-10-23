@@ -44,7 +44,7 @@ const configLoading = $derived(appConfigStore.loading);
 const downloadsUrl = "https://kittynode.com/download";
 const remoteServerConnected = $derived(serverUrlStore.serverUrl !== "");
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
-const remoteHelpDescription = `Follow the Set up validator guide: ${validatorGuideUrl}`;
+const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 
 onMount(() => {
   void appConfigStore.load().catch((e) => {
