@@ -6,10 +6,11 @@ description: Initialize a remote Kittynode validator, submit deposits, monitor i
 import { Steps } from '@astrojs/starlight/components';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-const launchpadUrl = (network) =>
-  network === "ephemery"
+export function launchpadUrl(network) {
+  return network === "ephemery"
     ? "https://ephemery.dev/"
     : `https://${network}.launchpad.ethereum.org`;
+}
 
 This guide covers the Kittynode validator workflow: prepare your machines, run `kittynode validator init`, submit deposits, monitor remotely, and exit when you are done.
 
