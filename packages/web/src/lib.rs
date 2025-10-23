@@ -11,7 +11,7 @@ use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
 };
 use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
 use tokio::net::TcpListener;
@@ -199,9 +199,19 @@ pub async fn get_operational_state() -> Result<Json<OperationalState>, (StatusCo
         .map_err(to_http_error)
 }
 
+#[derive(Serialize)]
+pub struct HealthResponse {
+    status: &'static str,
+}
+
+pub async fn health() -> Json<HealthResponse> {
+    Json(HealthResponse { status: "ok" })
+}
+
 pub fn app() -> Router {
     Router::new()
         .route("/", get(hello_world))
+        .route("/health", get(health))
         .route("/add_capability/{name}", post(add_capability))
         .route("/remove_capability/{name}", post(remove_capability))
         .route("/get_capabilities", get(get_capabilities))
@@ -245,6 +255,22 @@ mod tests {
     use super::*;
     use axum::{body::Body, http::Request};
     use tower::ServiceExt; // for `oneshot`
+
+    #[tokio::test]
+    async fn health_endpoint_returns_ok() {
+        let app = app();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 
     #[tokio::test]
     async fn delete_unknown_package_maps_to_404() {
