@@ -1,0 +1,117 @@
+---
+title: Set up validator
+description: Initialize a Kittynode validator.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide covers the Kittynode validator workflow: prepare your machines, run `kittynode validator init`, submit deposits, monitor remotely, and exit when you are done.
+
+:::note
+You only need one machine to run your Ethereum validator with `kittynode validator init`, but this guide will show you how to use another machine to monitor your validator with [Tailscale](https://tailscale.com/).
+:::
+
+## Prepare your machines
+
+<Steps>
+
+1. Install Kittynode CLI on both machines:
+
+    <Tabs>
+      <TabItem label="Linux / macOS">
+        ```bash
+        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
+        ```
+      </TabItem>
+      <TabItem label="Windows">
+        ```bash
+        powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"
+        ```
+      </TabItem>
+    </Tabs>
+
+2. Install and sign in to [Tailscale](https://tailscale.com/) on each machine. Note the MagicDNS or Tailscale IP.
+
+3. On the remote host, [set up Docker](https://docs.kittynode.com/guides/set-up-docker) and confirm it's running.
+
+</Steps>
+
+## Initialize the validator
+
+Run the guided validator setup on the remote machine:
+
+```bash
+kittynode validator init
+```
+
+During this flow you will:
+
+- Choose the target network (Hoodi, Sepolia, or Ephemery).
+- Pick how many validators to run and, if desired, enable 0x02 compounding validators.
+- Confirm the withdrawal address.
+- Generate validator keys.
+- Import the keys and start the clients.
+
+When the flow reaches the final steps screen it prints the path to your `deposit_data-*.json` file. Keep that file handy—you will upload it in the next section.
+
+## Deposit your stake
+
+Submit the deposit data for every validator you created. Use the launchpad that matches the network you selected in the CLI.
+
+<Tabs>
+  <TabItem label="Hoodi">
+    - Open [hoodi.launchpad.ethereum.org](https://hoodi.launchpad.ethereum.org).
+    - Upload the `deposit_data-*.json` file.
+    - Follow the instructions to submit the deposit.
+  </TabItem>
+  <TabItem label="Sepolia">
+    - Open [sepolia.launchpad.ethereum.org](https://sepolia.launchpad.ethereum.org).
+    - Upload the `deposit_data-*.json` file.
+    - Follow the instructions to submit the deposit.
+  </TabItem>
+  <TabItem label="Ephemery">
+    - Open [launchpad.ephemery.dev](https://launchpad.ephemery.dev).
+    - Upload the `deposit_data-*.json` file.
+    - Follow the instructions to submit the deposit.
+  </TabItem>
+</Tabs>
+
+After the deposits land onchain your validator(s) will enter the activation queue. Kittynode keeps the clients running until activation completes.
+
+## Monitor with the desktop app
+
+<Steps>
+
+1. On the remote machine, start the Kittynode web service:
+
+    ```bash
+    kittynode web start
+    ```
+
+2. On your desktop machine, open the Kittynode app, go to **Settings → Remote server**, and paste the remote URL (for example `http://<insert-tailscale-name-here>:3000`).
+
+3. Click **Connect**. The app checks the remote `/health` endpoint before saving the connection.
+
+</Steps>
+
+## Exit your validator
+
+When you are ready to exit:
+
+<Steps>
+
+1. Sign in to the remote machine and run the Lighthouse exit command from the validator container:
+
+    ```bash
+    docker exec -it kittynode-lighthouse-validator lighthouse \
+      --network <network> account validator exit --all
+    ```
+
+    Replace `<network>` with the network you configured (`hoodi`, `sepolia`, or `ephemery`). The `--all` flag exits every imported validator; supply specific public keys if you prefer a partial exit.
+
+2. Wait for the exit to finalize onchain. You can track progress in the Kittynode app or on a community staking dashboard.
+
+3. After the exit and withdrawal balance finalize, transfer the funds by following the [Ethereum withdrawal docs](https://ethereum.org/en/staking/withdrawals).
+
+</Steps>

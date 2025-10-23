@@ -276,6 +276,17 @@ impl HttpCoreClient {
             ))
         }
     }
+
+    pub async fn health_check(&self) -> Result<()> {
+        let response = self
+            .client
+            .get(self.url("/health"))
+            .send()
+            .await
+            .wrap_err("Failed to GET /health")?;
+        Self::ensure_success(response, "/health", "requesting").await?;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -522,6 +533,7 @@ mod tests {
             client.get_capabilities().await?,
             vec!["remote-capability".to_string()]
         );
+        client.health_check().await?;
         client.add_capability("beta").await?;
         client.install_package("ok", None).await?;
         let states = client.get_packages(&["alpha"]).await?;
@@ -564,6 +576,7 @@ mod tests {
         let state = TestState::default();
         let router = Router::new()
             .route("/get_capabilities", get(get_capabilities))
+            .route("/health", get(health))
             .route("/add_capability/{name}", post(add_capability))
             .route("/install_package/{name}", post(install_package))
             .route("/get_packages", post(get_packages))
@@ -588,6 +601,10 @@ mod tests {
     async fn add_capability(Path(name): Path<String>) -> StatusCode {
         assert_eq!(name, "beta");
         StatusCode::NO_CONTENT
+    }
+
+    async fn health() -> StatusCode {
+        StatusCode::OK
     }
 
     async fn install_package(Path(name): Path<String>) -> Response {

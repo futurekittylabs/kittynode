@@ -111,6 +111,10 @@ export const coreClient = {
     return invoke("delete_kittynode");
   },
 
+  checkRemoteHealth(endpoint: string): Promise<void> {
+    return invoke("check_remote_health", { endpoint });
+  },
+
   restartApp(): Promise<void> {
     return invoke("restart_app");
   },

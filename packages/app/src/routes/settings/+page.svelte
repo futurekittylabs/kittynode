@@ -43,6 +43,8 @@ const configInitialized = $derived(appConfigStore.initialized);
 const configLoading = $derived(appConfigStore.loading);
 const downloadsUrl = "https://kittynode.com/download";
 const remoteServerConnected = $derived(serverUrlStore.serverUrl !== "");
+const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
+const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 
 onMount(() => {
   void appConfigStore.load().catch((e) => {
@@ -117,13 +119,16 @@ function openRemoteDialog() {
 
 async function applyRemoteConnection(url: string) {
   try {
+    await coreClient.checkRemoteHealth(url);
     await appConfigStore.setServerUrl(url);
     await operationalStateStore.refresh();
     refetchStores();
     notifySuccess("Connected to remote");
     return true;
   } catch (e) {
-    notifyError("Failed to connect to remote", e);
+    notifyError("Failed to connect to remote", e, {
+      description: remoteHelpDescription,
+    });
     return false;
   }
 }
