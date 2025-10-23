@@ -27,13 +27,12 @@ import {
   Cpu,
   ArrowRight,
   Download,
-  PauseCircle,
-  Loader2,
+  CirclePause,
+  LoaderCircle,
   CircleAlert,
 } from "@lucide/svelte";
 import { formatPackageName } from "$lib/utils";
 import { packageConfigStore } from "$stores/packageConfig.svelte";
-//
 
 const { isInstalling, installPackage } = usePackageInstaller();
 
@@ -136,8 +135,6 @@ function isLocalDesktop() {
     !["ios", "android"].includes(platform()) && serverUrlStore.serverUrl === ""
   );
 }
-
-//
 
 onMount(async () => {
   if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();
@@ -303,11 +300,11 @@ onDestroy(() => {
                     {#if runtimeStatus === "running"}
                       <Activity class="w-5 h-5 text-green-500 mt-0.5" />
                     {:else if runtimeStatus === "stopped"}
-                      <PauseCircle
+                      <CirclePause
                         class="w-5 h-5 text-amber-500 dark:text-amber-200 mt-0.5"
                       />
                     {:else if runtimeStatus === "checking"}
-                      <Loader2
+                      <LoaderCircle
                         class="w-5 h-5 text-muted-foreground mt-0.5 animate-spin"
                       />
                     {:else}
@@ -359,7 +356,7 @@ onDestroy(() => {
                   <div
                     class="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 shrink-0"
                   >
-                    <Loader2
+                    <LoaderCircle
                       class="h-3 w-3 animate-spin text-muted-foreground"
                     />
                     <span class="text-xs font-medium text-muted-foreground"

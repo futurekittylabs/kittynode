@@ -41,7 +41,6 @@ function setInstalledUnavailable() {
     status: "unavailable",
     packages: {},
   };
-  // cleared via UI state only
 }
 export const packagesStore = {
   get packages() {
@@ -144,7 +143,6 @@ export const packagesStore = {
         status: "ready",
         packages,
       };
-      // no-op
     } catch (e) {
       if (requestId !== installedRequestToken) {
         return;
@@ -160,7 +158,6 @@ export const packagesStore = {
         packages: {},
         error: message,
       };
-      // no-op
     }
   },
 

@@ -41,7 +41,6 @@ const packageName = $derived(page.params.name || "");
 const pkg = $derived(
   packageName ? packagesStore.packages[packageName] : undefined,
 );
-//
 const installedState = $derived(packagesStore.installedState);
 const packageStatus = $derived(
   pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
@@ -176,7 +175,6 @@ async function refreshValidatorInstalled() {
   try {
     const installed = await coreClient.isValidatorInstalled();
     isValidatorInstalled = installed;
-    //
   } catch (error) {
     console.error("Failed to check validator status", error);
   }
@@ -191,7 +189,7 @@ async function loadConfigFor(name: string) {
     const config = await packageConfigStore.getConfig(name);
     const network = config.values.network || defaultEthereumNetwork;
     currentNetwork = network;
-    //
+
     if (!supportedNetworkValues.includes(network)) {
       notifyError(
         `Network "${network}" is not supported. Please choose ${supportedNetworksMessage}.`,
@@ -259,7 +257,6 @@ async function updateConfig() {
       },
     });
     currentNetwork = selectedNetwork;
-    //
     lastLoadedConfig = packageName;
     notifySuccess("Configuration updated successfully");
   } catch (error) {
@@ -285,7 +282,6 @@ $effect(() => {
     selectedNetwork = defaultEthereumNetwork;
     currentNetwork = defaultEthereumNetwork;
     isValidatorInstalled = false;
-    //
   }
 });
 
