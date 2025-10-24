@@ -33,8 +33,8 @@ function formatReleaseDate(pubDate: string | undefined): string {
 const appReleaseDate = formatReleaseDate(appPubDate);
 const cliReleaseDate = formatReleaseDate(cliPubDate);
 
-const appVersionLabel = `kittynode-app@${appVersion}`;
-const cliVersionLabel = `kittynode-cli@${cliVersion}`;
+const appVersionLabel = `Version ${appVersion}`;
+const cliVersionLabel = `Version ${cliVersion}`;
 
 const downloads = [
   {
@@ -89,7 +89,7 @@ const downloads = [
 ];
 </script>
 
-<div class="mt-16">
+<div class="my-16">
   <div class="mb-8 text-center">
     <h1 class="text-2xl font-semibold mb-2">Install Kittynode</h1>
     <p class="mx-auto max-w-2xl text-sm text-muted-foreground">
@@ -109,7 +109,7 @@ const downloads = [
           <p class="text-base font-medium">
             <a href={changelogUrl} class="link">{appVersionLabel}</a>
             {#if appReleaseDate}
-              • {appReleaseDate}
+              — {appReleaseDate}
             {/if}
           </p>
         </div>
@@ -174,7 +174,7 @@ const downloads = [
           <p class="text-base font-medium">
             <a href={changelogUrl} class="link">{cliVersionLabel}</a>
             {#if cliReleaseDate}
-              • {cliReleaseDate}
+              — {cliReleaseDate}
             {/if}
           </p>
         </div>
