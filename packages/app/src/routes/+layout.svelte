@@ -51,7 +51,11 @@ let remoteBannerLoading = $state(false);
 let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
-  packagesStore.handleOperationalStateChange(operationalStateStore.state);
+  const state = operationalStateStore.state;
+  const endpoint = serverUrlStore.serverUrl;
+  if (endpoint !== "" || state?.dockerRunning) {
+    void packagesStore.loadInstalledPackages({ force: true });
+  }
 });
 
 async function setRemote(endpoint: string) {
@@ -66,7 +70,6 @@ async function setRemote(endpoint: string) {
       await coreClient.checkRemoteHealth(endpoint);
     }
     await appConfigStore.setServerUrl(endpoint);
-    await operationalStateStore.refresh();
     refetchStores();
     notifySuccess(
       connectAction ? "Connected to remote" : "Disconnected from remote",
