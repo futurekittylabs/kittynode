@@ -126,11 +126,15 @@ const statusKind = $derived(
 );
 
 const canStopNode = $derived(
-  runtime.lifecycle === "idle" && runtime.status === "running",
+  runtime.lifecycle === "idle" &&
+    runtime.status === "running" &&
+    operationalStateStore.canManage,
 );
 
 const canStartNode = $derived(
-  runtime.lifecycle === "idle" && runtime.status === "stopped",
+  runtime.lifecycle === "idle" &&
+    runtime.status === "stopped" &&
+    operationalStateStore.canManage,
 );
 
 async function handleDeletePackage(name: string) {
@@ -201,7 +205,12 @@ async function loadConfigFor(name: string) {
 }
 
 async function stopNode() {
-  if (!packageName || !canStopNode) return;
+  if (!packageName || !canStopNode) {
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+    }
+    return;
+  }
 
   try {
     const success = await runtime.performLifecycle("stopping", () =>
@@ -217,7 +226,12 @@ async function stopNode() {
 }
 
 async function startNode() {
-  if (!packageName || !canStartNode) return;
+  if (!packageName || !canStartNode) {
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+    }
+    return;
+  }
 
   try {
     const success = await runtime.performLifecycle("starting", () =>
@@ -274,12 +288,7 @@ $effect(() => {
 onMount(async () => {
   operationalStateStore.startPolling();
   await operationalStateStore.refresh();
-  {
-    const state = operationalStateStore.state;
-    if (state?.mode === "remote" || state?.dockerRunning) {
-      await packagesStore.loadInstalledPackages({ force: true });
-    }
-  }
+  await packagesStore.loadInstalledPackages({ force: true });
   await refreshValidatorInstalled();
 });
 
@@ -399,7 +408,7 @@ onDestroy(() => {
           </Button>
         </Card.Content>
       </Card.Root>
-    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+    {:else if installedStatus === "unavailable"}
       <Alert.Root>
         <Terminal class="size-4" />
         <Alert.Title>Docker is not available</Alert.Title>

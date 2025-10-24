@@ -61,12 +61,7 @@ onMount(() => {
   operationalStateStore.startPolling();
   void operationalStateStore.refresh();
   packagesStore.loadPackages();
-  {
-    const state = operationalStateStore.state;
-    if (state?.mode === "remote" || state?.dockerRunning) {
-      packagesStore.loadInstalledPackages();
-    }
-  }
+  packagesStore.loadInstalledPackages();
 
   return () => {
     operationalStateStore.stopPolling();
@@ -122,7 +117,7 @@ onMount(() => {
         </Button>
       </Card.Content>
     </Card.Root>
-  {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+  {:else if installedState.status === "unavailable"}
     <Card.Root class="border-yellow-500/50 bg-yellow-500/10">
       <Card.Header>
         <Card.Title class="flex items-center space-x-2">

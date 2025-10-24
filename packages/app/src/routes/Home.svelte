@@ -96,9 +96,13 @@ $effect(() => {
       ethereumNetworkLabel = null;
     }
 
-    // Fetch validator installed status once; ignore errors
+    // Fetch validator installed status once when we can manage
     try {
-      ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
+      if (operationalStateStore.canManage) {
+        ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
+      } else {
+        ethereumValidatorInstalled = null;
+      }
     } catch (e) {
       ethereumValidatorInstalled = null;
     }
@@ -158,10 +162,7 @@ onMount(async () => {
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();
-    const state = operationalStateStore.state;
-    if (serverUrlStore.serverUrl !== "" || state?.dockerRunning) {
-      await packagesStore.loadInstalledPackages();
-    }
+    await packagesStore.loadInstalledPackages();
   }
 });
 
@@ -261,7 +262,7 @@ onDestroy(() => {
           </p>
         </Card.Content>
       </Card.Root>
-    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
+    {:else if installedState.status === "unavailable"}
       <Card.Root>
         <Card.Content>
           <p class="text-sm text-muted-foreground">
@@ -421,21 +422,6 @@ onDestroy(() => {
           </Button>
         </Card.Content>
       </Card.Root>
-    {:else if operationalStateStore.state?.mode === "local" && !operationalStateStore.state?.dockerRunning}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center space-x-2">
-            <Info class="h-5 w-5" />
-            <span>Docker Required</span>
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <p class="text-sm text-muted-foreground">
-            Docker needs to be running to view and manage packages. Please start
-            Docker and return to this page.
-          </p>
-        </Card.Content>
-      </Card.Root>
     {:else if installedState.status === "error"}
       <Card.Root>
         <Card.Content class="flex items-center justify-between">
@@ -449,6 +435,21 @@ onDestroy(() => {
           >
             Retry
           </Button>
+        </Card.Content>
+      </Card.Root>
+    {:else if installedState.status === "unavailable"}
+      <Card.Root>
+        <Card.Header>
+          <Card.Title class="flex items-center space-x-2">
+            <Info class="h-5 w-5" />
+            <span>Docker Required</span>
+          </Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <p class="text-sm text-muted-foreground">
+            Docker needs to be running to view and manage packages. Please start
+            Docker and return to this page.
+          </p>
         </Card.Content>
       </Card.Root>
     {:else if catalogState.status !== "ready" || installedState.status !== "ready"}

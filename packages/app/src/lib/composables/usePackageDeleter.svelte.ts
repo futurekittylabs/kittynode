@@ -1,4 +1,5 @@
 import { packagesStore } from "$stores/packages.svelte";
+import { operationalStateStore } from "$stores/operationalState.svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 import { goto } from "$app/navigation";
 
@@ -13,6 +14,11 @@ export function usePackageDeleter() {
     packageName: string,
     options?: { redirectToDashboard?: boolean },
   ): Promise<boolean> {
+    if (!operationalStateStore.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+      return false;
+    }
+
     const status = packagesStore.installationStatus(packageName);
 
     if (status === "unknown") {
