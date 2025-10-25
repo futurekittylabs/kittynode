@@ -23,7 +23,6 @@ import {
   MessageCircleMore,
   Globe,
   Unlink,
-  Link2,
 } from "@lucide/svelte";
 import { packagesStore } from "$stores/packages.svelte";
 import { operationalStateStore } from "$stores/operationalState.svelte";
@@ -42,9 +41,7 @@ const installedNodes = $derived(
   installedState.status === "ready" ? packagesStore.installedPackages : [],
 );
 const remoteServerUrl = $derived(serverUrlStore.serverUrl);
-const lastRemoteServerUrl = $derived(serverUrlStore.lastServerUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
-const showRemoteBanner = $derived(lastRemoteServerUrl !== "");
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
 const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 let remoteBannerLoading = $state(false);
@@ -85,15 +82,6 @@ async function setRemote(endpoint: string) {
 }
 
 const handleRemoteDisconnect = () => setRemote("");
-
-async function handleRemoteConnect() {
-  if (!lastRemoteServerUrl) {
-    notifyError("No remote server available to connect");
-    return;
-  }
-
-  await setRemote(lastRemoteServerUrl);
-}
 
 const navigationItems = [
   { icon: House, label: "Dashboard", href: "/" },
@@ -276,7 +264,7 @@ onMount(async () => {
     </Sidebar.Root>
 
     <Sidebar.Inset>
-      {#if showRemoteBanner}
+      {#if remoteConnected}
         <div
           class="flex flex-wrap items-center justify-between gap-3 border-b border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground md:flex-nowrap md:rounded-t-xl"
           role="status"
@@ -284,19 +272,15 @@ onMount(async () => {
         >
           <div class="flex min-w-0 items-center gap-2">
             <Globe class="h-5 w-5 shrink-0 text-primary dark:text-primary-foreground" />
-            <span class="leading-tight">
-              {remoteConnected ? "Remote connected" : "Remote disconnected"}
-            </span>
+            <span class="leading-tight">Remote connected</span>
           </div>
           <Button
             size="sm"
             variant="outline"
             class="gap-2"
-            onclick={remoteConnected ? handleRemoteDisconnect : handleRemoteConnect}
+            onclick={handleRemoteDisconnect}
             disabled={remoteBannerLoading}
-            aria-label={
-              remoteConnected ? "Disconnect from remote server" : "Connect to remote server"
-            }
+            aria-label="Disconnect from remote server"
           >
             {#if remoteBannerLoading}
               <span
@@ -304,15 +288,9 @@ onMount(async () => {
                 aria-hidden="true"
               ></span>
             {:else}
-              {#if remoteConnected}
-                <Unlink class="h-4 w-4 shrink-0" />
-              {:else}
-                <Link2 class="h-4 w-4 shrink-0" />
-              {/if}
+              <Unlink class="h-4 w-4 shrink-0" />
             {/if}
-            <span class="hidden sm:inline">
-              {remoteConnected ? "Disconnect" : "Connect"}
-            </span>
+            <span class="hidden sm:inline">Disconnect</span>
           </Button>
         </div>
       {/if}
