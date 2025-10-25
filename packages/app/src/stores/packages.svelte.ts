@@ -29,6 +29,8 @@ let installedState = $state<InstalledState>({
 });
 
 let installedRequestToken = 0;
+let installedSyncInFlight = false;
+let scheduledSync: Promise<void> | null = null;
 let lastOperationalSnapshot: { canManage: boolean } | null = null;
 
 function toPackageRecord(list: Package[]): Record<string, Package> {
@@ -36,11 +38,40 @@ function toPackageRecord(list: Package[]): Record<string, Package> {
 }
 
 function setInstalledUnavailable() {
+  if (installedState.status === "unavailable") {
+    return;
+  }
   installedRequestToken += 1;
   installedState = {
     status: "unavailable",
     packages: {},
   };
+}
+
+function packagesChanged(next: Record<string, Package>): boolean {
+  if (installedState.status !== "ready") {
+    return true;
+  }
+
+  const current = installedState.packages;
+  const currentKeys = Object.keys(current);
+  const nextKeys = Object.keys(next);
+
+  if (currentKeys.length !== nextKeys.length) {
+    return true;
+  }
+
+  for (const key of nextKeys) {
+    const currentPackage = current[key];
+    const nextPackage = next[key];
+    if (!currentPackage) {
+      return true;
+    }
+    if (JSON.stringify(currentPackage) !== JSON.stringify(nextPackage)) {
+      return true;
+    }
+  }
+  return false;
 }
 export const packagesStore = {
   get packages() {
@@ -160,6 +191,56 @@ export const packagesStore = {
       };
     }
   },
+  async syncInstalledPackages() {
+    const state = operationalStateStore.state;
+
+    if (!state) {
+      return;
+    }
+
+    if (!state.canManage) {
+      setInstalledUnavailable();
+      return;
+    }
+
+    if (installedState.status !== "ready") {
+      await this.loadInstalledPackages({ force: true });
+      return;
+    }
+
+    if (installedSyncInFlight) {
+      return;
+    }
+
+    installedSyncInFlight = true;
+    const requestId = installedRequestToken;
+    try {
+      const result = await coreClient.getInstalledPackages();
+
+      if (requestId !== installedRequestToken) {
+        return;
+      }
+
+      const packages = toPackageRecord(result);
+
+      if (!packagesChanged(packages)) {
+        return;
+      }
+
+      installedState = {
+        status: "ready",
+        packages,
+      };
+    } catch (e) {
+      if (requestId !== installedRequestToken) {
+        return;
+      }
+      const message = e instanceof Error ? e.message : String(e);
+      console.error(`Failed to sync installed packages: ${message}`);
+    } finally {
+      installedSyncInFlight = false;
+    }
+  },
 
   async installPackage(name: string, network?: string) {
     try {
@@ -237,3 +318,13 @@ export const packagesStore = {
     }
   },
 };
+
+operationalStateStore.subscribe(() => {
+  if (scheduledSync) {
+    return;
+  }
+
+  scheduledSync = packagesStore.syncInstalledPackages().finally(() => {
+    scheduledSync = null;
+  });
+});

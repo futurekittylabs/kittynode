@@ -162,7 +162,7 @@ onMount(async () => {
 
   if (!isMobileAndLocal()) {
     await packagesStore.loadPackages();
-    await packagesStore.loadInstalledPackages();
+    await packagesStore.syncInstalledPackages();
   }
 });
 

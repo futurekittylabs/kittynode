@@ -128,7 +128,7 @@ onMount(async () => {
 
   await packagesStore.loadPackages();
   await operationalStateStore.refresh();
-  await packagesStore.loadInstalledPackages();
+  await packagesStore.syncInstalledPackages();
 
   // Load Ethereum network label once for display in sidebar
   try {
