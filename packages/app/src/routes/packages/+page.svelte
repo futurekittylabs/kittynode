@@ -59,9 +59,9 @@ function managePackage(packageName: string) {
 
 onMount(() => {
   operationalStateStore.startPolling();
-  void operationalStateStore.refresh();
+  operationalStateStore.refresh().catch(() => {});
   packagesStore.loadPackages();
-  packagesStore.loadInstalledPackages();
+  packagesStore.syncInstalledPackages().catch(() => {});
 
   return () => {
     operationalStateStore.stopPolling();

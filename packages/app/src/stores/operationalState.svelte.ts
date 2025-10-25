@@ -4,15 +4,19 @@ import type {
   OperationalState,
 } from "$lib/types/operational_state";
 
+type PollSubscriber = (state: OperationalState | null) => void;
+
 let state = $state<OperationalState | null>(null);
 let loading = $state(false);
 let error = $state<string | null>(null);
 let isStarting = $state(false);
 let pollHandle: number | null = $state(null);
 let startingTimeout: number | null = $state(null);
+const pollSubscribers = new Set<PollSubscriber>();
 
 async function refresh() {
   loading = true;
+  let succeeded = false;
   try {
     state = await coreClient.getOperationalState();
     error = null;
@@ -20,12 +24,16 @@ async function refresh() {
       isStarting = false;
       clearStartingTimeout();
     }
+    succeeded = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Failed to refresh operational state: ${message}`);
     error = message;
   } finally {
     loading = false;
+    if (succeeded) {
+      notifySubscribers();
+    }
   }
 }
 
@@ -86,6 +94,17 @@ function clearStartingTimeout() {
   }
 }
 
+function notifySubscribers() {
+  for (const subscriber of pollSubscribers) {
+    try {
+      subscriber(state);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Operational state subscriber failed: ${message}`);
+    }
+  }
+}
+
 export const operationalStateStore = {
   get state() {
     return state;
@@ -119,6 +138,12 @@ export const operationalStateStore = {
   stopPolling,
   async startDockerIfNeeded() {
     return startDockerIfNeeded();
+  },
+  subscribe(listener: PollSubscriber) {
+    pollSubscribers.add(listener);
+    return () => {
+      pollSubscribers.delete(listener);
+    };
   },
 };
 const DEFAULT_POLL_INTERVAL = 5000;

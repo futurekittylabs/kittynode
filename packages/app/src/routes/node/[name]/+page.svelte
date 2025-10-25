@@ -288,7 +288,7 @@ $effect(() => {
 onMount(async () => {
   operationalStateStore.startPolling();
   await operationalStateStore.refresh();
-  await packagesStore.loadInstalledPackages({ force: true });
+  await packagesStore.syncInstalledPackages();
   await refreshValidatorInstalled();
 });
 
