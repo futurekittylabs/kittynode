@@ -458,36 +458,6 @@ fn run_init_blocking() -> Result<()> {
     Ok(())
 }
 
-fn prompt_external_endpoints(state: &mut InitState) -> Result<()> {
-    let theme = ColorfulTheme::default();
-
-    println!("\n📡 External Ethereum Node Configuration");
-    println!("=====================================\n");
-
-    println!("Enter your Execution Layer (EL) endpoint.");
-    println!("Example: http://192.168.1.100:8545 or http://25.67.109.175:8545");
-    let el_endpoint: String = Input::with_theme(&theme)
-        .with_prompt("Execution endpoint")
-        .validate_with(|input: &String| validate_endpoint_url(input))
-        .interact()?;
-
-    println!("\nEnter your Consensus Layer (CL) endpoint.");
-    println!("Example: http://192.168.1.100:5052 or http://25.67.109.175:5052");
-    let cl_endpoint: String = Input::with_theme(&theme)
-        .with_prompt("Consensus endpoint")
-        .validate_with(|input: &String| validate_endpoint_url(input))
-        .interact()?;
-
-    state.external_execution_endpoint = el_endpoint;
-    state.external_consensus_endpoint = cl_endpoint;
-
-    println!("\n✓ External endpoints configured:");
-    println!("  EL: {}", state.external_execution_endpoint);
-    println!("  CL: {}", state.external_consensus_endpoint);
-
-    Ok(())
-}
-
 fn handle_event(
     key: KeyEvent,
     state: &mut InitState,
