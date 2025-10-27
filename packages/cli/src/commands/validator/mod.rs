@@ -661,7 +661,10 @@ fn render(frame: &mut Frame, state: &InitState) {
             lines.push(Line::styled("Use existing Ethereum nodes?", title_style));
             lines.push(Line::from("Use ←/→ or ↑/↓ to select, then press Enter."));
             lines.push(Line::from(""));
-            let options = ["Use Kittynode's Docker nodes", "Use my existing nodes"];
+            let options = [
+                "Set up Docker nodes with Kittynode",
+                "use my existing nodes",
+            ];
             let selected_index = if state.use_external_nodes { 1 } else { 0 };
             lines.extend(option_lines(selected_index, &options));
             lines.push(Line::from(""));
