@@ -1,5 +1,5 @@
 <script lang="ts">
-import { initializedStore } from "$states/initialized.svelte";
+import { initializedStore } from "$lib/states/initialized.svelte";
 import { goto } from "$app/navigation";
 import { platform } from "@tauri-apps/plugin-os";
 import { coreClient } from "$lib/client";

@@ -3,10 +3,13 @@ import { coreClient } from "$lib/client";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
-import { serverUrlStore, normalizeServerUrl } from "$states/serverUrl.svelte";
-import { operationalStateStore } from "$states/operationalState.svelte";
-import { updates } from "$states/updates.svelte";
-import { appConfigStore } from "$states/appConfig.svelte";
+import {
+  serverUrlStore,
+  normalizeServerUrl,
+} from "$lib/states/serverUrl.svelte";
+import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { updates } from "$lib/states/updates.svelte";
+import { appConfigStore } from "$lib/states/appConfig.svelte";
 import { onMount } from "svelte";
 import { Switch } from "$lib/components/ui/switch";
 import { Input } from "$lib/components/ui/input";
@@ -23,8 +26,8 @@ import {
   Link2,
   Unlink,
 } from "@lucide/svelte";
-import { refetchStores } from "$utils/refetchStores";
-import { notifySuccess, notifyError, notifyInfo } from "$utils/notify";
+import { refetchStores } from "$lib/utils/refetchStores";
+import { notifySuccess, notifyError, notifyInfo } from "$lib/utils/notify";
 import { setMode, userPrefersMode } from "mode-watcher";
 import * as Select from "$lib/components/ui/select";
 

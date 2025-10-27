@@ -1,6 +1,6 @@
-import { packagesStore } from "$states/packages.svelte";
-import { operationalStateStore } from "$states/operationalState.svelte";
-import { notifyError, notifySuccess } from "$utils/notify";
+import { packagesStore } from "$lib/states/packages.svelte";
+import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { notifyError, notifySuccess } from "$lib/utils/notify";
 import { goto } from "$app/navigation";
 
 export function usePackageDeleter() {

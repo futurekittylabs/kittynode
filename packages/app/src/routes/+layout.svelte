@@ -1,15 +1,15 @@
 <script lang="ts">
 import "../app.css";
 import { onMount } from "svelte";
-import { initializedStore } from "$states/initialized.svelte";
-import { appConfigStore } from "$states/appConfig.svelte";
+import { initializedStore } from "$lib/states/initialized.svelte";
+import { appConfigStore } from "$lib/states/appConfig.svelte";
 import { ModeWatcher, mode } from "mode-watcher";
 import Splash from "./Splash.svelte";
 import { platform } from "@tauri-apps/plugin-os";
-import { updates } from "$states/updates.svelte";
+import { updates } from "$lib/states/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigStore } from "$states/packageConfig.svelte";
+import { packageConfigStore } from "$lib/states/packageConfig.svelte";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -23,12 +23,12 @@ import {
   Globe,
   Unlink,
 } from "@lucide/svelte";
-import { packagesStore } from "$states/packages.svelte";
-import { operationalStateStore } from "$states/operationalState.svelte";
+import { packagesStore } from "$lib/states/packages.svelte";
+import { operationalStateStore } from "$lib/states/operationalState.svelte";
 import { page } from "$app/state";
-import { serverUrlStore } from "$states/serverUrl.svelte";
-import { notifySuccess, notifyError } from "$utils/notify";
-import { refetchStores } from "$utils/refetchStores";
+import { serverUrlStore } from "$lib/states/serverUrl.svelte";
+import { notifySuccess, notifyError } from "$lib/utils/notify";
+import { refetchStores } from "$lib/utils/refetchStores";
 import { coreClient } from "$lib/client";
 
 const { children } = $props();

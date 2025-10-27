@@ -1,6 +1,6 @@
-import { packagesStore } from "$states/packages.svelte";
-import { operationalStateStore } from "$states/operationalState.svelte";
-import { notifyError, notifySuccess } from "$utils/notify";
+import { packagesStore } from "$lib/states/packages.svelte";
+import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { notifyError, notifySuccess } from "$lib/utils/notify";
 
 export function usePackageInstaller() {
   let installingPackages = $state<Set<string>>(new Set());

@@ -9,10 +9,6 @@ const config = {
     adapter: adapter({
       fallback: "index.html",
     }),
-    alias: {
-      $states: "src/states",
-      $utils: "src/utils",
-    },
   },
 };
 
