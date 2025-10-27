@@ -870,6 +870,11 @@ fn run_launch_flow(
             println!("Using external Ethereum nodes:");
             println!("  EL: {}", external_execution_endpoint);
             println!("  CL: {}", external_consensus_endpoint);
+        } else {
+            // When switching to local nodes, explicitly set empty values to remove external endpoints
+            // This allows users to revert from external to local nodes without manual config editing
+            values.insert("execution_endpoint".to_string(), String::new());
+            values.insert("consensus_endpoint".to_string(), String::new());
         }
 
         let config = PackageConfig { values };

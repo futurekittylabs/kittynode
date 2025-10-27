@@ -71,8 +71,16 @@ impl Ethereum {
 
         // Check if using external nodes
         let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
-        let use_external_execution = cfg.values.get("execution_endpoint").is_some();
-        let use_external_consensus = cfg.values.get("consensus_endpoint").is_some();
+        let use_external_execution = cfg
+            .values
+            .get("execution_endpoint")
+            .map(|v| !v.is_empty())
+            .unwrap_or(false);
+        let use_external_consensus = cfg
+            .values
+            .get("consensus_endpoint")
+            .map(|v| !v.is_empty())
+            .unwrap_or(false);
 
         // If using external nodes, skip EL and CL containers but still create validator if enabled
         let skip_el_cl_containers = use_external_execution && use_external_consensus;
@@ -287,10 +295,11 @@ impl Ethereum {
                 vc_cmd.push(network.to_string());
             }
 
-            // Use external consensus endpoint if configured, otherwise use local container
+            // Use external consensus endpoint if configured and not empty, otherwise use local container
             let beacon_endpoint = cfg
                 .values
                 .get("consensus_endpoint")
+                .filter(|v| !v.is_empty())
                 .cloned()
                 .unwrap_or_else(|| format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"));
 
