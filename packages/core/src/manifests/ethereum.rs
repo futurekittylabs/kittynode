@@ -68,6 +68,17 @@ impl Ethereum {
         if !is_supported_network(network) {
             return Err(eyre!("Unsupported Ethereum network: {network}"));
         }
+
+        // Check if using external nodes
+        let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
+        let use_external_execution = cfg.values.get("execution_endpoint").is_some();
+        let use_external_consensus = cfg.values.get("consensus_endpoint").is_some();
+
+        // If using external nodes, return empty container list (no Docker containers needed)
+        if use_external_execution && use_external_consensus {
+            return Ok(Vec::new());
+        }
+
         generate_jwt_secret(ETHEREUM_NAME)
             .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
         let kittynode_path = kittynode_path()?;
@@ -271,10 +282,18 @@ impl Ethereum {
                 vc_cmd.push("--network".to_string());
                 vc_cmd.push(network.to_string());
             }
+
+            // Use external consensus endpoint if configured, otherwise use local container
+            let beacon_endpoint = cfg
+                .values
+                .get("consensus_endpoint")
+                .cloned()
+                .unwrap_or_else(|| format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"));
+
             vc_cmd.extend([
                 "vc".to_string(),
                 "--beacon-nodes".to_string(),
-                format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"),
+                beacon_endpoint,
                 "--suggested-fee-recipient".to_string(),
                 fee.to_string(),
             ]);

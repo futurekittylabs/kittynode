@@ -42,7 +42,7 @@ use kittynode_core::api::{
         available_networks, check_internet_connectivity, ensure_ephemery_config,
         format_eth_from_gwei, generate_validator_files_with_progress, normalize_withdrawal_address,
         parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
-        validate_password,
+        validate_endpoint_url, validate_password,
     },
 };
 
@@ -334,6 +334,7 @@ const CONSENSUS_OPTIONS: [&str; 1] = ["lighthouse (only option, others coming so
 enum Step {
     Docker,
     Network,
+    ExternalNodes,
     Execution,
     Consensus,
     Keygen,
@@ -349,6 +350,9 @@ struct InitState {
     network_index: usize,
     execution_index: usize,
     consensus_index: usize,
+    use_external_nodes: bool,
+    external_execution_endpoint: String,
+    external_consensus_endpoint: String,
     keygen_summary: Option<KeygenSummary>,
     status: Option<String>,
     aborted: bool,
@@ -362,6 +366,9 @@ impl InitState {
             network_index: 0,
             execution_index: 0,
             consensus_index: 0,
+            use_external_nodes: false,
+            external_execution_endpoint: String::new(),
+            external_consensus_endpoint: String::new(),
             keygen_summary: None,
             status: None,
             aborted: false,
@@ -440,6 +447,36 @@ fn run_init_blocking() -> Result<()> {
     Ok(())
 }
 
+fn prompt_external_endpoints(state: &mut InitState) -> Result<()> {
+    let theme = ColorfulTheme::default();
+
+    println!("\n📡 External Ethereum Node Configuration");
+    println!("=====================================\n");
+
+    println!("Enter your Execution Layer (EL) endpoint.");
+    println!("Example: http://192.168.1.100:8545 or http://25.67.109.175:8545");
+    let el_endpoint: String = Input::with_theme(&theme)
+        .with_prompt("Execution endpoint")
+        .validate_with(|input: &String| validate_endpoint_url(input))
+        .interact()?;
+
+    println!("\nEnter your Consensus Layer (CL) endpoint.");
+    println!("Example: http://192.168.1.100:5052 or http://25.67.109.175:5052");
+    let cl_endpoint: String = Input::with_theme(&theme)
+        .with_prompt("Consensus endpoint")
+        .validate_with(|input: &String| validate_endpoint_url(input))
+        .interact()?;
+
+    state.external_execution_endpoint = el_endpoint;
+    state.external_consensus_endpoint = cl_endpoint;
+
+    println!("\n✓ External endpoints configured:");
+    println!("  EL: {}", state.external_execution_endpoint);
+    println!("  CL: {}", state.external_consensus_endpoint);
+
+    Ok(())
+}
+
 fn handle_event(
     key: KeyEvent,
     state: &mut InitState,
@@ -458,8 +495,28 @@ fn handle_event(
                 state.network_index += 1;
             }
             KeyCode::Enter => {
-                state.step = Step::Execution;
+                state.step = Step::ExternalNodes;
                 state.status = None;
+            }
+            _ => {}
+        },
+        Step::ExternalNodes => match key.code {
+            KeyCode::Up | KeyCode::Left => state.use_external_nodes = false,
+            KeyCode::Down | KeyCode::Right => state.use_external_nodes = true,
+            KeyCode::Enter => {
+                if state.use_external_nodes {
+                    state.status = Some("Enter external node endpoints...".to_string());
+                    // Prompt for endpoints
+                    if let Err(e) = prompt_external_endpoints(state) {
+                        state.status = Some(format!("Error: {e}"));
+                    } else {
+                        state.step = Step::Keygen;
+                        state.status = None;
+                    }
+                } else {
+                    state.step = Step::Execution;
+                    state.status = None;
+                }
             }
             _ => {}
         },
@@ -525,7 +582,15 @@ fn handle_event(
             if matches!(key.code, KeyCode::Enter)
                 && let Some(summary) = state.keygen_summary.as_ref()
             {
-                match run_launch_flow(terminal, handle, summary, state.network()) {
+                match run_launch_flow(
+                    terminal,
+                    handle,
+                    summary,
+                    state.network(),
+                    state.use_external_nodes,
+                    &state.external_execution_endpoint,
+                    &state.external_consensus_endpoint,
+                ) {
                     Ok(()) => {
                         state.status = Some("Clients started successfully.".to_string());
                         state.step = Step::Deposit;
@@ -580,6 +645,21 @@ fn render(frame: &mut Frame, state: &InitState) {
             lines.push(Line::from("Use ↑/↓ and press Enter."));
             lines.push(Line::from(""));
             lines.extend(option_lines(state.network_index, &NETWORK_OPTIONS));
+        }
+        Step::ExternalNodes => {
+            lines.push(Line::styled("Use existing Ethereum nodes?", title_style));
+            lines.push(Line::from("Use ←/→ or ↑/↓ to select, then press Enter."));
+            lines.push(Line::from(""));
+            let options = ["Use Kittynode's Docker nodes", "Use my existing nodes"];
+            let selected_index = if state.use_external_nodes { 1 } else { 0 };
+            lines.extend(option_lines(selected_index, &options));
+            lines.push(Line::from(""));
+            lines.push(Line::from(
+                "If you have Ethereum nodes already running on this machine,",
+            ));
+            lines.push(Line::from(
+                "you can connect Kittynode's validator to them instead.",
+            ));
         }
         Step::Execution => {
             lines.push(Line::styled("Select an execution client", title_style));
@@ -719,6 +799,9 @@ fn run_launch_flow(
     handle: &Handle,
     summary: &KeygenSummary,
     network: &str,
+    use_external_nodes: bool,
+    external_execution_endpoint: &str,
+    external_consensus_endpoint: &str,
 ) -> Result<()> {
     // Re-enable logging while the blocking container import flow executes.
     let _logs_on = crate::log_control::enable_guard();
@@ -738,6 +821,22 @@ fn run_launch_flow(
             "validator_fee_recipient".to_string(),
             summary.fee_recipient.clone(),
         );
+
+        // Add external endpoints if configured
+        if use_external_nodes {
+            values.insert(
+                "execution_endpoint".to_string(),
+                external_execution_endpoint.to_string(),
+            );
+            values.insert(
+                "consensus_endpoint".to_string(),
+                external_consensus_endpoint.to_string(),
+            );
+            println!("Using external Ethereum nodes:");
+            println!("  EL: {}", external_execution_endpoint);
+            println!("  CL: {}", external_consensus_endpoint);
+        }
+
         let config = PackageConfig { values };
         let mut needs_install = false;
         let update_result = handle

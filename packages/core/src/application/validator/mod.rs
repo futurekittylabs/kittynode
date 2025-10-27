@@ -3,7 +3,7 @@ mod keygen;
 
 pub use input_validation::{
     normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
-    validate_password,
+    validate_endpoint_url, validate_password,
 };
 #[cfg(target_os = "linux")]
 pub use keygen::swap_active;
