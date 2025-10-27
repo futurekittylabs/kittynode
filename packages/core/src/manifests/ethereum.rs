@@ -74,13 +74,16 @@ impl Ethereum {
         let use_external_execution = cfg.values.get("execution_endpoint").is_some();
         let use_external_consensus = cfg.values.get("consensus_endpoint").is_some();
 
-        // If using external nodes, return empty container list (no Docker containers needed)
-        if use_external_execution && use_external_consensus {
-            return Ok(Vec::new());
-        }
+        // If using external nodes, skip EL and CL containers but still create validator if enabled
+        let skip_el_cl_containers = use_external_execution && use_external_consensus;
 
-        generate_jwt_secret(ETHEREUM_NAME)
-            .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
+        let mut containers = Vec::new();
+
+        // Only generate JWT secret if we're running local EL/CL containers
+        if !skip_el_cl_containers {
+            generate_jwt_secret(ETHEREUM_NAME)
+                .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
+        }
         let kittynode_path = kittynode_path()?;
         let package_path = PackageConfigStore::package_dir(&kittynode_path, ETHEREUM_NAME);
         let jwt_path = package_path.join("jwt.hex");
@@ -189,8 +192,9 @@ impl Ethereum {
             });
         }
 
-        let mut containers = vec![
-            Container {
+        // Only add EL and CL containers if not using external nodes
+        if !skip_el_cl_containers {
+            containers.push(Container {
                 name: RETH_NODE_CONTAINER_NAME.to_string(),
                 image: "ghcr.io/paradigmxyz/reth".to_string(),
                 cmd: reth_cmd,
@@ -223,8 +227,8 @@ impl Ethereum {
                     options: None,
                 }],
                 file_bindings: reth_file_bindings,
-            },
-            Container {
+            });
+            containers.push(Container {
                 name: LIGHTHOUSE_NODE_CONTAINER_NAME.to_string(),
                 image: "sigp/lighthouse".to_string(),
                 cmd: lighthouse_cmd,
@@ -264,8 +268,8 @@ impl Ethereum {
                     options: None,
                 }],
                 file_bindings: lighthouse_file_bindings,
-            },
-        ];
+            });
+        }
 
         let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
         let enabled = cfg
