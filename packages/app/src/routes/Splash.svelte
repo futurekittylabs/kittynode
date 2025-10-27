@@ -8,7 +8,7 @@ import { toast } from "svelte-sonner";
 import { Button } from "$lib/components/ui/button";
 import { Progress } from "$lib/components/ui/progress";
 import { mode } from "mode-watcher";
-import { AlertTriangle, ArrowUpRight } from "@lucide/svelte";
+import { TriangleAlert, ArrowUpRight } from "@lucide/svelte";
 
 let currentPlatform = $state("");
 let currentStep = $state(0);
@@ -173,7 +173,7 @@ async function initKittynode() {
   class="relative z-10 flex min-h-svh w-full items-center justify-center px-6 py-10 sm:px-10 sm:py-16"
 >
   <section
-    class="flex w-full max-w-4xl flex-col rounded-[2rem] border border-border/40 bg-background/90 px-6 py-10 shadow-none backdrop-blur-sm sm:px-12 sm:py-14"
+    class="flex w-full max-w-4xl flex-col rounded-4xl border border-border/40 bg-background/90 px-6 py-10 shadow-none backdrop-blur-sm sm:px-12 sm:py-14"
   >
     <header class="space-y-6 kittynode-onboard-font">
       <div class="flex flex-wrap items-center gap-3">
@@ -192,7 +192,7 @@ async function initKittynode() {
       <Progress value={progressValue} class="h-1" />
     </header>
 
-    <div class="kittynode-onboard-font mt-8 min-h-[240px]">
+    <div class="kittynode-onboard-font mt-8 min-h-60">
       {#if currentStep === 0}
         <div class="flex h-full flex-col justify-center gap-6 text-left">
           <div class="space-y-4">
@@ -247,7 +247,7 @@ async function initKittynode() {
               <span
                 class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 sm:h-9 sm:w-9"
               >
-                <AlertTriangle class="h-5 w-5" aria-hidden="true" />
+                <TriangleAlert class="h-5 w-5" aria-hidden="true" />
               </span>
               <h2
                 class="font-medium leading-tight text-[1.9rem] text-foreground sm:text-[2rem]"

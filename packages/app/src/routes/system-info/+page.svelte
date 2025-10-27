@@ -26,8 +26,6 @@ function fetchSystemInfo() {
   systemInfoStore.fetchSystemInfo();
 }
 
-// Progress bar alone conveys usage; no percentage text needed.
-
 onMount(() => {
   if (!systemInfoStore.systemInfo) {
     fetchSystemInfo();

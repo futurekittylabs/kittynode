@@ -28,7 +28,7 @@ import {
   Settings,
   FileText,
   CircleAlert,
-  PauseCircle,
+  CirclePause,
   ShieldCheck,
   ArrowUpRight,
 } from "@lucide/svelte";
@@ -365,7 +365,7 @@ onDestroy(() => {
             <div
               class="flex items-center space-x-1 rounded-full bg-amber-500/10 px-3 py-1.5"
             >
-              <PauseCircle class="h-4 w-4 text-amber-500 dark:text-amber-200" />
+              <CirclePause class="h-4 w-4 text-amber-500 dark:text-amber-200" />
               <span
                 class="text-sm font-medium text-amber-700 dark:text-amber-200"
                 >Stopped</span
@@ -563,7 +563,7 @@ onDestroy(() => {
                   name="network"
                   bind:value={selectedNetwork}
                 >
-                  <Select.Trigger class="w-full sm:w-[220px] md:w-[240px]">
+                  <Select.Trigger class="w-full sm:w-[220px] md:w-60">
                     {networkTriggerContent}
                   </Select.Trigger>
                   <Select.Content>
