@@ -335,6 +335,7 @@ enum Step {
     Docker,
     Network,
     ExternalNodes,
+    ExternalEndpoints,
     Execution,
     Consensus,
     Keygen,
@@ -342,6 +343,12 @@ enum Step {
     Launch,
     Deposit,
     Done,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EndpointInputMode {
+    Execution,
+    Consensus,
 }
 
 struct InitState {
@@ -353,6 +360,8 @@ struct InitState {
     use_external_nodes: bool,
     external_execution_endpoint: String,
     external_consensus_endpoint: String,
+    endpoint_input_buffer: String,
+    endpoint_input_mode: EndpointInputMode,
     keygen_summary: Option<KeygenSummary>,
     status: Option<String>,
     aborted: bool,
@@ -369,6 +378,8 @@ impl InitState {
             use_external_nodes: false,
             external_execution_endpoint: String::new(),
             external_consensus_endpoint: String::new(),
+            endpoint_input_buffer: String::new(),
+            endpoint_input_mode: EndpointInputMode::Execution,
             keygen_summary: None,
             status: None,
             aborted: false,
@@ -505,18 +516,48 @@ fn handle_event(
             KeyCode::Down | KeyCode::Right => state.use_external_nodes = true,
             KeyCode::Enter => {
                 if state.use_external_nodes {
-                    state.status = Some("Enter external node endpoints...".to_string());
-                    // Prompt for endpoints
-                    if let Err(e) = prompt_external_endpoints(state) {
-                        state.status = Some(format!("Error: {e}"));
-                    } else {
-                        state.step = Step::Keygen;
-                        state.status = None;
-                    }
+                    state.step = Step::ExternalEndpoints;
+                    state.endpoint_input_mode = EndpointInputMode::Execution;
+                    state.endpoint_input_buffer.clear();
+                    state.status = None;
                 } else {
                     state.step = Step::Execution;
                     state.status = None;
                 }
+            }
+            _ => {}
+        },
+        Step::ExternalEndpoints => match key.code {
+            KeyCode::Char(c) => {
+                state.endpoint_input_buffer.push(c);
+            }
+            KeyCode::Backspace => {
+                state.endpoint_input_buffer.pop();
+            }
+            KeyCode::Enter => {
+                if validate_endpoint_url(&state.endpoint_input_buffer).is_ok() {
+                    match state.endpoint_input_mode {
+                        EndpointInputMode::Execution => {
+                            state.external_execution_endpoint = state.endpoint_input_buffer.clone();
+                            state.endpoint_input_mode = EndpointInputMode::Consensus;
+                            state.endpoint_input_buffer.clear();
+                        }
+                        EndpointInputMode::Consensus => {
+                            state.external_consensus_endpoint = state.endpoint_input_buffer.clone();
+                            state.step = Step::Keygen;
+                            state.endpoint_input_buffer.clear();
+                            state.status = None;
+                        }
+                    }
+                } else {
+                    state.status = Some("Invalid endpoint URL. Please try again.".to_string());
+                    state.endpoint_input_buffer.clear();
+                }
+            }
+            KeyCode::Esc => {
+                state.step = Step::ExternalNodes;
+                state.endpoint_input_buffer.clear();
+                state.status = None;
             }
             _ => {}
         },
@@ -660,6 +701,30 @@ fn render(frame: &mut Frame, state: &InitState) {
             lines.push(Line::from(
                 "you can connect Kittynode's validator to them instead.",
             ));
+        }
+        Step::ExternalEndpoints => {
+            match state.endpoint_input_mode {
+                EndpointInputMode::Execution => {
+                    lines.push(Line::styled(
+                        "Enter Execution Layer (EL) endpoint",
+                        title_style,
+                    ));
+                    lines.push(Line::from("Example: http://192.168.1.100:8545"));
+                    lines.push(Line::from(""));
+                    lines.push(Line::from(format!("> {}", state.endpoint_input_buffer)));
+                }
+                EndpointInputMode::Consensus => {
+                    lines.push(Line::styled(
+                        "Enter Consensus Layer (CL) endpoint",
+                        title_style,
+                    ));
+                    lines.push(Line::from("Example: http://192.168.1.100:5052"));
+                    lines.push(Line::from(""));
+                    lines.push(Line::from(format!("> {}", state.endpoint_input_buffer)));
+                }
+            }
+            lines.push(Line::from(""));
+            lines.push(Line::from("Press Esc to go back, Enter to confirm."));
         }
         Step::Execution => {
             lines.push(Line::styled("Select an execution client", title_style));
