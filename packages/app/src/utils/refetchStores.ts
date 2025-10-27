@@ -1,5 +1,5 @@
-import { systemInfoStore } from "$stores/systemInfo.svelte";
-import { operationalStateStore } from "$stores/operationalState.svelte";
+import { systemInfoStore } from "$states/systemInfo.svelte";
+import { operationalStateStore } from "$states/operationalState.svelte";
 
 export function refetchStores() {
   systemInfoStore.fetchSystemInfo();

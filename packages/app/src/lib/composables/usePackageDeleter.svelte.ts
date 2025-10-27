@@ -1,5 +1,5 @@
-import { packagesStore } from "$stores/packages.svelte";
-import { operationalStateStore } from "$stores/operationalState.svelte";
+import { packagesStore } from "$states/packages.svelte";
+import { operationalStateStore } from "$states/operationalState.svelte";
 import { notifyError, notifySuccess } from "$utils/notify";
 import { goto } from "$app/navigation";
 

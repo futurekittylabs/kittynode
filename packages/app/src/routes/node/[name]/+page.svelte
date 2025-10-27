@@ -2,11 +2,11 @@
 import { page } from "$app/state";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
-import { packagesStore } from "$stores/packages.svelte";
+import { packagesStore } from "$states/packages.svelte";
 import { onDestroy, onMount } from "svelte";
 import DockerLogs from "$lib/components/DockerLogs.svelte";
-import { operationalStateStore } from "$stores/operationalState.svelte";
-import { packageConfigStore } from "$stores/packageConfig.svelte";
+import { operationalStateStore } from "$states/operationalState.svelte";
+import { packageConfigStore } from "$states/packageConfig.svelte";
 import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";

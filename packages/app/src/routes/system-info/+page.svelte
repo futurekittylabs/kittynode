@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { serverUrlStore } from "$stores/serverUrl.svelte";
-import { systemInfoStore } from "$stores/systemInfo.svelte";
-import { operationalStateStore } from "$stores/operationalState.svelte";
+import { serverUrlStore } from "$states/serverUrl.svelte";
+import { systemInfoStore } from "$states/systemInfo.svelte";
+import { operationalStateStore } from "$states/operationalState.svelte";
 import { Skeleton } from "$lib/components/ui/skeleton";
 import { Progress } from "$lib/components/ui/progress";
 import * as Card from "$lib/components/ui/card";

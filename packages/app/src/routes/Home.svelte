@@ -3,11 +3,11 @@ import { onMount, onDestroy } from "svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
-import { systemInfoStore } from "$stores/systemInfo.svelte";
-import { packagesStore } from "$stores/packages.svelte";
-import { appConfigStore } from "$stores/appConfig.svelte";
-import { serverUrlStore } from "$stores/serverUrl.svelte";
-import { operationalStateStore } from "$stores/operationalState.svelte";
+import { systemInfoStore } from "$states/systemInfo.svelte";
+import { packagesStore } from "$states/packages.svelte";
+import { appConfigStore } from "$states/appConfig.svelte";
+import { serverUrlStore } from "$states/serverUrl.svelte";
+import { operationalStateStore } from "$states/operationalState.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
 import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
@@ -16,7 +16,7 @@ import {
   ethereumNetworks,
 } from "$lib/constants/ethereumNetworks";
 import * as Select from "$lib/components/ui/select";
-import { runtimeOverviewStore } from "$stores/runtimeOverview.svelte";
+import { runtimeOverviewStore } from "$states/runtimeOverview.svelte";
 import { coreClient } from "$lib/client";
 import {
   Package2,
@@ -32,7 +32,7 @@ import {
   CircleAlert,
 } from "@lucide/svelte";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigStore } from "$stores/packageConfig.svelte";
+import { packageConfigStore } from "$states/packageConfig.svelte";
 
 const { isInstalling, installPackage } = usePackageInstaller();
 

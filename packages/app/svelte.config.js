@@ -10,7 +10,7 @@ const config = {
       fallback: "index.html",
     }),
     alias: {
-      $stores: "src/stores",
+      $states: "src/states",
       $utils: "src/utils",
     },
   },

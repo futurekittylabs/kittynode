@@ -1,4 +1,4 @@
-import { packagesStore } from "$stores/packages.svelte";
+import { packagesStore } from "$states/packages.svelte";
 
 export type RuntimeStatus = "unknown" | "checking" | "running" | "stopped";
 export type LifecyclePhase = "idle" | "stopping" | "starting";
