@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as Card from "$lib/components/ui/card";
 import { operationalStateStore } from "$lib/states/operationalState.svelte";
-import { CircleCheck, CircleAlert, Server, Loader2 } from "@lucide/svelte";
+import { CircleCheck, CircleAlert, Server, LoaderCircle } from "@lucide/svelte";
 
 const { showServerIcon = false } = $props<{ showServerIcon?: boolean }>();
 
@@ -22,10 +22,10 @@ const loading = $derived(operationalStateStore.loading && !state);
   <Card.Content>
     <div class="flex items-center space-x-2">
       {#if isStarting}
-        <Loader2 class="h-4 w-4 text-blue-500 animate-spin" />
+        <LoaderCircle class="h-4 w-4 text-blue-500 animate-spin" />
         <span class="text-sm font-medium">Starting Docker...</span>
       {:else if loading}
-        <Loader2 class="h-4 w-4 text-muted-foreground animate-spin" />
+        <LoaderCircle class="h-4 w-4 text-muted-foreground animate-spin" />
         <span class="text-sm font-medium">Checking status...</span>
       {:else if (state?.mode === "remote" && state?.canManage) || state?.dockerRunning}
         <CircleCheck class="h-4 w-4 text-green-500" />

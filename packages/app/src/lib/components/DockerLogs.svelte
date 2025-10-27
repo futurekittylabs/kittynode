@@ -83,7 +83,7 @@ function handleScroll(e: Event) {
       {#if !hasLogs}
         <div class="text-muted-foreground">No logs available</div>
       {:else}
-        <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+        <div class="whitespace-pre-wrap wrap:anywhere">
           {@html logsHtml}
         </div>
       {/if}
