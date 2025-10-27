@@ -7,9 +7,7 @@
     "website"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^2.2.6",
-    "prettier": "^3.6.2",
-    "prettier-plugin-svelte": "^3.4.0"
+    "@biomejs/biome": "^2.2.6"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",

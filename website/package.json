@@ -9,8 +9,8 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "format-lint": "prettier --check . --ignore-path ../.prettierignore && biome format . && biome lint .",
-    "format-lint:fix": "prettier --write . --ignore-path ../.prettierignore && biome format . --fix && biome lint . --fix"
+    "format-lint": "biome format . && biome lint .",
+    "format-lint:fix": "biome format . --fix && biome lint . --fix"
   },
   "devDependencies": {
     "@internationalized/date": "^3.10.0",
