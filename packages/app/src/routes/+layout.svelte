@@ -1,7 +1,6 @@
 <script lang="ts">
 import "../app.css";
 import { onMount } from "svelte";
-import { windowShownStore } from "$stores/windowShown.svelte.ts";
 import { initializedStore } from "$stores/initialized.svelte";
 import { appConfigStore } from "$stores/appConfig.svelte";
 import { ModeWatcher, mode } from "mode-watcher";
@@ -103,8 +102,6 @@ let onboardingCompleted = $state(false);
 let checkingOnboarding = $state(true);
 
 onMount(async () => {
-  await windowShownStore.show();
-
   try {
     await appConfigStore.load();
   } catch (e) {
