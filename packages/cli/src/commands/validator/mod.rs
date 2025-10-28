@@ -663,7 +663,7 @@ fn render(frame: &mut Frame, state: &InitState) {
             lines.push(Line::from(""));
             let options = [
                 "Set up Docker nodes with Kittynode",
-                "use my existing nodes",
+                "Use my existing nodes",
             ];
             let selected_index = if state.use_external_nodes { 1 } else { 0 };
             lines.extend(option_lines(selected_index, &options));
