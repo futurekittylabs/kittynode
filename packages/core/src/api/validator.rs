@@ -5,7 +5,7 @@ pub use crate::application::validator::{
     check_internet_connectivity, default_withdrawal_address, derive_execution_address,
     format_eth_from_gwei, generate_validator_files, generate_validator_files_with_progress,
     normalize_withdrawal_address, parse_deposit_amount_gwei, parse_validator_count,
-    resolve_withdrawal_address, validate_password,
+    resolve_withdrawal_address, validate_endpoint_url, validate_password,
 };
 pub use crate::infra::ephemery::{
     EPHEMERY_CHECKPOINT_URLS, EPHEMERY_NETWORK_NAME, EphemeryConfig, ensure_ephemery_config,

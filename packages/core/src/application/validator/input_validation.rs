@@ -1,6 +1,7 @@
 use alloy_primitives::U256;
 use alloy_primitives::utils::parse_units;
 use eyre::{Result, eyre};
+use url::Url;
 
 pub const MIN_VALIDATOR_COUNT: u16 = 1;
 pub const MAX_VALIDATOR_COUNT: u16 = 32;
@@ -82,6 +83,45 @@ pub fn validate_password(password: &str) -> Result<()> {
             "Password must be at most {MAX_PASSWORD_LEN} characters long"
         ));
     }
+    Ok(())
+}
+
+/// Validates an Ethereum endpoint URL format
+/// Accepts formats like:
+/// - http://localhost:8545
+/// - http://192.168.1.100:5052
+/// - http://25.67.109.175:8545
+pub fn validate_endpoint_url(endpoint: &str) -> Result<()> {
+    let trimmed = endpoint.trim();
+    if trimmed.is_empty() {
+        return Err(eyre!("Endpoint URL cannot be empty"));
+    }
+
+    // Try to parse as URL
+    let url = Url::parse(trimmed).map_err(|e| eyre!("Invalid endpoint URL format: {e}"))?;
+
+    // Check scheme
+    match url.scheme() {
+        "http" | "https" => {}
+        other => {
+            return Err(eyre!(
+                "Endpoint must use http or https scheme, got: {other}"
+            ));
+        }
+    }
+
+    // Check host exists
+    if url.host_str().is_none() {
+        return Err(eyre!("Endpoint URL must include a host"));
+    }
+
+    // Check port exists
+    if url.port().is_none() {
+        return Err(eyre!(
+            "Endpoint URL must include a port (e.g., :8545 or :5052)"
+        ));
+    }
+
     Ok(())
 }
 

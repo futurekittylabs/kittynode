@@ -68,8 +68,30 @@ impl Ethereum {
         if !is_supported_network(network) {
             return Err(eyre!("Unsupported Ethereum network: {network}"));
         }
-        generate_jwt_secret(ETHEREUM_NAME)
-            .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
+
+        // Check if using external nodes
+        let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
+        let use_external_execution = cfg
+            .values
+            .get("execution_endpoint")
+            .map(|v| !v.is_empty())
+            .unwrap_or(false);
+        let use_external_consensus = cfg
+            .values
+            .get("consensus_endpoint")
+            .map(|v| !v.is_empty())
+            .unwrap_or(false);
+
+        // If using external nodes, skip EL and CL containers but still create validator if enabled
+        let skip_el_cl_containers = use_external_execution && use_external_consensus;
+
+        let mut containers = Vec::new();
+
+        // Only generate JWT secret if we're running local EL/CL containers
+        if !skip_el_cl_containers {
+            generate_jwt_secret(ETHEREUM_NAME)
+                .wrap_err("Failed to ensure JWT secret for Ethereum package")?;
+        }
         let kittynode_path = kittynode_path()?;
         let package_path = PackageConfigStore::package_dir(&kittynode_path, ETHEREUM_NAME);
         let jwt_path = package_path.join("jwt.hex");
@@ -178,8 +200,9 @@ impl Ethereum {
             });
         }
 
-        let mut containers = vec![
-            Container {
+        // Only add EL and CL containers if not using external nodes
+        if !skip_el_cl_containers {
+            containers.push(Container {
                 name: RETH_NODE_CONTAINER_NAME.to_string(),
                 image: "ghcr.io/paradigmxyz/reth".to_string(),
                 cmd: reth_cmd,
@@ -212,8 +235,8 @@ impl Ethereum {
                     options: None,
                 }],
                 file_bindings: reth_file_bindings,
-            },
-            Container {
+            });
+            containers.push(Container {
                 name: LIGHTHOUSE_NODE_CONTAINER_NAME.to_string(),
                 image: "sigp/lighthouse".to_string(),
                 cmd: lighthouse_cmd,
@@ -253,8 +276,8 @@ impl Ethereum {
                     options: None,
                 }],
                 file_bindings: lighthouse_file_bindings,
-            },
-        ];
+            });
+        }
 
         let cfg = PackageConfigStore::load(ETHEREUM_NAME)?;
         let enabled = cfg
@@ -271,10 +294,19 @@ impl Ethereum {
                 vc_cmd.push("--network".to_string());
                 vc_cmd.push(network.to_string());
             }
+
+            // Use external consensus endpoint if configured and not empty, otherwise use local container
+            let beacon_endpoint = cfg
+                .values
+                .get("consensus_endpoint")
+                .filter(|v| !v.is_empty())
+                .cloned()
+                .unwrap_or_else(|| format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"));
+
             vc_cmd.extend([
                 "vc".to_string(),
                 "--beacon-nodes".to_string(),
-                format!("http://{LIGHTHOUSE_NODE_CONTAINER_NAME}:5052"),
+                beacon_endpoint,
                 "--suggested-fee-recipient".to_string(),
                 fee.to_string(),
             ]);
