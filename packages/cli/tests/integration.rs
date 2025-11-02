@@ -1,11 +1,11 @@
-use assert_cmd::Command;
+use assert_cmd::cargo::cargo_bin_cmd;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
 #[test]
 fn get_packages_outputs_known_package() {
-    let mut cmd = Command::cargo_bin("kittynode").unwrap();
+    let mut cmd = cargo_bin_cmd!("kittynode");
     let output = cmd
         .args(["package", "catalog"])
         .assert()
@@ -22,7 +22,7 @@ fn get_packages_outputs_known_package() {
 
 #[test]
 fn get_config_outputs_readable_text() {
-    let mut cmd = Command::cargo_bin("kittynode").unwrap();
+    let mut cmd = cargo_bin_cmd!("kittynode");
     let output = cmd
         .args(["config", "show"])
         .assert()
@@ -43,8 +43,7 @@ fn web_start_and_stop_roundtrip() {
     let sandbox = WebServiceSandbox::new(temp_home.path().to_path_buf());
     let port = find_free_port();
 
-    let start_output = Command::cargo_bin("kittynode")
-        .unwrap()
+    let start_output = cargo_bin_cmd!("kittynode")
         .env("HOME", sandbox.home())
         .args(["web", "start", "--port", &port.to_string()])
         .assert()
@@ -62,8 +61,7 @@ fn web_start_and_stop_roundtrip() {
         "expected web state file to exist after start"
     );
 
-    let status_running = Command::cargo_bin("kittynode")
-        .unwrap()
+    let status_running = cargo_bin_cmd!("kittynode")
         .env("HOME", sandbox.home())
         .args(["web", "status"])
         .assert()
@@ -77,8 +75,7 @@ fn web_start_and_stop_roundtrip() {
         "expected status output to mention running state, got {status_running_stdout}"
     );
 
-    let stop_output = Command::cargo_bin("kittynode")
-        .unwrap()
+    let stop_output = cargo_bin_cmd!("kittynode")
         .env("HOME", sandbox.home())
         .args(["web", "stop"])
         .assert()
@@ -96,8 +93,7 @@ fn web_start_and_stop_roundtrip() {
         "expected web state file to be removed after stop"
     );
 
-    let status_stopped = Command::cargo_bin("kittynode")
-        .unwrap()
+    let status_stopped = cargo_bin_cmd!("kittynode")
         .env("HOME", sandbox.home())
         .args(["web", "status"])
         .assert()
@@ -142,9 +138,8 @@ impl WebServiceSandbox {
     }
 
     fn stop(&self) {
-        if let Ok(mut cmd) = Command::cargo_bin("kittynode") {
-            let _ = cmd.env("HOME", self.home()).args(["web", "stop"]).output();
-        }
+        let mut cmd = cargo_bin_cmd!("kittynode");
+        let _ = cmd.env("HOME", self.home()).args(["web", "stop"]).output();
     }
 }
 
