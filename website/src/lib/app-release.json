@@ -1,19 +1,19 @@
 {
-  "version": "0.101.0",
+  "version": "0.102.0",
   "notes": "",
-  "pub_date": "2025-10-25T23:00:52.749Z",
+  "pub_date": "2025-11-02T01:08:41.886Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNW94cjU1V3BrN0xaUUw1aWJMb2w3S3Y2cXhKcDRhMFFJSDVJQStCdjNWcHpKRG9JS285TVdJbUJXbTI2SHhUUmt3WUF3czF4V3BEK0dzSXpTckNpVHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYxNDMyOTY2CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKT2hxZGYzemQ0MUp3dUZqcVFkN0pXeXkrVHdvYUNRRjhvZ2pYWk96amhWbzZHZHZIWVBrb1IwYjNkOU9ML1RIbmt6MFNocXB3dU5pdzRZREJyNkMvRGc9PQo=",
-      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.101.0/Kittynode_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNW91K3V1bEw0WmM1UWRUdDhXL1FkUG1zNWRvR0VlOWJIZG1CYWhLaTlZMXExMFVDdmc0Rm1yS0hNTWxRNjcvL1JubjZidTg2b3RkT2ladk50YjF5c3c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMDQ1MzA1CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKTVJRajl4czAwQ1BTU3UzUVBMQWNoSmhhVHFhTVlnUkQvV0dNbzBEaURaZ3JUZWJpMjZiZmFEc2tHRGhHK1d6UUhOWERwQ3JkWE9UTTEwaUxNQ0JLQWc9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.102.0/Kittynode_aarch64.app.tar.gz"
     },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNXZMMTN6R1Q3bXpQdzg4dkZhUE5KS1FnM2dHZ1MyMzVGZlpIb1dWWDU4RWlRaVE3WWViT0JSV0M1R3gyelpuU3Fpd3hTTFJaUHNxOHBYVWpqNG9CcGdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYxNDMzMDQ2CWZpbGU6S2l0dHlub2RlXzAuMTAxLjBfYW1kNjQuQXBwSW1hZ2UKWVNEeEhRQjhmODB4V1g2a3cwUFhncW15OThqQVpDY2VOR0d2UFA2cWlVbi9iQUJ6M2FqQjc0N0FVNlZtTlFXNUZSZ01NTkxPRzlFR0NHTmM2dTU1RHc9PQo=",
-      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.101.0/Kittynode_0.101.0_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWpRMFlVd1pXUEppOTVlVkkzaXRYMmdlZFlPbThWODRPekFMQ0NFYkJvV2pXTGc3NFk4NVV2d0wrRW5WOW0rZXVRWVh1WHA2SXVBVlZpOFNMQmNIZHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMDQ1NTI0CWZpbGU6S2l0dHlub2RlXzAuMTAyLjBfYW1kNjQuQXBwSW1hZ2UKT1kxNWpTcW1EbDRNZHNuSFU3UnNiZzdEeUFBNGwxWlUyRFRGMkFka0NqaE9FVFNHTjlxSm9QME55d0x5ODI2MkJQbFovSjRraHRhTWlYZ3NOd1RlQkE9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.102.0/Kittynode_0.102.0_amd64.AppImage"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWhtM09FaUh3RDhIWG81WWZuQnF4OGZSMXl6b3k4Y1ZlSVJob3R4MG5pQ0xJU0VnYW5iUjlHV3hVS0tIM3ZDMithM1plbUpUZkJJeWV0Vk1wWjJMVlFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYxNDMzMjUwCWZpbGU6S2l0dHlub2RlXzAuMTAxLjBfeDY0X2VuLVVTLm1zaQo5QWVjMTcyZytIdmZBZlZKVENlekVXS1VqSUxmbEc2SnNQS052SWpzZE1zcThreEZqaktId0VQZ3NwNnFnTTFXZVNOTVZUR2QvN2k4MnRIQTArL3hDdz09Cg==",
-      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.101.0/Kittynode_0.101.0_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWxwVk56VGpVb283eUpYOW03SXJidkNrZHFET0NjUkxUajl5YVVnejUxcGxjb1pkelM2WnZKY3A2Wnk0WGFhY0xTRkZuNWxQNzh2UVF4RGZ1WVJPdXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMDQ1NzE5CWZpbGU6S2l0dHlub2RlXzAuMTAyLjBfeDY0X2VuLVVTLm1zaQowdmc4dmdGTVhvRnhsYnVmRENHWWR3R25ZQ0EwakcwNUZZQnd1UGQzZDhNZ3VoS05XSE5sUm9iQ1JPdXRkclpaVTlJd0p6RlZpYWVIOEpPV240MXJCdz09Cg==",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.102.0/Kittynode_0.102.0_x64_en-US.msi"
     }
   }
 }
