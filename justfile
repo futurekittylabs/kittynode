@@ -139,7 +139,9 @@ test-coverage-all:
 # update dependencies
 update:
   cargo upgrade
-  bun update
+  bun update --cwd docs
+  bun update --cwd packages/app
+  bun update --cwd website
 
 # start the web server
 web:
