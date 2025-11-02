@@ -12,7 +12,7 @@ publish.workspace = true
 alloy-primitives = "=0.8.25"
 bip32 = { version = "0.5.3", default-features = false, features = ["bip39", "secp256k1"] }
 bip39 = { package = "tiny-bip39", version = "2" }
-bollard = "0.19.3"
+bollard = "0.19.4"
 eth2_key_derivation = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_key_derivation" }
 eth2_keystore = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_keystore" }
 eth2_network_config = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "eth2_network_config" }
