@@ -2,38 +2,13 @@
 import { onMount } from "svelte";
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
-import { formatPackageName } from "$lib/utils";
 import { packagesStore } from "$lib/states/packages.svelte";
 import { operationalStateStore } from "$lib/states/operationalState.svelte";
 import { goto } from "$app/navigation";
-import { usePackageInstaller } from "$lib/composables/usePackageInstaller.svelte";
-import * as Select from "$lib/components/ui/select";
-import {
-  defaultEthereumNetwork,
-  ethereumNetworks,
-} from "$lib/constants/ethereumNetworks";
-import {
-  Package2,
-  Download,
-  CircleCheck,
-  CircleAlert,
-  Settings2,
-  Search,
-} from "@lucide/svelte";
-
-const { isInstalling, installPackage } = usePackageInstaller();
+import { CircleAlert, Search } from "@lucide/svelte";
+import PackageCard from "$lib/components/PackageCard.svelte";
 
 let searchQuery = $state("");
-let selectedEthereumNetwork = $state(defaultEthereumNetwork);
-
-const defaultEthereumNetworkLabel =
-  ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
-    ?.label ?? defaultEthereumNetwork;
-
-const selectedEthereumNetworkLabel = $derived(
-  ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
-    ?.label || defaultEthereumNetworkLabel,
-);
 
 const catalogState = $derived(packagesStore.catalogState);
 const installedState = $derived(packagesStore.installedState);
@@ -141,108 +116,12 @@ onMount(() => {
   {:else if filteredPackages().length > 0}
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each filteredPackages() as [name, pkg]}
-        {@const status = packagesStore.installationStatus(name)}
-        {@const isInstallingPackage = isInstalling(name)}
-
-        <Card.Root>
-          <Card.Header>
-            <div class="flex items-start justify-between">
-              <div class="flex items-start space-x-3">
-                <Package2 class="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div class="flex-1">
-                  <Card.Title class="text-base">{formatPackageName(name)}</Card.Title>
-                  <Card.Description class="mt-1">
-                    {pkg.description}
-                  </Card.Description>
-                </div>
-              </div>
-              {#if status === "installed"}
-                <div
-                  class="flex items-center space-x-1 rounded-full bg-green-500/10 px-2 py-1"
-                >
-                  <CircleCheck class="h-3 w-3 text-green-500" />
-                  <span
-                    class="text-xs font-medium text-green-700 dark:text-green-400"
-                    >Installed</span
-                  >
-                </div>
-              {/if}
-            </div>
-          </Card.Header>
-
-          <Card.Footer class="flex flex-col gap-3">
-            {#if status === "installed"}
-              <Button
-                size="sm"
-                variant="default"
-                onclick={() => managePackage(name)}
-                class="w-full"
-              >
-                <Settings2 class="h-4 w-4 mr-1" />
-                Manage
-              </Button>
-            {:else if status === "available"}
-              {#if name === "ethereum"}
-                <div class="w-full space-y-1">
-                  <Select.Root
-                    type="single"
-                    bind:value={selectedEthereumNetwork}
-                    disabled={!operationalStateStore.canInstall ||
-                      isInstallingPackage}
-                  >
-                    <Select.Label class="text-xs font-medium text-muted-foreground">
-                      Network
-                    </Select.Label>
-                    <Select.Trigger class="w-full justify-between">
-                      <span class="text-sm">{selectedEthereumNetworkLabel}</span>
-                    </Select.Trigger>
-                    <Select.Content>
-                      <Select.Group>
-                        {#each ethereumNetworks as option}
-                          <Select.Item
-                            value={option.value}
-                            label={option.label}
-                          >
-                            {option.label}
-                          </Select.Item>
-                        {/each}
-                      </Select.Group>
-                    </Select.Content>
-                  </Select.Root>
-                </div>
-              {/if}
-              <Button
-                size="sm"
-                variant="default"
-                onclick={async () => {
-                  const selectedNetwork =
-                    name === "ethereum" ? selectedEthereumNetwork : undefined;
-                  const installed = await installPackage(name, selectedNetwork);
-                  if (installed) {
-                    managePackage(name);
-                  }
-                }}
-                disabled={!operationalStateStore.canInstall ||
-                  isInstallingPackage}
-                class="w-full"
-              >
-                {#if isInstallingPackage}
-                  <div
-                    class="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent"
-                  ></div>
-                  Installing...
-                {:else}
-                  <Download class="h-4 w-4 mr-1" />
-                  Install
-                {/if}
-              </Button>
-            {:else}
-              <Button size="sm" variant="outline" disabled class="w-full">
-                Checking status...
-              </Button>
-            {/if}
-          </Card.Footer>
-        </Card.Root>
+        <PackageCard
+          name={name}
+          description={pkg.description}
+          onManage={managePackage}
+          onInstalled={managePackage}
+        />
       {/each}
     </div>
   {:else}

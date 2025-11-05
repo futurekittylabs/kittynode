@@ -7,10 +7,10 @@ import { onDestroy, onMount } from "svelte";
 import DockerLogs from "$lib/components/DockerLogs.svelte";
 import { operationalStateStore } from "$lib/states/operationalState.svelte";
 import { packageConfigStore } from "$lib/states/packageConfig.svelte";
-import { usePackageDeleter } from "$lib/composables/usePackageDeleter.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import { coreClient } from "$lib/client";
+import { goto } from "$app/navigation";
 import {
   defaultEthereumNetwork,
   ethereumNetworks,
@@ -35,7 +35,56 @@ import {
 import { notifyError, notifySuccess } from "$lib/utils/notify";
 import { formatPackageName } from "$lib/utils";
 
-const { isDeleting, deletePackage } = usePackageDeleter();
+let deletingPackages = $state<Set<string>>(new Set());
+
+function isDeleting(packageName: string): boolean {
+  return deletingPackages.has(packageName);
+}
+
+async function deletePackage(
+  packageName: string,
+  options?: { redirectToDashboard?: boolean },
+): Promise<boolean> {
+  if (!operationalStateStore.canManage) {
+    notifyError("Cannot manage packages in the current operational state");
+    return false;
+  }
+
+  const status = packagesStore.installationStatus(packageName);
+
+  if (status === "unknown") {
+    notifyError("Package status is still loading. Try again once it finishes.");
+    return false;
+  }
+
+  if (status !== "installed") {
+    notifyError(`${packageName} is not currently installed`);
+    return false;
+  }
+
+  if (deletingPackages.has(packageName)) {
+    return false;
+  }
+
+  deletingPackages = new Set([...deletingPackages, packageName]);
+  try {
+    await packagesStore.deletePackage(packageName);
+    notifySuccess(`Successfully deleted ${packageName}`);
+
+    if (options?.redirectToDashboard) {
+      await goto("/");
+    }
+
+    return true;
+  } catch (error) {
+    notifyError(`Failed to delete ${packageName}`, error);
+    return false;
+  } finally {
+    const next = new Set(deletingPackages);
+    next.delete(packageName);
+    deletingPackages = next;
+  }
+}
 
 const packageName = $derived(page.params.name || "");
 const pkg = $derived(
