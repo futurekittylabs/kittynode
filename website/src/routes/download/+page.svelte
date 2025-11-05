@@ -40,49 +40,78 @@ const downloads = [
   {
     name: "Linux",
     icon: Terminal,
-    requirements: "Linux (x86_64)",
-    primary: {
-      label: ".AppImage",
-      url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.AppImage`,
-    },
-    options: [
+    requirements: "Linux",
+    variants: [
       {
-        label: ".deb",
-        url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.deb`,
-      },
-      {
-        label: ".rpm",
-        url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64_linux.rpm`,
+        label: "x86_64",
+        downloads: [
+          {
+            label: ".AppImage",
+            url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.AppImage`,
+            span: "full",
+          },
+          {
+            label: ".deb",
+            url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.deb`,
+          },
+          {
+            label: ".rpm",
+            url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64_linux.rpm`,
+          },
+        ],
       },
     ],
   },
   {
     name: "macOS",
     icon: AppWindowMac,
-    requirements: "macOS 10.15+ (Apple Silicon)",
-    primary: {
-      label: ".dmg",
-      url: `${releaseUrl}/Kittynode_${appVersion}_aarch64_darwin.dmg`,
-    },
-    options: [
+    requirements: "macOS 10.15+",
+    variants: [
       {
-        label: ".app.tar.gz",
-        url: `${releaseUrl}/Kittynode_darwin_aarch64.app.tar.gz`,
+        label: "Apple Silicon",
+        downloads: [
+          {
+            label: ".dmg",
+            url: `${releaseUrl}/Kittynode_${appVersion}_aarch64_darwin.dmg`,
+          },
+          {
+            label: ".app.tar.gz",
+            url: `${releaseUrl}/Kittynode_darwin_aarch64.app.tar.gz`,
+          },
+        ],
+      },
+      {
+        label: "x86_64",
+        downloads: [
+          {
+            label: ".dmg",
+            url: `${releaseUrl}/Kittynode_${appVersion}_x86_64_darwin.dmg`,
+          },
+          {
+            label: ".app.tar.gz",
+            url: `${releaseUrl}/Kittynode_darwin_x86_64.app.tar.gz`,
+          },
+        ],
       },
     ],
   },
   {
     name: "Windows",
     icon: Monitor,
-    requirements: "Windows 7+ (x86_64)",
-    primary: {
-      label: ".exe",
-      url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup_windows.exe`,
-    },
-    options: [
+    requirements: "Windows 7+",
+    variants: [
       {
-        label: ".msi",
-        url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US_windows.msi`,
+        label: "x86_64",
+        downloads: [
+          {
+            label: ".exe",
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup_windows.exe`,
+          },
+          {
+            label: ".msi",
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US_windows.msi`,
+          },
+        ],
       },
     ],
   },
@@ -117,61 +146,66 @@ const downloads = [
             {/if}
           </p>
         </div>
-        <div class="grid gap-4 min-[900px]:grid-cols-3">
+        <div class="mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-2xl">
           {#each downloads as info}
             <div class="rounded-lg border bg-card p-5">
-              <div class="mb-4 flex items-center gap-3">
-                <div class="rounded-md bg-muted p-1.5">
-                  <svelte:component this={info.icon} class="h-5 w-5" />
+              <div
+                class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="rounded-md bg-muted p-1.5">
+                    <svelte:component this={info.icon} class="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 class="text-base font-medium">{info.name}</h3>
+                    <p class="text-sm text-muted-foreground">{info.requirements}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 class="text-base font-medium">{info.name}</h3>
-                  <p class="text-xs text-muted-foreground">
-                    {info.requirements}
-                  </p>
-                </div>
-              </div>
-              <div class="space-y-2">
-                {#if info.primary}
-                  <Button
-                    href={info.primary.url}
-                    size="sm"
-                    class="w-full gap-2"
-                    variant="default"
-                  >
-                    <Download class="h-3.5 w-3.5" />
-                    {info.primary.label}
-                  </Button>
-                {/if}
-                {#if info.options && info.options.length > 0}
-                  {#if info.options.length > 1}
-                    <div class="flex gap-2">
-                      {#each info.options as option}
-                        <Button
-                          href={option.url}
-                          size="sm"
-                          variant="outline"
-                          class="flex-1 gap-2"
-                        >
-                          <Download class="h-3.5 w-3.5" />
-                          {option.label}
-                        </Button>
-                      {/each}
+                <div class="flex-1 space-y-4 w-full md:w-auto md:max-w-[18rem]">
+                  {#each info.variants as variant}
+                    <div class="space-y-2">
+                      <p class="text-sm font-medium text-muted-foreground">
+                        {variant.label}
+                      </p>
+                      {#if variant.downloads.some((download) => download.span === "full")}
+                        {#each variant.downloads as download}
+                          {#if download.span === "full"}
+                            <Button
+                              href={download.url}
+                              size="sm"
+                              class="w-full justify-center gap-2"
+                              variant={variant.downloads.indexOf(download) === 0
+                                ? "default"
+                                : "outline"}
+                            >
+                              <Download class="h-3.5 w-3.5" />
+                              {download.label}
+                            </Button>
+                          {/if}
+                        {/each}
+                      {/if}
+                      {#if variant.downloads.some((download) => download.span !== "full")}
+                        <div class="grid gap-2 min-[420px]:grid-cols-2">
+                          {#each variant.downloads as download}
+                            {#if download.span !== "full"}
+                              <Button
+                                href={download.url}
+                                size="sm"
+                                class="w-full justify-center gap-2"
+                                variant={variant.downloads.indexOf(download) === 0
+                                  ? "default"
+                                  : "outline"}
+                              >
+                                <Download class="h-3.5 w-3.5" />
+                                {download.label}
+                              </Button>
+                            {/if}
+                          {/each}
+                        </div>
+                      {/if}
                     </div>
-                  {:else}
-                    {#each info.options as option}
-                      <Button
-                        href={option.url}
-                        size="sm"
-                        class="w-full gap-2"
-                        variant="outline"
-                      >
-                        <Download class="h-3.5 w-3.5" />
-                        {option.label}
-                      </Button>
-                    {/each}
-                  {/if}
-                {/if}
+                  {/each}
+                </div>
               </div>
             </div>
           {/each}
@@ -189,16 +223,19 @@ const downloads = [
             {/if}
           </p>
         </div>
-        <Tabs.Root value="linux/macos">
-          <Tabs.List
-            class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2"
-          >
-            <Tabs.Trigger value="linux/macos" class="px-4"
-              >Linux / macOS</Tabs.Trigger
-            >
-            <Tabs.Trigger value="windows" class="px-4">Windows</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="linux/macos">
+        <div class="mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-2xl">
+          <div class="rounded-lg border bg-card p-5 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="rounded-md bg-muted p-1.5">
+                <Terminal class="h-5 w-5" />
+              </div>
+              <div>
+                <h3 class="text-base font-medium">Linux / macOS</h3>
+                <p class="text-sm text-muted-foreground">
+                  Open a terminal and enter the following:
+                </p>
+              </div>
+            </div>
             <Code.Root
               lang="bash"
               class="w-full"
@@ -207,8 +244,19 @@ const downloads = [
             >
               <Code.CopyButton variant="secondary" />
             </Code.Root>
-          </Tabs.Content>
-          <Tabs.Content value="windows">
+          </div>
+          <div class="rounded-lg border bg-card p-5 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="rounded-md bg-muted p-1.5">
+                <Monitor class="h-5 w-5" />
+              </div>
+              <div>
+                <h3 class="text-base font-medium">Windows</h3>
+                <p class="text-sm text-muted-foreground">
+                  Open PowerShell and enter the following:
+                </p>
+              </div>
+            </div>
             <Code.Root
               lang="bash"
               class="w-full"
@@ -217,8 +265,8 @@ const downloads = [
             >
               <Code.CopyButton variant="secondary" />
             </Code.Root>
-          </Tabs.Content>
-        </Tabs.Root>
+          </div>
+        </div>
       </div>
     </Tabs.Content>
   </Tabs.Root>
