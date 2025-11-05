@@ -85,11 +85,11 @@ const downloads = [
         downloads: [
           {
             label: ".dmg",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x86_64_darwin.dmg`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64_darwin.dmg`,
           },
           {
             label: ".app.tar.gz",
-            url: `${releaseUrl}/Kittynode_darwin_x86_64.app.tar.gz`,
+            url: `${releaseUrl}/Kittynode_darwin_x64.app.tar.gz`,
           },
         ],
       },
@@ -146,7 +146,9 @@ const downloads = [
             {/if}
           </p>
         </div>
-        <div class="mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-2xl">
+        <div
+          class="mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-2xl"
+        >
           {#each downloads as info}
             <div class="rounded-lg border bg-card p-5">
               <div
@@ -158,7 +160,9 @@ const downloads = [
                   </div>
                   <div>
                     <h3 class="text-base font-medium">{info.name}</h3>
-                    <p class="text-sm text-muted-foreground">{info.requirements}</p>
+                    <p class="text-sm text-muted-foreground">
+                      {info.requirements}
+                    </p>
                   </div>
                 </div>
                 <div class="flex-1 space-y-4 w-full md:w-auto md:max-w-[18rem]">
@@ -192,7 +196,8 @@ const downloads = [
                                 href={download.url}
                                 size="sm"
                                 class="w-full justify-center gap-2"
-                                variant={variant.downloads.indexOf(download) === 0
+                                variant={variant.downloads.indexOf(download) ===
+                                0
                                   ? "default"
                                   : "outline"}
                               >
