@@ -43,16 +43,16 @@ const downloads = [
     requirements: "Linux (x86_64)",
     primary: {
       label: ".AppImage",
-      url: `${releaseUrl}/Kittynode_${appVersion}_amd64.AppImage`,
+      url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.AppImage`,
     },
     options: [
       {
         label: ".deb",
-        url: `${releaseUrl}/Kittynode_${appVersion}_amd64.deb`,
+        url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.deb`,
       },
       {
         label: ".rpm",
-        url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
+        url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64_linux.rpm`,
       },
     ],
   },
@@ -62,12 +62,12 @@ const downloads = [
     requirements: "macOS 10.15+ (Apple Silicon)",
     primary: {
       label: ".dmg",
-      url: `${releaseUrl}/Kittynode_${appVersion}_aarch64.dmg`,
+      url: `${releaseUrl}/Kittynode_${appVersion}_aarch64_darwin.dmg`,
     },
     options: [
       {
         label: ".app.tar.gz",
-        url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz`,
+        url: `${releaseUrl}/Kittynode_darwin_aarch64.app.tar.gz`,
       },
     ],
   },
@@ -77,12 +77,12 @@ const downloads = [
     requirements: "Windows 7+ (x86_64)",
     primary: {
       label: ".exe",
-      url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup.exe`,
+      url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup_windows.exe`,
     },
     options: [
       {
         label: ".msi",
-        url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US.msi`,
+        url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US_windows.msi`,
       },
     ],
   },
@@ -93,12 +93,16 @@ const downloads = [
   <div class="mb-8 text-center">
     <h1 class="text-2xl font-semibold mb-2">Install Kittynode</h1>
     <p class="mx-auto max-w-2xl text-sm text-muted-foreground">
-      We recommend the desktop app for most users! The CLI app is great for users that want to run a node remotely (e.g., on a dedicated Linux server) or prefer the simplicity of a CLI.
+      We recommend the desktop app for most users! The CLI app is great for
+      users that want to run a node remotely (e.g., on a dedicated Linux server)
+      or prefer the simplicity of a CLI.
     </p>
   </div>
 
   <Tabs.Root value="desktop">
-    <Tabs.List class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
+    <Tabs.List
+      class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2"
+    >
       <Tabs.Trigger value="desktop" class="px-4">Desktop</Tabs.Trigger>
       <Tabs.Trigger value="cli" class="px-4">Command line</Tabs.Trigger>
     </Tabs.List>
@@ -122,7 +126,9 @@ const downloads = [
                 </div>
                 <div>
                   <h3 class="text-base font-medium">{info.name}</h3>
-                  <p class="text-xs text-muted-foreground">{info.requirements}</p>
+                  <p class="text-xs text-muted-foreground">
+                    {info.requirements}
+                  </p>
                 </div>
               </div>
               <div class="space-y-2">
@@ -154,7 +160,12 @@ const downloads = [
                     </div>
                   {:else}
                     {#each info.options as option}
-                      <Button href={option.url} size="sm" class="w-full gap-2" variant="outline">
+                      <Button
+                        href={option.url}
+                        size="sm"
+                        class="w-full gap-2"
+                        variant="outline"
+                      >
                         <Download class="h-3.5 w-3.5" />
                         {option.label}
                       </Button>
@@ -179,17 +190,31 @@ const downloads = [
           </p>
         </div>
         <Tabs.Root value="linux/macos">
-          <Tabs.List class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
-            <Tabs.Trigger value="linux/macos" class="px-4">Linux / macOS</Tabs.Trigger>
+          <Tabs.List
+            class="mx-auto mb-4 flex w-full max-w-md flex-wrap justify-center gap-2"
+          >
+            <Tabs.Trigger value="linux/macos" class="px-4"
+              >Linux / macOS</Tabs.Trigger
+            >
             <Tabs.Trigger value="windows" class="px-4">Windows</Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="linux/macos">
-            <Code.Root lang="bash" class="w-full" code={cliInstallCommandUnix} hideLines>
+            <Code.Root
+              lang="bash"
+              class="w-full"
+              code={cliInstallCommandUnix}
+              hideLines
+            >
               <Code.CopyButton variant="secondary" />
             </Code.Root>
           </Tabs.Content>
           <Tabs.Content value="windows">
-            <Code.Root lang="bash" class="w-full" code={cliInstallCommandWindows} hideLines>
+            <Code.Root
+              lang="bash"
+              class="w-full"
+              code={cliInstallCommandWindows}
+              hideLines
+            >
               <Code.CopyButton variant="secondary" />
             </Code.Root>
           </Tabs.Content>
