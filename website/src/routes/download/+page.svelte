@@ -223,7 +223,7 @@ const downloads = [
             {/if}
           </p>
         </div>
-        <div class="mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-2xl">
+        <div class="mx-auto flex w-full flex-col gap-4">
           <div class="rounded-lg border bg-card p-5 space-y-3">
             <div class="flex items-center gap-3">
               <div class="rounded-md bg-muted p-1.5">
