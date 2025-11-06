@@ -26,7 +26,7 @@ import {
   Link2,
   Unlink,
 } from "@lucide/svelte";
-import { refetchStores } from "$lib/utils/refetchStores";
+import { refetchStates } from "$lib/utils/refetchStates";
 import { notifySuccess, notifyError, notifyInfo } from "$lib/utils/notify";
 import { setMode, userPrefersMode } from "mode-watcher";
 import * as Select from "$lib/components/ui/select";
@@ -125,7 +125,7 @@ async function applyRemoteConnection(url: string) {
     await coreClient.checkRemoteHealth(url);
     await appConfigStore.setServerUrl(url);
     await operationalStateStore.refresh();
-    refetchStores();
+    refetchStates();
     notifySuccess("Connected to remote");
     return true;
   } catch (e) {
@@ -140,7 +140,7 @@ async function clearRemoteConnection() {
   try {
     await appConfigStore.setServerUrl("");
     await operationalStateStore.refresh();
-    refetchStores();
+    refetchStates();
     notifySuccess("Disconnected from remote");
     return true;
   } catch (e) {

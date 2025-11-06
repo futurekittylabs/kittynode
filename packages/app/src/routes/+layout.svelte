@@ -28,7 +28,7 @@ import { operationalStateStore } from "$lib/states/operationalState.svelte";
 import { page } from "$app/state";
 import { serverUrlStore } from "$lib/states/serverUrl.svelte";
 import { notifySuccess, notifyError } from "$lib/utils/notify";
-import { refetchStores } from "$lib/utils/refetchStores";
+import { refetchStates } from "$lib/utils/refetchStates";
 import { coreClient } from "$lib/client";
 
 const { children } = $props();
@@ -62,8 +62,7 @@ async function setRemote(endpoint: string) {
       await coreClient.checkRemoteHealth(endpoint);
     }
     await appConfigStore.setServerUrl(endpoint);
-    await operationalStateStore.refresh();
-    refetchStores();
+    refetchStates();
     notifySuccess(
       connectAction ? "Connected to remote" : "Disconnected from remote",
     );
