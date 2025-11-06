@@ -1,7 +1,7 @@
 import { coreClient } from "$lib/client";
 import type { PackageConfig } from "$lib/types";
 
-export const packageConfigStore = {
+export const packageConfigState = {
   async getConfig(packageName: string): Promise<PackageConfig> {
     return await coreClient.getPackageConfig(packageName);
   },

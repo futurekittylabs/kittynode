@@ -1,4 +1,4 @@
 export * from "./package";
 export * from "./config";
-export * from "./operational_state";
+export * from "./operational";
 export * from "./system_info";

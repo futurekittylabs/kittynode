@@ -3,14 +3,14 @@ import { onMount, onDestroy } from "svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
-import { systemInfoStore } from "$lib/states/systemInfo.svelte";
-import { packagesStore } from "$lib/states/packages.svelte";
-import { appConfigStore } from "$lib/states/appConfig.svelte";
-import { serverUrlStore } from "$lib/states/serverUrl.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { systemInfoState } from "$lib/states/systemInfo.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
+import { appConfigState } from "$lib/states/appConfig.svelte";
+import { serverUrlState } from "$lib/states/serverUrl.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
 import { goto } from "$app/navigation";
-import { runtimeOverviewStore } from "$lib/states/runtimeOverview.svelte";
+import { runtimeOverviewState } from "$lib/states/runtimeOverview.svelte";
 import { coreClient } from "$lib/client";
 import {
   Package2,
@@ -25,26 +25,26 @@ import {
   CircleAlert,
 } from "@lucide/svelte";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigStore } from "$lib/states/packageConfig.svelte";
+import { packageConfigState } from "$lib/states/packageConfig.svelte";
 import PackageCard from "$lib/components/PackageCard.svelte";
 
-const catalogState = $derived(packagesStore.catalogState);
-const installedState = $derived(packagesStore.installedState);
+const catalogState = $derived(packagesState.catalogState);
+const installedState = $derived(packagesState.installedState);
 
 const totalPackageCount = $derived(
   catalogState.status === "ready"
-    ? Object.keys(packagesStore.packages).length
+    ? Object.keys(packagesState.packages).length
     : null,
 );
 
 const installedPackageCount = $derived(
   installedState.status === "ready"
-    ? packagesStore.installedPackages.length
+    ? packagesState.installedPackages.length
     : null,
 );
 
 const installedPackagesList = $derived(
-  installedState.status === "ready" ? packagesStore.installedPackages : [],
+  installedState.status === "ready" ? packagesState.installedPackages : [],
 );
 let ethereumNetworkLabel = $state<string | null>(null);
 let ethereumValidatorInstalled = $state<boolean | null>(null);
@@ -62,7 +62,7 @@ $effect(() => {
   }
   (async () => {
     try {
-      const cfg = await packageConfigStore.getConfig("ethereum");
+      const cfg = await packageConfigState.getConfig("ethereum");
       const network = cfg.values.network;
       if (network) {
         if (network === "hoodi") ethereumNetworkLabel = "Hoodi";
@@ -79,7 +79,7 @@ $effect(() => {
 
     // Fetch validator installed status once when we can manage
     try {
-      if (operationalStateStore.canManage) {
+      if (operationalState.canManage) {
         ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
       } else {
         ethereumValidatorInstalled = null;
@@ -90,8 +90,8 @@ $effect(() => {
   })();
 });
 
-const runtimeStatuses = $derived(runtimeOverviewStore.statuses);
-const runtimeStatusesLoading = $derived(runtimeOverviewStore.loading);
+const runtimeStatuses = $derived(runtimeOverviewState.statuses);
+const runtimeStatusesLoading = $derived(runtimeOverviewState.loading);
 
 const featuredAvailablePackages = $derived(
   catalogState.status !== "ready" || installedState.status !== "ready"
@@ -107,30 +107,30 @@ function managePackage(packageName: string) {
 
 function isMobileAndLocal() {
   return (
-    ["ios", "android"].includes(platform()) && serverUrlStore.serverUrl === ""
+    ["ios", "android"].includes(platform()) && serverUrlState.serverUrl === ""
   );
 }
 
 function isLocalDesktop() {
   return (
-    !["ios", "android"].includes(platform()) && serverUrlStore.serverUrl === ""
+    !["ios", "android"].includes(platform()) && serverUrlState.serverUrl === ""
   );
 }
 
 onMount(async () => {
-  if (!systemInfoStore.systemInfo) systemInfoStore.fetchSystemInfo();
+  if (!systemInfoState.systemInfo) systemInfoState.fetchSystemInfo();
 
   try {
-    await appConfigStore.load();
+    await appConfigState.load();
   } catch (error) {
     console.error(`Failed to load Kittynode config: ${error}`);
   }
 
-  await operationalStateStore.refresh();
+  await operationalState.refresh();
 
-  if (isLocalDesktop() && appConfigStore.autoStartDocker) {
+  if (isLocalDesktop() && appConfigState.autoStartDocker) {
     console.info("Attempting Docker auto-start based on user preference");
-    const result = await operationalStateStore.startDockerIfNeeded();
+    const result = await operationalState.startDockerIfNeeded();
     if (result.status === "error") {
       console.error(
         `Docker auto-start failed: ${result.error}. Continuing without auto-start.`,
@@ -138,30 +138,30 @@ onMount(async () => {
     }
   }
 
-  const pollingInterval = operationalStateStore.isStarting ? 2000 : 5000;
-  operationalStateStore.startPolling(pollingInterval);
+  const pollingInterval = operationalState.isStarting ? 2000 : 5000;
+  operationalState.startPolling(pollingInterval);
 
   if (!isMobileAndLocal()) {
-    await packagesStore.loadPackages();
-    await packagesStore.syncInstalledPackages();
+    await packagesState.loadPackages();
+    await packagesState.syncInstalledPackages();
   }
 });
 
 $effect(() => {
   if (installedState.status === "ready") {
-    const names = packagesStore.installedPackages.map((pkg) => pkg.name);
-    runtimeOverviewStore.sync(names, {
+    const names = packagesState.installedPackages.map((pkg) => pkg.name);
+    runtimeOverviewState.sync(names, {
       enabled: names.length > 0,
-      pollInterval: operationalStateStore.isStarting ? 2000 : 5000,
+      pollInterval: operationalState.isStarting ? 2000 : 5000,
     });
   } else {
-    runtimeOverviewStore.stop();
+    runtimeOverviewState.stop();
   }
 });
 
 onDestroy(() => {
-  operationalStateStore.stopPolling();
-  runtimeOverviewStore.stop();
+  operationalState.stopPolling();
+  runtimeOverviewState.stop();
 });
 </script>
 
@@ -193,7 +193,7 @@ onDestroy(() => {
       </Card.Content>
     </Card.Root>
 
-    {#if systemInfoStore.systemInfo}
+    {#if systemInfoState.systemInfo}
       <Card.Root>
         <Card.Header class="pb-3">
           <Card.Title
@@ -205,10 +205,10 @@ onDestroy(() => {
         </Card.Header>
         <Card.Content>
           <div class="text-2xl font-bold">
-            {systemInfoStore.systemInfo.processor.cores} cores
+            {systemInfoState.systemInfo.processor.cores} cores
           </div>
           <p class="text-xs text-muted-foreground">
-            {systemInfoStore.systemInfo.processor.name}
+            {systemInfoState.systemInfo.processor.name}
           </p>
         </Card.Content>
       </Card.Root>
@@ -224,7 +224,7 @@ onDestroy(() => {
         </Card.Header>
         <Card.Content>
           <div class="text-2xl font-bold">
-            {systemInfoStore.systemInfo.memory.totalDisplay}
+            {systemInfoState.systemInfo.memory.totalDisplay}
           </div>
           <p class="text-xs text-muted-foreground">Total System Memory</p>
         </Card.Content>
@@ -261,7 +261,7 @@ onDestroy(() => {
           <Button
             size="sm"
             variant="outline"
-            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+            onclick={() => packagesState.loadInstalledPackages({ force: true })}
           >
             Retry
           </Button>
@@ -397,7 +397,7 @@ onDestroy(() => {
           <Button
             size="sm"
             variant="outline"
-            onclick={() => packagesStore.loadPackages({ force: true })}
+            onclick={() => packagesState.loadPackages({ force: true })}
           >
             Retry
           </Button>
@@ -412,7 +412,7 @@ onDestroy(() => {
           <Button
             size="sm"
             variant="outline"
-            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+            onclick={() => packagesState.loadInstalledPackages({ force: true })}
           >
             Retry
           </Button>

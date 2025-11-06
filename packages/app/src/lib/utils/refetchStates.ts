@@ -1,7 +1,7 @@
-import { systemInfoStore } from "$lib/states/systemInfo.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { systemInfoState } from "$lib/states/systemInfo.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 
 export function refetchStates() {
-  systemInfoStore.fetchSystemInfo();
-  void operationalStateStore.refresh();
+  systemInfoState.fetchSystemInfo();
+  void operationalState.refresh();
 }

@@ -1,4 +1,4 @@
-import { packagesStore } from "$lib/states/packages.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
 
 export type RuntimeStatus = "unknown" | "checking" | "running" | "stopped";
 export type LifecyclePhase = "idle" | "stopping" | "starting";
@@ -15,7 +15,7 @@ async function requestStatus(name: string): Promise<RuntimeStatus> {
 
   const request = (async () => {
     try {
-      const result = await packagesStore.getPackages([name]);
+      const result = await packagesState.getPackages([name]);
       const state = result[name];
       const runtime = state?.runtime;
       const status: RuntimeStatus =
@@ -41,7 +41,7 @@ export async function fetchRuntimeStatuses(
     return {};
   }
 
-  const runtimeMap = await packagesStore.getPackages(packageNames);
+  const runtimeMap = await packagesState.getPackages(packageNames);
   const result: Record<string, RuntimeStatus> = {};
 
   for (const name of packageNames) {

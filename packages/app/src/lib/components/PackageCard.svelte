@@ -2,8 +2,8 @@
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
 import * as Select from "$lib/components/ui/select";
-import { packagesStore } from "$lib/states/packages.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { notifyError, notifySuccess } from "$lib/utils/notify";
 import { formatPackageName } from "$lib/utils";
 import {
@@ -26,7 +26,7 @@ let {
   showStatusBadge?: boolean;
 }>();
 
-const status = $derived(packagesStore.installationStatus(name));
+const status = $derived(packagesState.installationStatus(name));
 let isInstalling = $state(false);
 let selectedEthereumNetwork = $state(defaultEthereumNetwork);
 
@@ -40,16 +40,16 @@ const selectedEthereumNetworkLabel = $derived(
 );
 
 const installDisabled = $derived(
-  !operationalStateStore.canInstall || status !== "available" || isInstalling,
+  !operationalState.canInstall || status !== "available" || isInstalling,
 );
 
 async function handleInstall() {
-  if (!operationalStateStore.canInstall) {
+  if (!operationalState.canInstall) {
     notifyError("Cannot install packages in the current operational state");
     return;
   }
 
-  const currentStatus = packagesStore.installationStatus(name);
+  const currentStatus = packagesState.installationStatus(name);
 
   if (currentStatus === "unknown") {
     notifyError("Package status is still loading. Try again once it finishes.");
@@ -68,7 +68,7 @@ async function handleInstall() {
   isInstalling = true;
   try {
     const network = name === "ethereum" ? selectedEthereumNetwork : undefined;
-    await packagesStore.installPackage(name, network);
+    await packagesState.installPackage(name, network);
     notifySuccess(`Successfully installed ${name}`);
     onInstalled?.(name);
   } catch (error) {

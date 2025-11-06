@@ -108,7 +108,7 @@ function sync(
   }
 }
 
-export const runtimeOverviewStore = {
+export const runtimeOverviewState = {
   get statuses() {
     return statuses;
   },

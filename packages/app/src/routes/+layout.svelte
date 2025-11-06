@@ -1,15 +1,15 @@
 <script lang="ts">
 import "../app.css";
 import { onMount } from "svelte";
-import { initializedStore } from "$lib/states/initialized.svelte";
-import { appConfigStore } from "$lib/states/appConfig.svelte";
+import { initializedState } from "$lib/states/initialized.svelte";
+import { appConfigState } from "$lib/states/appConfig.svelte";
 import { ModeWatcher, mode } from "mode-watcher";
 import Splash from "./Splash.svelte";
 import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$lib/states/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigStore } from "$lib/states/packageConfig.svelte";
+import { packageConfigState } from "$lib/states/packageConfig.svelte";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -23,10 +23,10 @@ import {
   Globe,
   Unlink,
 } from "@lucide/svelte";
-import { packagesStore } from "$lib/states/packages.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { page } from "$app/state";
-import { serverUrlStore } from "$lib/states/serverUrl.svelte";
+import { serverUrlState } from "$lib/states/serverUrl.svelte";
 import { notifySuccess, notifyError } from "$lib/utils/notify";
 import { refetchStates } from "$lib/utils/refetchStates";
 import { coreClient } from "$lib/client";
@@ -35,11 +35,11 @@ const { children } = $props();
 
 const currentPath = $derived(page.url?.pathname || "");
 
-const installedState = $derived(packagesStore.installedState);
+const installedState = $derived(packagesState.installedState);
 const installedNodes = $derived(
-  installedState.status === "ready" ? packagesStore.installedPackages : [],
+  installedState.status === "ready" ? packagesState.installedPackages : [],
 );
-const remoteServerUrl = $derived(serverUrlStore.serverUrl);
+const remoteServerUrl = $derived(serverUrlState.serverUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
 const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
@@ -47,7 +47,7 @@ let remoteBannerLoading = $state(false);
 let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
-  packagesStore.handleOperationalStateChange(operationalStateStore.state);
+  packagesState.handleOperationalStateChange(operationalState.state);
 });
 
 async function setRemote(endpoint: string) {
@@ -61,7 +61,7 @@ async function setRemote(endpoint: string) {
     if (connectAction) {
       await coreClient.checkRemoteHealth(endpoint);
     }
-    await appConfigStore.setServerUrl(endpoint);
+    await appConfigState.setServerUrl(endpoint);
     refetchStates();
     notifySuccess(
       connectAction ? "Connected to remote" : "Disconnected from remote",
@@ -102,7 +102,7 @@ let checkingOnboarding = $state(true);
 
 onMount(async () => {
   try {
-    await appConfigStore.load();
+    await appConfigState.load();
   } catch (e) {
     console.error(`Failed to load Kittynode config: ${e}`);
   }
@@ -113,7 +113,7 @@ onMount(async () => {
     if (onboardingCompleted) {
       // Skip splash screen without re-initializing config
       // Just set the initialized flag to bypass the splash
-      await initializedStore.fakeInitialize();
+      await initializedState.fakeInitialize();
     }
   } catch (e) {
     console.error(`Failed to check onboarding status: ${e}`);
@@ -122,13 +122,13 @@ onMount(async () => {
   }
   checkingOnboarding = false;
 
-  await packagesStore.loadPackages();
-  await operationalStateStore.refresh();
-  await packagesStore.syncInstalledPackages();
+  await packagesState.loadPackages();
+  await operationalState.refresh();
+  await packagesState.syncInstalledPackages();
 
   // Load Ethereum network label once for display in sidebar
   try {
-    const cfg = await packageConfigStore.getConfig("ethereum");
+    const cfg = await packageConfigState.getConfig("ethereum");
     const network = cfg.values.network;
     if (typeof network === "string") {
       const trimmedNetwork = network.trim();
@@ -153,7 +153,7 @@ onMount(async () => {
 <Toaster position="bottom-right" richColors theme={mode.current} />
 {#if checkingOnboarding}
   <!-- Show nothing while checking onboarding status -->
-{:else if !onboardingCompleted && !initializedStore.initialized}
+{:else if !onboardingCompleted && !initializedState.initialized}
   <Splash />
 {:else}
   <Sidebar.Provider>

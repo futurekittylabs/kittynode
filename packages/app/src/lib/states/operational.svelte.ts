@@ -1,8 +1,5 @@
 import { coreClient } from "$lib/client";
-import type {
-  OperationalMode,
-  OperationalState,
-} from "$lib/types/operational_state";
+import type { OperationalMode, OperationalState } from "$lib/types/operational";
 
 type PollSubscriber = (state: OperationalState | null) => void;
 
@@ -105,7 +102,7 @@ function notifySubscribers() {
   }
 }
 
-export const operationalStateStore = {
+export const operationalState = {
   get state() {
     return state;
   },

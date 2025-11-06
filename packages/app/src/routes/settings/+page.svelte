@@ -4,12 +4,12 @@ import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
 import { platform } from "@tauri-apps/plugin-os";
 import {
-  serverUrlStore,
+  serverUrlState,
   normalizeServerUrl,
 } from "$lib/states/serverUrl.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { updates } from "$lib/states/updates.svelte";
-import { appConfigStore } from "$lib/states/appConfig.svelte";
+import { appConfigState } from "$lib/states/appConfig.svelte";
 import { onMount } from "svelte";
 import { Switch } from "$lib/components/ui/switch";
 import { Input } from "$lib/components/ui/input";
@@ -41,16 +41,16 @@ let remoteDialogAction = $state<"connect" | null>(null);
 let remoteInlineLoading = $state(false);
 let remoteInlineAction = $state<"connect" | "disconnect" | null>(null);
 
-const autoStartDockerEnabled = $derived(appConfigStore.autoStartDocker);
-const configInitialized = $derived(appConfigStore.initialized);
-const configLoading = $derived(appConfigStore.loading);
+const autoStartDockerEnabled = $derived(appConfigState.autoStartDocker);
+const configInitialized = $derived(appConfigState.initialized);
+const configLoading = $derived(appConfigState.loading);
 const downloadsUrl = "https://kittynode.com/download";
-const remoteServerConnected = $derived(serverUrlStore.serverUrl !== "");
+const remoteServerConnected = $derived(serverUrlState.serverUrl !== "");
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
 const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 
 onMount(() => {
-  void appConfigStore.load().catch((e) => {
+  void appConfigState.load().catch((e) => {
     console.error(`Failed to load Kittynode config: ${e}`);
   });
 });
@@ -70,14 +70,14 @@ async function handleAutoStartDockerChange(enabled: boolean) {
 
   updatingAutoStartDocker = true;
   try {
-    await appConfigStore.setAutoStartDocker(enabled);
+    await appConfigState.setAutoStartDocker(enabled);
     notifySuccess(
       enabled ? "Docker auto-start enabled" : "Docker auto-start disabled",
     );
   } catch (e) {
     notifyError("Failed to update Docker auto-start preference", e);
     try {
-      await appConfigStore.reload();
+      await appConfigState.reload();
     } catch (reloadError) {
       console.error(`Failed to reload Kittynode config: ${reloadError}`);
     }
@@ -112,8 +112,8 @@ function validateRemoteUrl(url: string) {
 
 function openRemoteDialog() {
   remoteServerUrlInput =
-    serverUrlStore.serverUrl ||
-    serverUrlStore.lastServerUrl ||
+    serverUrlState.serverUrl ||
+    serverUrlState.lastServerUrl ||
     "http://127.0.0.1:3000";
   remoteServerError = "";
   remoteDialogAction = null;
@@ -123,8 +123,8 @@ function openRemoteDialog() {
 async function applyRemoteConnection(url: string) {
   try {
     await coreClient.checkRemoteHealth(url);
-    await appConfigStore.setServerUrl(url);
-    await operationalStateStore.refresh();
+    await appConfigState.setServerUrl(url);
+    await operationalState.refresh();
     refetchStates();
     notifySuccess("Connected to remote");
     return true;
@@ -138,8 +138,8 @@ async function applyRemoteConnection(url: string) {
 
 async function clearRemoteConnection() {
   try {
-    await appConfigStore.setServerUrl("");
-    await operationalStateStore.refresh();
+    await appConfigState.setServerUrl("");
+    await operationalState.refresh();
     refetchStates();
     notifySuccess("Disconnected from remote");
     return true;
@@ -175,7 +175,7 @@ async function submitRemoteDialog() {
 
 async function quickConnectToLastServer() {
   const candidateUrl =
-    serverUrlStore.serverUrl || serverUrlStore.lastServerUrl || "";
+    serverUrlState.serverUrl || serverUrlState.lastServerUrl || "";
 
   if (!candidateUrl) {
     openRemoteDialog();
@@ -266,7 +266,7 @@ async function checkForUpdates() {
         <div>
           <p class="text-sm font-medium">Remote server</p>
           <p class="text-xs text-muted-foreground">
-            {serverUrlStore.serverUrl || "Not connected"}
+            {serverUrlState.serverUrl || "Not connected"}
           </p>
         </div>
         <div class="flex items-center gap-2">
@@ -613,7 +613,7 @@ async function checkForUpdates() {
         <Button
           size="sm"
           onclick={deleteKittynode}
-          disabled={serverUrlStore.serverUrl !== ""}
+          disabled={serverUrlState.serverUrl !== ""}
           variant="destructive"
         >
           <Trash2 class="h-4 w-4 mr-1" />

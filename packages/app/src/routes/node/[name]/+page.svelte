@@ -2,11 +2,11 @@
 import { page } from "$app/state";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
-import { packagesStore } from "$lib/states/packages.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
 import { onDestroy, onMount } from "svelte";
 import DockerLogs from "$lib/components/DockerLogs.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
-import { packageConfigStore } from "$lib/states/packageConfig.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
+import { packageConfigState } from "$lib/states/packageConfig.svelte";
 import * as Select from "$lib/components/ui/select";
 import * as Alert from "$lib/components/ui/alert";
 import { coreClient } from "$lib/client";
@@ -45,12 +45,12 @@ async function deletePackage(
   packageName: string,
   options?: { redirectToDashboard?: boolean },
 ): Promise<boolean> {
-  if (!operationalStateStore.canManage) {
+  if (!operationalState.canManage) {
     notifyError("Cannot manage packages in the current operational state");
     return false;
   }
 
-  const status = packagesStore.installationStatus(packageName);
+  const status = packagesState.installationStatus(packageName);
 
   if (status === "unknown") {
     notifyError("Package status is still loading. Try again once it finishes.");
@@ -68,7 +68,7 @@ async function deletePackage(
 
   deletingPackages = new Set([...deletingPackages, packageName]);
   try {
-    await packagesStore.deletePackage(packageName);
+    await packagesState.deletePackage(packageName);
     notifySuccess(`Successfully deleted ${packageName}`);
 
     if (options?.redirectToDashboard) {
@@ -88,11 +88,11 @@ async function deletePackage(
 
 const packageName = $derived(page.params.name || "");
 const pkg = $derived(
-  packageName ? packagesStore.packages[packageName] : undefined,
+  packageName ? packagesState.packages[packageName] : undefined,
 );
-const installedState = $derived(packagesStore.installedState);
+const installedState = $derived(packagesState.installedState);
 const packageStatus = $derived(
-  pkg ? packagesStore.installationStatus(pkg.name) : "unknown",
+  pkg ? packagesState.installationStatus(pkg.name) : "unknown",
 );
 
 const runtime = createPackageRuntimeController();
@@ -177,13 +177,13 @@ const statusKind = $derived(
 const canStopNode = $derived(
   runtime.lifecycle === "idle" &&
     runtime.status === "running" &&
-    operationalStateStore.canManage,
+    operationalState.canManage,
 );
 
 const canStartNode = $derived(
   runtime.lifecycle === "idle" &&
     runtime.status === "stopped" &&
-    operationalStateStore.canManage,
+    operationalState.canManage,
 );
 
 async function handleDeletePackage(name: string) {
@@ -235,7 +235,7 @@ async function loadConfigFor(name: string) {
   }
 
   try {
-    const config = await packageConfigStore.getConfig(name);
+    const config = await packageConfigState.getConfig(name);
     const network = config.values.network || defaultEthereumNetwork;
     currentNetwork = network;
 
@@ -255,7 +255,7 @@ async function loadConfigFor(name: string) {
 
 async function stopNode() {
   if (!packageName || !canStopNode) {
-    if (!operationalStateStore.canManage) {
+    if (!operationalState.canManage) {
       notifyError("Cannot manage packages in the current operational state");
     }
     return;
@@ -263,7 +263,7 @@ async function stopNode() {
 
   try {
     const success = await runtime.performLifecycle("stopping", () =>
-      packagesStore.stopPackage(packageName),
+      packagesState.stopPackage(packageName),
     );
     if (success) {
       notifySuccess(`Stopped ${packageName}`);
@@ -276,7 +276,7 @@ async function stopNode() {
 
 async function startNode() {
   if (!packageName || !canStartNode) {
-    if (!operationalStateStore.canManage) {
+    if (!operationalState.canManage) {
       notifyError("Cannot manage packages in the current operational state");
     }
     return;
@@ -284,7 +284,7 @@ async function startNode() {
 
   try {
     const success = await runtime.performLifecycle("starting", () =>
-      packagesStore.startPackage(packageName),
+      packagesState.startPackage(packageName),
     );
     if (success) {
       notifySuccess(`Started ${packageName}`);
@@ -300,7 +300,7 @@ async function updateConfig() {
 
   configLoading = true;
   try {
-    await packageConfigStore.updateConfig(packageName, {
+    await packageConfigState.updateConfig(packageName, {
       values: {
         network: selectedNetwork,
       },
@@ -320,7 +320,7 @@ $effect(() => {
   runtime.attach({
     name,
     enabled: Boolean(name),
-    pollInterval: operationalStateStore.isStarting ? 2000 : 5000,
+    pollInterval: operationalState.isStarting ? 2000 : 5000,
   });
 
   if (name) {
@@ -335,14 +335,14 @@ $effect(() => {
 });
 
 onMount(async () => {
-  operationalStateStore.startPolling();
-  await operationalStateStore.refresh();
-  await packagesStore.syncInstalledPackages();
+  operationalState.startPolling();
+  await operationalState.refresh();
+  await packagesState.syncInstalledPackages();
   await refreshValidatorInstalled();
 });
 
 onDestroy(() => {
-  operationalStateStore.stopPolling();
+  operationalState.stopPolling();
   runtime.stop();
 });
 </script>
@@ -434,7 +434,7 @@ onDestroy(() => {
       {/if}
     </div>
 
-    {#if operationalStateStore.state?.mode === "local" && operationalStateStore.dockerRunning === false}
+    {#if operationalState.state?.mode === "local" && operationalState.dockerRunning === false}
       <Alert.Root>
         <Terminal class="size-4" />
         <Alert.Title>Docker is not running</Alert.Title>
@@ -451,7 +451,7 @@ onDestroy(() => {
           <Button
             size="sm"
             variant="outline"
-            onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+            onclick={() => packagesState.loadInstalledPackages({ force: true })}
           >
             Retry
           </Button>

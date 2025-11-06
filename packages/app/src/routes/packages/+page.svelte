@@ -2,16 +2,16 @@
 import { onMount } from "svelte";
 import * as Card from "$lib/components/ui/card";
 import { Button } from "$lib/components/ui/button";
-import { packagesStore } from "$lib/states/packages.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { packagesState } from "$lib/states/packages.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { goto } from "$app/navigation";
 import { CircleAlert, Search } from "@lucide/svelte";
 import PackageCard from "$lib/components/PackageCard.svelte";
 
 let searchQuery = $state("");
 
-const catalogState = $derived(packagesStore.catalogState);
-const installedState = $derived(packagesStore.installedState);
+const catalogState = $derived(packagesState.catalogState);
+const installedState = $derived(packagesState.installedState);
 
 const filteredPackages = $derived(() => {
   if (catalogState.status !== "ready") {
@@ -19,7 +19,7 @@ const filteredPackages = $derived(() => {
   }
 
   const query = searchQuery.toLowerCase();
-  return Object.entries(packagesStore.packages)
+  return Object.entries(packagesState.packages)
     .filter(
       ([name, pkg]) =>
         name.toLowerCase().includes(query) ||
@@ -33,13 +33,13 @@ function managePackage(packageName: string) {
 }
 
 onMount(() => {
-  operationalStateStore.startPolling();
-  operationalStateStore.refresh().catch(() => {});
-  packagesStore.loadPackages();
-  packagesStore.syncInstalledPackages().catch(() => {});
+  operationalState.startPolling();
+  operationalState.refresh().catch(() => {});
+  packagesState.loadPackages();
+  packagesState.syncInstalledPackages().catch(() => {});
 
   return () => {
-    operationalStateStore.stopPolling();
+    operationalState.stopPolling();
   };
 });
 </script>
@@ -71,7 +71,7 @@ onMount(() => {
         <Button
           size="sm"
           variant="outline"
-          onclick={() => packagesStore.loadPackages({ force: true })}
+          onclick={() => packagesState.loadPackages({ force: true })}
         >
           Retry
         </Button>
@@ -86,7 +86,7 @@ onMount(() => {
         <Button
           size="sm"
           variant="outline"
-          onclick={() => packagesStore.loadInstalledPackages({ force: true })}
+          onclick={() => packagesState.loadInstalledPackages({ force: true })}
         >
           Retry
         </Button>

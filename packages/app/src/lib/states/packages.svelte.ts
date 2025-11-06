@@ -1,7 +1,7 @@
 import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
-import type { OperationalState } from "$lib/types/operational_state";
-import { operationalStateStore } from "./operationalState.svelte";
+import type { OperationalState } from "$lib/types/operational";
+import { operationalState } from "./operational.svelte";
 
 type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
@@ -73,7 +73,7 @@ function packagesChanged(next: Record<string, Package>): boolean {
   }
   return false;
 }
-export const packagesStore = {
+export const packagesState = {
   get packages() {
     return catalogState.packages;
   },
@@ -140,7 +140,7 @@ export const packagesStore = {
   },
 
   async loadInstalledPackages({ force = false }: { force?: boolean } = {}) {
-    const state = operationalStateStore.state;
+    const state = operationalState.state;
 
     if (!state) {
       return;
@@ -181,7 +181,7 @@ export const packagesStore = {
 
       const message = e instanceof Error ? e.message : String(e);
       console.error(`Failed to load installed packages: ${message}`);
-      const fallbackStatus = operationalStateStore.canManage
+      const fallbackStatus = operationalState.canManage
         ? "error"
         : "unavailable";
       installedState = {
@@ -192,7 +192,7 @@ export const packagesStore = {
     }
   },
   async syncInstalledPackages() {
-    const state = operationalStateStore.state;
+    const state = operationalState.state;
 
     if (!state) {
       return;
@@ -319,12 +319,12 @@ export const packagesStore = {
   },
 };
 
-operationalStateStore.subscribe(() => {
+operationalState.subscribe(() => {
   if (scheduledSync) {
     return;
   }
 
-  scheduledSync = packagesStore.syncInstalledPackages().finally(() => {
+  scheduledSync = packagesState.syncInstalledPackages().finally(() => {
     scheduledSync = null;
   });
 });

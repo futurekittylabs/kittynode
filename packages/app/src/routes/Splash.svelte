@@ -1,5 +1,5 @@
 <script lang="ts">
-import { initializedStore } from "$lib/states/initialized.svelte";
+import { initializedState } from "$lib/states/initialized.svelte";
 import { goto } from "$app/navigation";
 import { platform } from "@tauri-apps/plugin-os";
 import { coreClient } from "$lib/client";
@@ -19,7 +19,7 @@ const isLastStep = $derived(currentStep === totalSteps - 1);
 const progressValue = $derived(
   totalSteps <= 1 ? 100 : (currentStep / (totalSteps - 1)) * 100,
 );
-const isInitializing = $derived(initializedStore.initializing);
+const isInitializing = $derived(initializedState.initializing);
 
 let canvasElement: HTMLCanvasElement;
 let animationFrameId: number;
@@ -147,9 +147,9 @@ function prevStep() {
 async function initKittynode() {
   try {
     if (["ios", "android"].includes(currentPlatform)) {
-      await initializedStore.fakeInitialize();
+      await initializedState.fakeInitialize();
     } else {
-      await initializedStore.initialize();
+      await initializedState.initialize();
     }
     try {
       await coreClient.setOnboardingCompleted(true);

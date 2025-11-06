@@ -4,7 +4,7 @@ type InitState = "idle" | "initializing" | "initialized";
 
 let state = $state<InitState>("idle");
 
-export const initializedStore = {
+export const initializedState = {
   get state() {
     return state;
   },

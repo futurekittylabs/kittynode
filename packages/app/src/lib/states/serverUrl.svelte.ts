@@ -5,7 +5,7 @@ export function normalizeServerUrl(url: string) {
   return url.trim();
 }
 
-export const serverUrlStore = {
+export const serverUrlState = {
   get serverUrl() {
     return serverUrl;
   },

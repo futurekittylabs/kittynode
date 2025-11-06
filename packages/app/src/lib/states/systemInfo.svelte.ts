@@ -3,7 +3,7 @@ import type { SystemInfo } from "$lib/types/system_info";
 
 let systemInfo = $state<SystemInfo>();
 
-export const systemInfoStore = {
+export const systemInfoState = {
   get systemInfo() {
     return systemInfo;
   },

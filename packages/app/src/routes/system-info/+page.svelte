@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { serverUrlStore } from "$lib/states/serverUrl.svelte";
-import { systemInfoStore } from "$lib/states/systemInfo.svelte";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { serverUrlState } from "$lib/states/serverUrl.svelte";
+import { systemInfoState } from "$lib/states/systemInfo.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { Skeleton } from "$lib/components/ui/skeleton";
 import { Progress } from "$lib/components/ui/progress";
 import * as Card from "$lib/components/ui/card";
@@ -23,17 +23,17 @@ function calculateUsagePercentage(used: number, total: number): number {
 }
 
 function fetchSystemInfo() {
-  systemInfoStore.fetchSystemInfo();
+  systemInfoState.fetchSystemInfo();
 }
 
 onMount(() => {
-  if (!systemInfoStore.systemInfo) {
+  if (!systemInfoState.systemInfo) {
     fetchSystemInfo();
   }
-  operationalStateStore.startPolling();
+  operationalState.startPolling();
 
   return () => {
-    operationalStateStore.stopPolling();
+    operationalState.stopPolling();
   };
 });
 </script>
@@ -62,7 +62,7 @@ onMount(() => {
       </Card.Header>
       <Card.Content class="space-y-2">
         <div class="flex items-center space-x-2">
-          {#if serverUrlStore.serverUrl}
+          {#if serverUrlState.serverUrl}
             <Globe class="h-4 w-4 text-green-500" />
             <span class="text-sm font-medium">Connected</span>
           {:else}
@@ -70,9 +70,9 @@ onMount(() => {
             <span class="text-sm font-medium">Not connected</span>
           {/if}
         </div>
-        {#if serverUrlStore.serverUrl}
+        {#if serverUrlState.serverUrl}
           <p class="text-xs text-muted-foreground break-all">
-            {serverUrlStore.serverUrl}
+            {serverUrlState.serverUrl}
           </p>
         {/if}
       </Card.Content>
@@ -91,7 +91,7 @@ onMount(() => {
     </Card.Root>
   </div>
 
-  {#if systemInfoStore.systemInfo}
+  {#if systemInfoState.systemInfo}
     <!-- Hardware Information -->
     <div class="grid gap-4 md:grid-cols-2">
       <Card.Root>
@@ -104,27 +104,27 @@ onMount(() => {
         <Card.Content class="space-y-2">
           <div>
             <p class="text-sm font-medium">
-              {systemInfoStore.systemInfo.processor.name}
+              {systemInfoState.systemInfo.processor.name}
             </p>
           </div>
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-muted-foreground">Cores</p>
               <p class="font-medium">
-                {systemInfoStore.systemInfo.processor.cores}
+                {systemInfoState.systemInfo.processor.cores}
               </p>
             </div>
             <div>
               <p class="text-muted-foreground">Frequency</p>
               <p class="font-medium">
-                {systemInfoStore.systemInfo.processor.frequencyGhz.toFixed(2)} GHz
+                {systemInfoState.systemInfo.processor.frequencyGhz.toFixed(2)} GHz
               </p>
             </div>
           </div>
           <div>
             <p class="text-sm text-muted-foreground">Architecture</p>
             <p class="text-sm font-medium">
-              {systemInfoStore.systemInfo.processor.architecture}
+              {systemInfoState.systemInfo.processor.architecture}
             </p>
           </div>
         </Card.Content>
@@ -141,7 +141,7 @@ onMount(() => {
           <div>
             <p class="text-sm text-muted-foreground">Total System Memory</p>
             <p class="text-2xl font-bold">
-              {systemInfoStore.systemInfo.memory.totalDisplay}
+              {systemInfoState.systemInfo.memory.totalDisplay}
             </p>
           </div>
         </Card.Content>
@@ -160,7 +160,7 @@ onMount(() => {
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
-        {#each systemInfoStore.systemInfo.storage.disks as disk}
+        {#each systemInfoState.systemInfo.storage.disks as disk}
           {@const usagePercent = calculateUsagePercentage(
             disk.totalBytes - disk.availableBytes,
             disk.totalBytes,

@@ -1,13 +1,13 @@
 <script lang="ts">
 import * as Card from "$lib/components/ui/card";
-import { operationalStateStore } from "$lib/states/operationalState.svelte";
+import { operationalState } from "$lib/states/operational.svelte";
 import { CircleCheck, CircleAlert, Server, LoaderCircle } from "@lucide/svelte";
 
 const { showServerIcon = false } = $props<{ showServerIcon?: boolean }>();
 
-const state = $derived(operationalStateStore.state);
-const isStarting = $derived(operationalStateStore.isStarting);
-const loading = $derived(operationalStateStore.loading && !state);
+const state = $derived(operationalState.state);
+const isStarting = $derived(operationalState.isStarting);
+const loading = $derived(operationalState.loading && !state);
 </script>
 
 <Card.Root>
