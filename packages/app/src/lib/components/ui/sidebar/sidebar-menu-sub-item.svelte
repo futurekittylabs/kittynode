@@ -11,11 +11,11 @@ let {
 </script>
 
 <li
-  bind:this={ref}
-  data-slot="sidebar-menu-sub-item"
-  data-sidebar="menu-sub-item"
-  class={cn("group/menu-sub-item relative", className)}
-  {...restProps}
+	bind:this={ref}
+	data-slot="sidebar-menu-sub-item"
+	data-sidebar="menu-sub-item"
+	class={cn("group/menu-sub-item relative", className)}
+	{...restProps}
 >
-  {@render children?.()}
+	{@render children?.()}
 </li>

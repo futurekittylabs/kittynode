@@ -27,6 +27,8 @@ export const buttonVariants = tv({
       sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
       lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
       icon: "size-9",
+      "icon-sm": "size-8",
+      "icon-lg": "size-10",
     },
   },
   defaultVariants: {
@@ -46,41 +48,41 @@ export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 </script>
 
 <script lang="ts">
-  let {
-    class: className,
-    variant = "default",
-    size = "default",
-    ref = $bindable(null),
-    href = undefined,
-    type = "button",
-    disabled,
-    children,
-    ...restProps
-  }: ButtonProps = $props();
+	let {
+		class: className,
+		variant = "default",
+		size = "default",
+		ref = $bindable(null),
+		href = undefined,
+		type = "button",
+		disabled,
+		children,
+		...restProps
+	}: ButtonProps = $props();
 </script>
 
 {#if href}
-  <a
-    bind:this={ref}
-    data-slot="button"
-    class={cn(buttonVariants({ variant, size }), className)}
-    href={disabled ? undefined : href}
-    aria-disabled={disabled}
-    role={disabled ? "link" : undefined}
-    tabindex={disabled ? -1 : undefined}
-    {...restProps}
-  >
-    {@render children?.()}
-  </a>
+	<a
+		bind:this={ref}
+		data-slot="button"
+		class={cn(buttonVariants({ variant, size }), className)}
+		href={disabled ? undefined : href}
+		aria-disabled={disabled}
+		role={disabled ? "link" : undefined}
+		tabindex={disabled ? -1 : undefined}
+		{...restProps}
+	>
+		{@render children?.()}
+	</a>
 {:else}
-  <button
-    bind:this={ref}
-    data-slot="button"
-    class={cn(buttonVariants({ variant, size }), className)}
-    {type}
-    {disabled}
-    {...restProps}
-  >
-    {@render children?.()}
-  </button>
+	<button
+		bind:this={ref}
+		data-slot="button"
+		class={cn(buttonVariants({ variant, size }), className)}
+		{type}
+		{disabled}
+		{...restProps}
+	>
+		{@render children?.()}
+	</button>
 {/if}
