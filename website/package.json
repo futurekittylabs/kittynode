@@ -23,7 +23,7 @@
     "@tailwindcss/vite": "^4.1.16",
     "bits-ui": "^2.14.2",
     "clsx": "^2.1.1",
-    "runed": "^0.35.1",
+    "runed": "^0.36.0",
     "shiki": "^3.14.0",
     "svelte": "^5.43.3",
     "svelte-check": "^4.3.3",
