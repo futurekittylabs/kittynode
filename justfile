@@ -140,8 +140,13 @@ test-coverage-all:
 update:
   cargo upgrade
   cd docs && bun update --latest
-  cd packages/app && bun update --latest
+  cd packages/app && just update-shadcn && bun update --latest
   cd website && bun update --latest
+  just lint-js-fix
+
+# update shadcn dependencies
+update-shadcn:
+  cd packages/app && bunx shadcn-svelte@latest add -y -o alert button card dialog input progress select sidebar skeleton switch
 
 # start the web server
 web:
