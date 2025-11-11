@@ -35,10 +35,9 @@ const codeState = useCode({
 </div>
 
 <style>
-	@reference '../../../../app.css';
-
 	:global(.dark) {
-		:global(.shiki, .shiki span) {
+		:global(.shiki),
+		:global(.shiki span) {
 			color: var(--shiki-dark) !important;
 			font-style: var(--shiki-dark-font-style) !important;
 			font-weight: var(--shiki-dark-font-weight) !important;
@@ -47,7 +46,8 @@ const codeState = useCode({
 	}
 
 	/* Shiki see: https://shiki.matsu.io/guide/dual-themes#class-based-dark-mode */
-	:global(html.dark .shiki, html.dark .shiki span) {
+	:global(html.dark .shiki),
+	:global(html.dark .shiki span) {
 		color: var(--shiki-dark) !important;
 		font-style: var(--shiki-dark-font-style) !important;
 		font-weight: var(--shiki-dark-font-weight) !important;
@@ -55,16 +55,28 @@ const codeState = useCode({
 	}
 
 	:global(pre.shiki) {
-		@apply overflow-x-auto rounded-lg bg-inherit py-4 text-sm;
+		overflow-x: auto;
+		border-radius: 0.5rem;
+		background-color: inherit;
+		padding-top: 1rem;
+		padding-bottom: 1rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
 	}
 
 	:global(pre.shiki:not([data-code-overflow] *):not([data-code-overflow])) {
-		@apply overflow-y-auto;
+		overflow-y: auto;
 		max-height: min(100%, 650px);
 	}
 
 	:global(pre.shiki code) {
-		@apply grid min-w-full rounded-none border-0 bg-transparent p-0 break-words;
+		display: grid;
+		min-width: 100%;
+		border-radius: 0;
+		border-width: 0;
+		background-color: transparent;
+		padding: 0;
+		overflow-wrap: break-word;
 		counter-reset: line;
 		box-decoration-break: clone;
 	}
@@ -84,22 +96,29 @@ const codeState = useCode({
 	}
 
 	:global(pre.line-numbers .line::before) {
-		@apply text-muted-foreground;
+		color: var(--muted-foreground);
 	}
 
 	:global(pre .line.line--highlighted) {
-		@apply bg-secondary;
+		background-color: var(--secondary);
 	}
 
 	:global(pre .line.line--highlighted span) {
-		@apply relative;
+		position: relative;
 	}
 
 	:global(pre .line) {
-		@apply inline-block min-h-4 w-full px-4 py-0.5;
+		display: inline-block;
+		min-height: 1rem;
+		width: 100%;
+		padding-left: 1rem;
+		padding-right: 1rem;
+		padding-top: 0.125rem;
+		padding-bottom: 0.125rem;
 	}
 
 	:global(pre.line-numbers .line) {
-		@apply px-2;
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
 	}
 </style>
