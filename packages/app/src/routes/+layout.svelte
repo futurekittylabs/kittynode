@@ -33,7 +33,9 @@ import { coreClient } from "$lib/client";
 
 const { children } = $props();
 
-const currentPath = $derived(page.url?.pathname || "");
+const currentPath = $derived(
+  `${page.url?.pathname ?? "/"}`.replace(/\/index\.html$/, "") || "/",
+);
 
 const installedState = $derived(packagesState.installedState);
 const installedNodes = $derived(
