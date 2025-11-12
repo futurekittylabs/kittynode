@@ -261,7 +261,7 @@ onMount(async () => {
       <Sidebar.Rail />
     </Sidebar.Root>
 
-    <Sidebar.Inset>
+    <Sidebar.Inset class="min-w-0">
       {#if remoteConnected}
         <div
           class="flex flex-wrap items-center justify-between gap-3 border-b border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary dark:bg-primary/20 dark:text-primary-foreground md:flex-nowrap md:rounded-t-xl"
