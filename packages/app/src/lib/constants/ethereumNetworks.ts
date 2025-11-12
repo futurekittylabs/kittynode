@@ -13,3 +13,26 @@ export const ethereumNetworkValues = ethereumNetworks.map(
 export function formatEthereumNetworks(delimiter: string): string {
   return ethereumNetworkValues.join(delimiter);
 }
+
+export function getEthereumNetworkLabel(
+  value: string | null | undefined,
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed.toLowerCase();
+  const match = ethereumNetworks.find(
+    (network) => network.value === normalized,
+  );
+  if (match) {
+    return match.label;
+  }
+
+  return trimmed[0].toUpperCase() + trimmed.slice(1);
+}

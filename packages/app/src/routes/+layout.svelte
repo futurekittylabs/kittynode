@@ -9,7 +9,6 @@ import { platform } from "@tauri-apps/plugin-os";
 import { updates } from "$lib/states/updates.svelte";
 import { Toaster } from "svelte-sonner";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigState } from "$lib/states/packageConfig.svelte";
 import UpdateBanner from "$lib/components/UpdateBanner.svelte";
 import { Button } from "$lib/components/ui/button";
 import * as Sidebar from "$lib/components/ui/sidebar";
@@ -30,6 +29,7 @@ import { serverUrlState } from "$lib/states/serverUrl.svelte";
 import { notifySuccess, notifyError } from "$lib/utils/notify";
 import { refetchStates } from "$lib/utils/refetchStates";
 import { coreClient } from "$lib/client";
+import { ethereumNetworkState } from "$lib/states/ethereumNetwork.svelte";
 
 const { children } = $props();
 
@@ -41,12 +41,12 @@ const installedState = $derived(packagesState.installedState);
 const installedNodes = $derived(
   installedState.status === "ready" ? packagesState.installedPackages : [],
 );
+const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
 const remoteServerUrl = $derived(serverUrlState.serverUrl);
 const remoteConnected = $derived(remoteServerUrl !== "");
 const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
 const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 let remoteBannerLoading = $state(false);
-let ethereumNetworkLabel = $state<string | null>(null);
 
 $effect(() => {
   packagesState.handleOperationalStateChange(operationalState.state);
@@ -127,21 +127,6 @@ onMount(async () => {
   await packagesState.loadPackages();
   await operationalState.refresh();
   await packagesState.syncInstalledPackages();
-
-  // Load Ethereum network label once for display in sidebar
-  try {
-    const cfg = await packageConfigState.getConfig("ethereum");
-    const network = cfg.values.network;
-    if (typeof network === "string") {
-      const trimmedNetwork = network.trim();
-      if (trimmedNetwork) {
-        ethereumNetworkLabel =
-          trimmedNetwork[0].toUpperCase() + trimmedNetwork.slice(1);
-      }
-    }
-  } catch (e) {
-    notifyError(`Failed to load Ethereum network label: ${e}`);
-  }
 
   try {
     await updates.getUpdate();

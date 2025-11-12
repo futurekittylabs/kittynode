@@ -2,6 +2,7 @@ import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
 import type { OperationalState } from "$lib/types/operational";
 import { operationalState } from "./operational.svelte";
+import { ethereumNetworkState } from "./ethereumNetwork.svelte";
 
 type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
@@ -46,6 +47,7 @@ function setInstalledUnavailable() {
     status: "unavailable",
     packages: {},
   };
+  ethereumNetworkState.handleInstalledPackages(null);
 }
 
 function packagesChanged(next: Record<string, Package>): boolean {
@@ -174,6 +176,7 @@ export const packagesState = {
         status: "ready",
         packages,
       };
+      ethereumNetworkState.handleInstalledPackages(Object.values(packages));
     } catch (e) {
       if (requestId !== installedRequestToken) {
         return;
@@ -189,6 +192,7 @@ export const packagesState = {
         packages: {},
         error: message,
       };
+      ethereumNetworkState.handleInstalledPackages(null);
     }
   },
   async syncInstalledPackages() {
@@ -231,6 +235,7 @@ export const packagesState = {
         status: "ready",
         packages,
       };
+      ethereumNetworkState.handleInstalledPackages(Object.values(packages));
     } catch (e) {
       if (requestId !== installedRequestToken) {
         return;

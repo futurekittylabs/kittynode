@@ -25,7 +25,7 @@ import {
   CircleAlert,
 } from "@lucide/svelte";
 import { formatPackageName } from "$lib/utils";
-import { packageConfigState } from "$lib/states/packageConfig.svelte";
+import { ethereumNetworkState } from "$lib/states/ethereumNetwork.svelte";
 import PackageCard from "$lib/components/PackageCard.svelte";
 
 const catalogState = $derived(packagesState.catalogState);
@@ -46,38 +46,20 @@ const installedPackageCount = $derived(
 const installedPackagesList = $derived(
   installedState.status === "ready" ? packagesState.installedPackages : [],
 );
-let ethereumNetworkLabel = $state<string | null>(null);
+const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
 let ethereumValidatorInstalled = $state<boolean | null>(null);
 
 $effect(() => {
   if (installedState.status !== "ready") {
-    ethereumNetworkLabel = null;
+    ethereumValidatorInstalled = null;
     return;
   }
   const hasEth = installedPackagesList.some((p) => p.name === "ethereum");
   if (!hasEth) {
-    ethereumNetworkLabel = null;
     ethereumValidatorInstalled = null;
     return;
   }
   (async () => {
-    try {
-      const cfg = await packageConfigState.getConfig("ethereum");
-      const network = cfg.values.network;
-      if (network) {
-        if (network === "hoodi") ethereumNetworkLabel = "Hoodi";
-        else if (network === "mainnet") ethereumNetworkLabel = "Mainnet";
-        else if (network === "sepolia") ethereumNetworkLabel = "Sepolia";
-        else if (network === "ephemery") ethereumNetworkLabel = "Ephemery";
-        else ethereumNetworkLabel = network;
-      } else {
-        ethereumNetworkLabel = null;
-      }
-    } catch (e) {
-      ethereumNetworkLabel = null;
-    }
-
-    // Fetch validator installed status once when we can manage
     try {
       if (operationalState.canManage) {
         ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
