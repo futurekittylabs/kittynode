@@ -3891,7 +3891,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-cli"
-version = "0.61.0"
+version = "0.62.0"
 dependencies = [
  "arboard",
  "assert_cmd",
