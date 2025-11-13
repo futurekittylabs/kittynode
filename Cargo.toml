@@ -10,6 +10,7 @@ resolver = "2"
 [workspace.package]
 edition = "2024"
 description = "Control center for world computer operators."
+homepage = "https://kittynode.com"
 readme = "README.md"
 repository = "https://github.com/futurekittylabs/kittynode"
 license = "MIT"
