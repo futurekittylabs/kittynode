@@ -12,7 +12,7 @@ publish.workspace = true
 name = "kittynode"
 path = "src/main.rs"
 
-[[package.metadata.dist]]
+[package.metadata.dist]
 formula = "kittynode"
 
 [dependencies]
