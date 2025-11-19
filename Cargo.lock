@@ -3886,7 +3886,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-cli"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "arboard",
  "assert_cmd",
@@ -3915,7 +3915,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-core"
-version = "0.55.0"
+version = "0.56.0"
 dependencies = [
  "alloy-primitives",
  "bip32",
@@ -3948,7 +3948,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-tauri"
-version = "0.111.0"
+version = "0.112.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -3971,7 +3971,7 @@ dependencies = [
 
 [[package]]
 name = "kittynode-web"
-version = "0.52.0"
+version = "0.53.0"
 dependencies = [
  "axum",
  "eyre",
