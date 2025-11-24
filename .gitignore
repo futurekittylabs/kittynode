@@ -38,5 +38,6 @@ tmp
 # Local screenshot images used to generate optimized homepage images
 screenshots
 
-# Work / task files
-work.md
+# Agents
+AGENTS.md
+CLAUDE.md
