@@ -12,11 +12,11 @@
     "format-lint:fix": "biome format . --fix && biome lint . --fix"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.5",
-    "@astrojs/cloudflare": "^12.6.11",
-    "@astrojs/starlight": "^0.36.2",
+    "@astrojs/check": "^0.9.6",
+    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/starlight": "^0.37.0",
     "@fontsource-variable/literata": "^5.2.8",
-    "astro": "^5.16.0",
+    "astro": "^5.16.3",
     "astro-embed": "^0.9.2",
     "sharp": "^0.34.5",
     "starlight-image-zoom": "^0.13.2",
@@ -25,6 +25,6 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "wrangler": "^4.50.0"
+    "wrangler": "^4.51.0"
   }
 }
