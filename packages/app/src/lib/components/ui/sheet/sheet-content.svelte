@@ -7,9 +7,9 @@ export const sheetVariants = tv({
       top: "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
       bottom:
         "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
-      left: "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 start-0 h-full w-3/4 border-e sm:max-w-sm",
+      left: "data-[state=closed]:slide-out-to-start data-[state=open]:slide-in-from-start inset-y-0 start-0 h-full w-3/4 border-e sm:max-w-sm",
       right:
-        "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 end-0 h-full w-3/4 border-s sm:max-w-sm",
+        "data-[state=closed]:slide-out-to-end data-[state=open]:slide-in-from-end inset-y-0 end-0 h-full w-3/4 border-s sm:max-w-sm",
     },
   },
   defaultVariants: {
@@ -24,8 +24,10 @@ export type Side = VariantProps<typeof sheetVariants>["side"];
 	import { Dialog as SheetPrimitive } from "bits-ui";
 	import XIcon from "@lucide/svelte/icons/x";
 	import type { Snippet } from "svelte";
+	import SheetPortal from "./sheet-portal.svelte";
 	import SheetOverlay from "./sheet-overlay.svelte";
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
+	import type { ComponentProps } from "svelte";
 
 	let {
 		ref = $bindable(null),
@@ -35,13 +37,13 @@ export type Side = VariantProps<typeof sheetVariants>["side"];
 		children,
 		...restProps
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
-		portalProps?: SheetPrimitive.PortalProps;
+		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetPortal>>;
 		side?: Side;
 		children: Snippet;
 	} = $props();
 </script>
 
-<SheetPrimitive.Portal {...portalProps}>
+<SheetPortal {...portalProps}>
 	<SheetOverlay />
 	<SheetPrimitive.Content
 		bind:ref
@@ -57,4 +59,4 @@ export type Side = VariantProps<typeof sheetVariants>["side"];
 			<span class="sr-only">Close</span>
 		</SheetPrimitive.Close>
 	</SheetPrimitive.Content>
-</SheetPrimitive.Portal>
+</SheetPortal>
