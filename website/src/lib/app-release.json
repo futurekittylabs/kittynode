@@ -1,15 +1,31 @@
 {
-  "version": "0.113.0",
+  "version": "0.114.0",
   "notes": "",
-  "pub_date": "2025-12-01T03:17:29.154Z",
+  "pub_date": "2025-12-11T06:41:51.188Z",
   "platforms": {
-    "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNXUwYWE2L0FuY1hUMnkveFl1OFQ5eFZGakgwM2c4aDZaVElSWExYVE5GalprcGJ5Y2hqc0NDdklnSjJQUUtDMTNaWkJlRkhBbXRUb1FnREk2eHdTOGdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0NTU5MDQ1CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKbDJrT2VFUCtVZnYxZ0lYcE1WYjRhS09OV1RKODdrWStVQnFSYzJvcEpxRExEc0JCa0tLVEpJTDdseEZNd2FuNEY1UGdTSWZ3WTdQT05rckdRM2loQlE9PQo=",
-      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.113.0/Kittynode_darwin_x64.app.tar.gz"
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWlBeklOams4UjcyckJTYU1XK0E1WnJyNUsxaDI5b2paOWlGQnNHN0pXWnNEanIyQ296OUZ1RGVNR0Vrc3k2d2luL3hGeXhTZjdaalo2S29QbHZvVlFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MTY2CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKY0hhbUNCemJjQWZKRlBETUZFTENUd253c0JUU3F3MnlWY0M5SU9ORXVLdU9hQmJiTFozTytDUXNrRDNLVDBlbUszVGVPYzNpRkZjNlU1TTVZaWR0Q3c9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode_darwin_aarch64.app.tar.gz"
     },
-    "darwin-x86_64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNXUwYWE2L0FuY1hUMnkveFl1OFQ5eFZGakgwM2c4aDZaVElSWExYVE5GalprcGJ5Y2hqc0NDdklnSjJQUUtDMTNaWkJlRkhBbXRUb1FnREk2eHdTOGdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0NTU5MDQ1CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKbDJrT2VFUCtVZnYxZ0lYcE1WYjRhS09OV1RKODdrWStVQnFSYzJvcEpxRExEc0JCa0tLVEpJTDdseEZNd2FuNEY1UGdTSWZ3WTdQT05rckdRM2loQlE9PQo=",
-      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.113.0/Kittynode_darwin_x64.app.tar.gz"
+    "darwin-aarch64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWlBeklOams4UjcyckJTYU1XK0E1WnJyNUsxaDI5b2paOWlGQnNHN0pXWnNEanIyQ296OUZ1RGVNR0Vrc3k2d2luL3hGeXhTZjdaalo2S29QbHZvVlFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MTY2CWZpbGU6S2l0dHlub2RlLmFwcC50YXIuZ3oKY0hhbUNCemJjQWZKRlBETUZFTENUd253c0JUU3F3MnlWY0M5SU9ORXVLdU9hQmJiTFozTytDUXNrRDNLVDBlbUszVGVPYzNpRkZjNlU1TTVZaWR0Q3c9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode_darwin_aarch64.app.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNW42YUsxczFCeGdRcVBYMllZR0cwdXNnRzQ4bnUvdSt5U0duUG1uWUV2MjRqWVliNVZJcExHOTVFdjlNT2lqNERkd0d2YW5MdXZ0UnVjL25PL1BqRVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MzA0CWZpbGU6S2l0dHlub2RlXzAuMTE0LjBfYW1kNjQuQXBwSW1hZ2UKQzJTNGFWTlpsOUFRam9VQ1FrVHlsSmc2YXpJQmVjL1NjODVJdERYQ3RnRmFjcVVpTE92MWlFK3VwSnByNVV0UVZIcU9vdTdySmdEMmJTNXdGRncvRGc9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode_0.114.0_amd64.AppImage"
+    },
+    "linux-x86_64-appimage": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNW42YUsxczFCeGdRcVBYMllZR0cwdXNnRzQ4bnUvdSt5U0duUG1uWUV2MjRqWVliNVZJcExHOTVFdjlNT2lqNERkd0d2YW5MdXZ0UnVjL25PL1BqRVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MzA0CWZpbGU6S2l0dHlub2RlXzAuMTE0LjBfYW1kNjQuQXBwSW1hZ2UKQzJTNGFWTlpsOUFRam9VQ1FrVHlsSmc2YXpJQmVjL1NjODVJdERYQ3RnRmFjcVVpTE92MWlFK3VwSnByNVV0UVZIcU9vdTdySmdEMmJTNXdGRncvRGc9PQo=",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode_0.114.0_amd64.AppImage"
+    },
+    "linux-x86_64-deb": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNWtWUCs5V05EYUZINVlOMEFjUURUTldSQ1VIUkJSNFYvYVhoN1M0SmI2b2xxa0F4QmJuRFFGMDIrbTlxbjNNNk1NZFRNaXQ4SGRKOWR1ZWVpakxhT1FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MzA0CWZpbGU6S2l0dHlub2RlXzAuMTE0LjBfYW1kNjQuZGViCjIyMGovTXdkK1MzeUhITkJwMDU5WTRpNU9GYUpLMTZISTczTUN3RkJVRWpzRW91bGc1ekN3R2lRQlM4bE1yTEc1ZURTV1pnZ3hJQkJYeHArZ3JjaURBPT0K",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode_0.114.0_amd64.deb"
+    },
+    "linux-x86_64-rpm": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVURUJ4MlBzNVNYNW9FU2RjckE5K0FIemxqWkQvOXRBbVJEVHJaZFlzOWNXKzI2WGdmNVg3bEhBQ3ZvYnloODRmSnVMOUl3ditmYm9FcXQza1luOWFxR0dZVUJYL3FqWkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1NDM1MzA0CWZpbGU6S2l0dHlub2RlLTAuMTE0LjAtMS54ODZfNjQucnBtCk9JdnFjN1hmRmN2OHFlVG91QXlkdURTaCthY3A1NGdqa01zMEN0SkpKaUtTejhGTEVEdnI3STZKQUl1MHBpQXFMUEZjOFdtU2NvSlMrOVhUeEp1QUFRPT0K",
+      "url": "https://github.com/futurekittylabs/kittynode/releases/download/kittynode-app-0.114.0/Kittynode-0.114.0-1.x86_64.rpm"
     }
   }
 }
