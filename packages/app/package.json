@@ -24,7 +24,7 @@
     "@fontsource-variable/literata": "^5.2.8",
     "@fontsource-variable/space-grotesk": "^5.2.10",
     "@internationalized/date": "^3.10.0",
-    "@lucide/svelte": "^0.561.0",
+    "@lucide/svelte": "^0.562.0",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.49.2",
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
