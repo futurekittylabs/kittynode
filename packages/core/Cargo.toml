@@ -33,7 +33,7 @@ tar = "0.4.44"
 ureq = { version = "2.12.1", features = ["json", "tls"] }
 tokio-stream = "0.1.17"
 toml = "0.9.8"
-tracing = "0.1.43"
+tracing = "0.1.44"
 tree_hash = "0.9.1"
 types = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0", package = "types", default-features = false }
 url = "2.5.7"
