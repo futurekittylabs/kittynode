@@ -46,9 +46,9 @@ let active: ScreenshotId = $state("app");
   <!-- Screenshot showcase -->
   <section class="showcase">
     <Tabs.Root bind:value={active}>
-      <Tabs.List aria-label="Screenshot view" class="h-11 p-1">
+      <Tabs.List aria-label="Screenshot view" class="h-10">
         {#each screenshotIds as id}
-          <Tabs.Trigger value={id} class="px-5 text-base">{screenshots[id].label}</Tabs.Trigger>
+          <Tabs.Trigger value={id} class="px-4">{screenshots[id].label}</Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>
@@ -151,7 +151,7 @@ let active: ScreenshotId = $state("app");
   }
 
   .hero h1 {
-    font-size: clamp(2.25rem, 5.5vw, 3.5rem);
+    font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -159,7 +159,7 @@ let active: ScreenshotId = $state("app");
   }
 
   .subtitle {
-    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
     color: var(--muted-foreground);
     line-height: 1.6;
   }
@@ -191,13 +191,13 @@ let active: ScreenshotId = $state("app");
 
   .screenshot-wrapper {
     width: 100%;
-    max-width: 1080px;
+    max-width: 1000px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border);
     background: var(--muted);
     box-shadow:
-      0 6px 24px rgb(0 0 0 / 0.07),
+      0 4px 20px rgb(0 0 0 / 0.06),
       0 0 0 1px rgb(0 0 0 / 0.02);
   }
 
