@@ -25,24 +25,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Determine previous app tag
-        id: previous_app_tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          current="${{ github.ref_name }}"
-          prev=""
-          while IFS= read -r tag; do
-            if [ "$tag" = "$current" ]; then
-              break
-            fi
-            prev="$tag"
-          done < <(git tag --list 'kittynode-app-*' --sort=v:refname)
-          echo "tag=$prev" >> "$GITHUB_OUTPUT"
 
       - name: Verify version match
         shell: bash
@@ -78,14 +60,6 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Create release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          generate_release_notes: true
-          previous_tag_name: ${{ steps.previous_app_tag.outputs.tag }}
-
       - name: Write App Store Connect API key (macOS)
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -110,11 +84,10 @@ jobs:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: ${{ format('{0}/private_keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) }}
         with:
-          releaseId: ${{ steps.create_release.outputs.id }}
           tagName: ${{ github.ref_name }}
+          generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
-          includeUpdaterJson: true
 
       - name: Cleanup ASC key (macOS)
         if: always() && matrix.platform == 'macos-latest'
@@ -130,25 +103,12 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          releaseId: ${{ steps.create_release.outputs.id }}
           tagName: ${{ github.ref_name }}
+          generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
-          includeUpdaterJson: true
-
-  publish-release:
-    needs: publish-tauri
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          draft: false
 
   update-release-manifests:
-    needs: publish-release
+    needs: publish-tauri
     uses: ./.github/workflows/update-release-manifests.yml
     secrets: inherit
