@@ -465,11 +465,19 @@ pub fn run() -> Result<()> {
         .map_err(|e| eyre::eyre!(e.to_string()))?
         .run(|app_handle, event| {
             // Handle dock icon click on macOS
+            #[cfg(target_os = "macos")]
             if let RunEvent::Reopen { .. } = event
                 && let Some(window) = app_handle.get_webview_window("main")
             {
                 let _ = window.show();
                 let _ = window.set_focus();
+            }
+
+            // Suppress unused variable warnings on other platforms
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = app_handle;
+                let _ = event;
             }
         });
 
