@@ -69,6 +69,7 @@
                 bun
                 cargo-tauri
                 nodejs
+                git
               ]
               # Linux-only system dependencies for Tauri
               ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
