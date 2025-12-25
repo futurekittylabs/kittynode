@@ -48,7 +48,7 @@ let active: ScreenshotId = $state("app");
     <Tabs.Root bind:value={active}>
       <Tabs.List aria-label="Screenshot view">
         {#each screenshotIds as id}
-          <Tabs.Trigger value={id}>{screenshots[id].label}</Tabs.Trigger>
+          <Tabs.Trigger value={id} class="px-5">{screenshots[id].label}</Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>
