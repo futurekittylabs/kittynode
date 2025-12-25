@@ -85,7 +85,7 @@ jobs:
           APPLE_API_KEY_PATH: ${{ format('{0}/private_keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "test release name"
+          releaseName: ${{ github.ref_name }}
           generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
@@ -105,7 +105,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "test release name"
+          releaseName: ${{ github.ref_name }}
           generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
