@@ -26,7 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Verify version match
+      - name: Verify tag version matches Cargo.toml
         shell: bash
         run: |
           TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^kittynode-app-\([0-9.]*\).*/\1/')
@@ -71,7 +71,7 @@ jobs:
           install -m 600 /dev/null "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY}.p8"
           printf '%s' "$APPLE_API_KEY_P8_BASE64" | base64 -D > "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY}.p8"
 
-      - name: Build the app (macOS + notarize)
+      - name: Build and notarize the macOS app
         if: matrix.platform == 'macos-latest'
         uses: tauri-apps/tauri-action@v0.6.0
         env:
@@ -85,6 +85,7 @@ jobs:
           APPLE_API_KEY_PATH: ${{ format('{0}/private_keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) }}
         with:
           tagName: ${{ github.ref_name }}
+          releaseName: "test release name"
           generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
@@ -104,6 +105,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
+          releaseName: "test release name"
           generateReleaseNotes: true
           projectPath: packages/app/src-tauri
           args: ${{ matrix.args }}
