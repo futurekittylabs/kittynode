@@ -464,7 +464,7 @@ pub fn run() -> Result<()> {
         .build(tauri::generate_context!())
         .map_err(|e| eyre::eyre!(e.to_string()))?
         .run(|app_handle, event| {
-            // Handle dock icon click on macOS
+            // Handle dock icon click to reopen window (macOS-only event)
             #[cfg(target_os = "macos")]
             if let RunEvent::Reopen { .. } = event
                 && let Some(window) = app_handle.get_webview_window("main")
@@ -473,12 +473,7 @@ pub fn run() -> Result<()> {
                 let _ = window.set_focus();
             }
 
-            // Suppress unused variable warnings on other platforms
-            #[cfg(not(target_os = "macos"))]
-            {
-                let _ = app_handle;
-                let _ = event;
-            }
+            let _ = (&app_handle, &event);
         });
 
     Ok(())
