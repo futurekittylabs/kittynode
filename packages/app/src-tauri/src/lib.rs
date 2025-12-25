@@ -426,10 +426,15 @@ pub fn run() -> Result<()> {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Hide window instead of closing so app stays in tray
+            // Hide window instead of closing so app stays in tray (only if tray is enabled)
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let _ = window.hide();
-                api.prevent_close();
+                let tray_enabled = api::get_config().map(|c| c.show_tray_icon).unwrap_or(true);
+
+                if tray_enabled {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+                // If tray is disabled, let the window close normally (app exits)
             }
         })
         .invoke_handler(tauri::generate_handler![
