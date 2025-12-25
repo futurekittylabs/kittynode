@@ -44,12 +44,14 @@ let active: ScreenshotId = $state("app");
 
   <!-- Screenshot showcase -->
   <section class="showcase">
-    <div class="screenshot-tabs">
+    <div class="screenshot-tabs" role="tablist" aria-label="Screenshot view">
       {#each screenshotIds as id}
         <button
           class="tab"
           class:active={active === id}
           onclick={() => (active = id)}
+          role="tab"
+          aria-selected={active === id}
         >
           {screenshots[id].label}
         </button>
