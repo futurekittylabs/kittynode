@@ -48,7 +48,7 @@ let active: ScreenshotId = $state("app");
     <Tabs.Root bind:value={active}>
       <Tabs.List aria-label="Screenshot view" class="h-10">
         {#each screenshotIds as id}
-          <Tabs.Trigger value={id} class="px-4">{screenshots[id].label}</Tabs.Trigger>
+          <Tabs.Trigger value={id} class="px-5">{screenshots[id].label}</Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>
@@ -151,7 +151,7 @@ let active: ScreenshotId = $state("app");
   }
 
   .hero h1 {
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: clamp(2.1rem, 5.25vw, 3.25rem);
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -159,7 +159,7 @@ let active: ScreenshotId = $state("app");
   }
 
   .subtitle {
-    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+    font-size: clamp(1.1rem, 1.9vw, 1.3rem);
     color: var(--muted-foreground);
     line-height: 1.6;
   }
@@ -191,13 +191,13 @@ let active: ScreenshotId = $state("app");
 
   .screenshot-wrapper {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1040px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border);
     background: var(--muted);
     box-shadow:
-      0 4px 20px rgb(0 0 0 / 0.06),
+      0 5px 22px rgb(0 0 0 / 0.065),
       0 0 0 1px rgb(0 0 0 / 0.02);
   }
 
