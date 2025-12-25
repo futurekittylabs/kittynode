@@ -50,16 +50,16 @@ const downloads = [
         downloads: [
           {
             label: ".AppImage",
-            url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.AppImage`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_amd64.AppImage`,
             span: "full",
           },
           {
             label: ".deb",
-            url: `${releaseUrl}/Kittynode_${appVersion}_amd64_linux.deb`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_amd64.deb`,
           },
           {
             label: ".rpm",
-            url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64_linux.rpm`,
+            url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
           },
         ],
       },
@@ -75,11 +75,11 @@ const downloads = [
         downloads: [
           {
             label: ".dmg",
-            url: `${releaseUrl}/Kittynode_${appVersion}_aarch64_darwin.dmg`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_aarch64.dmg`,
           },
           {
             label: ".app.tar.gz",
-            url: `${releaseUrl}/Kittynode_darwin_aarch64.app.tar.gz`,
+            url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz`,
           },
         ],
       },
@@ -88,11 +88,11 @@ const downloads = [
         downloads: [
           {
             label: ".dmg",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64_darwin.dmg`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64.dmg`,
           },
           {
             label: ".app.tar.gz",
-            url: `${releaseUrl}/Kittynode_darwin_x64.app.tar.gz`,
+            url: `${releaseUrl}/Kittynode_x64.app.tar.gz`,
           },
         ],
       },
@@ -108,11 +108,11 @@ const downloads = [
         downloads: [
           {
             label: ".exe",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup_windows.exe`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup.exe`,
           },
           {
             label: ".msi",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US_windows.msi`,
+            url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US.msi`,
           },
         ],
       },
