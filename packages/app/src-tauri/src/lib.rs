@@ -10,8 +10,10 @@ use kittynode_core::api::types::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::LazyLock;
+#[cfg(target_os = "macos")]
+use tauri::RunEvent;
 use tauri::{
-    Manager, RunEvent, State, WindowEvent,
+    Manager, State, WindowEvent,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
