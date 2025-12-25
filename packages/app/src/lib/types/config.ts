@@ -5,4 +5,5 @@ export interface KittynodeConfig {
   hasRemoteServer: boolean;
   onboardingCompleted: boolean;
   autoStartDocker: boolean;
+  showTrayIcon: boolean;
 }

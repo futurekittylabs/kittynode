@@ -23,6 +23,7 @@ pub use crate::application::remove_capability;
 pub use crate::application::set_auto_start_docker;
 pub use crate::application::set_onboarding_completed;
 pub use crate::application::set_server_url;
+pub use crate::application::set_show_tray_icon;
 pub use crate::application::start_docker;
 pub use crate::application::start_docker_if_needed;
 pub use crate::application::start_package;

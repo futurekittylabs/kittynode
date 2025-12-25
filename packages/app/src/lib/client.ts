@@ -87,6 +87,10 @@ export const coreClient = {
     return invoke("set_auto_start_docker", { enabled });
   },
 
+  setShowTrayIcon(enabled: boolean): Promise<void> {
+    return invoke("set_show_tray_icon", { enabled });
+  },
+
   setServerUrl(endpoint: string): Promise<void> {
     return invoke("set_server_url", { endpoint });
   },

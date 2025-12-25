@@ -104,6 +104,7 @@ auto_start_docker = true
             has_remote_server: false,
             onboarding_completed: true,
             auto_start_docker: true,
+            show_tray_icon: true,
         };
 
         save_normalized_to(&mut config, &config_path).expect("save should succeed");

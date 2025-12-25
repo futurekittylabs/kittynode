@@ -14,6 +14,12 @@ pub struct Config {
     pub onboarding_completed: bool,
     #[serde(default, alias = "auto_start_docker")]
     pub auto_start_docker: bool,
+    #[serde(default = "default_show_tray_icon", alias = "show_tray_icon")]
+    pub show_tray_icon: bool,
+}
+
+fn default_show_tray_icon() -> bool {
+    true
 }
 
 impl Config {

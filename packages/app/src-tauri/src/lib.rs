@@ -10,7 +10,11 @@ use kittynode_core::api::types::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use tauri::{Manager, State};
+use tauri::{
+    Manager, RunEvent, State, WindowEvent,
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+};
 use tauri_plugin_http::reqwest;
 use tracing::{debug, info};
 
@@ -326,6 +330,16 @@ fn set_auto_start_docker(enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn set_show_tray_icon(app_handle: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    info!("Updating show tray icon preference to: {}", enabled);
+    api::set_show_tray_icon(enabled).map_err(|e| e.to_string())?;
+    if let Some(tray) = app_handle.tray_by_id("main-tray") {
+        tray.set_visible(enabled).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn set_server_url(
     client_state: State<'_, CoreClientManager>,
     endpoint: String,
@@ -367,7 +381,53 @@ pub fn run() -> Result<()> {
             if let Some(window) = app.get_webview_window("main") {
                 window.set_focus().ok();
             }
+
+            // Create system tray menu
+            let show_item = MenuItem::with_id(app, "show", "Show Kittynode", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+            // Get config to check tray icon visibility preference
+            let show_tray = match api::get_config() {
+                Ok(c) => c.show_tray_icon,
+                Err(e) => {
+                    tracing::warn!("Failed to load config for tray visibility: {e}");
+                    true
+                }
+            };
+
+            // Build tray icon with menu on left-click
+            let tray = TrayIconBuilder::with_id("main-tray")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .show_menu_on_left_click(true)
+                .tooltip("Kittynode")
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
+            // Apply initial visibility from config
+            tray.set_visible(show_tray).ok();
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Hide window instead of closing so app stays in tray
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             fetch_latest_manifest,
@@ -396,12 +456,22 @@ pub fn run() -> Result<()> {
             set_onboarding_completed,
             get_config,
             set_auto_start_docker,
+            set_show_tray_icon,
             set_server_url,
             check_remote_health,
             restart_app
         ])
-        .run(tauri::generate_context!())
-        .map_err(|e| eyre::eyre!(e.to_string()))?;
+        .build(tauri::generate_context!())
+        .map_err(|e| eyre::eyre!(e.to_string()))?
+        .run(|app_handle, event| {
+            // Handle dock icon click on macOS
+            if let RunEvent::Reopen { .. } = event
+                && let Some(window) = app_handle.get_webview_window("main")
+            {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        });
 
     Ok(())
 }

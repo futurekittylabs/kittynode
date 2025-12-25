@@ -33,6 +33,7 @@ import * as Select from "$lib/components/ui/select";
 
 let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
 let updatingAutoStartDocker = $state(false);
+let updatingShowTrayIcon = $state(false);
 let remoteServerDialogOpen = $state(false);
 let remoteServerUrlInput = $state("");
 let remoteServerError = $state("");
@@ -42,6 +43,7 @@ let remoteInlineLoading = $state(false);
 let remoteInlineAction = $state<"connect" | "disconnect" | null>(null);
 
 const autoStartDockerEnabled = $derived(appConfigState.autoStartDocker);
+const showTrayIconEnabled = $derived(appConfigState.showTrayIcon);
 const configInitialized = $derived(appConfigState.initialized);
 const configLoading = $derived(appConfigState.loading);
 const downloadsUrl = "https://kittynode.com/download";
@@ -83,6 +85,37 @@ async function handleAutoStartDockerChange(enabled: boolean) {
     }
   } finally {
     updatingAutoStartDocker = false;
+  }
+}
+
+async function handleShowTrayIconChange(enabled: boolean) {
+  if (!configInitialized) {
+    return;
+  }
+
+  if (enabled === showTrayIconEnabled) {
+    return;
+  }
+
+  if (updatingShowTrayIcon) {
+    return;
+  }
+
+  updatingShowTrayIcon = true;
+  try {
+    await appConfigState.setShowTrayIcon(enabled);
+    notifySuccess(
+      enabled ? "System tray icon enabled" : "System tray icon disabled",
+    );
+  } catch (e) {
+    notifyError("Failed to update system tray preference", e);
+    try {
+      await appConfigState.reload();
+    } catch (reloadError) {
+      console.error(`Failed to reload Kittynode config: ${reloadError}`);
+    }
+  } finally {
+    updatingShowTrayIcon = false;
   }
 }
 
@@ -484,6 +517,31 @@ async function checkForUpdates() {
           </Select.Content>
         </Select.Root>
       </div>
+      {#if !["ios", "android"].includes(platform())}
+        <div class="mt-4 flex items-center justify-between">
+          <div>
+            <p id="show-tray-icon-label" class="text-sm font-medium">
+              Show in system tray
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Display Kittynode icon in the menu bar
+            </p>
+          </div>
+          {#if configLoading && !configInitialized}
+            <span class="text-sm text-muted-foreground">Loading...</span>
+          {:else if !configInitialized}
+            <span class="text-sm text-destructive">Failed to load</span>
+          {:else}
+            <Switch
+              id="show-tray-icon"
+              checked={showTrayIconEnabled}
+              onCheckedChange={handleShowTrayIconChange}
+              disabled={!configInitialized || updatingShowTrayIcon}
+              aria-labelledby="show-tray-icon-label"
+            />
+          {/if}
+        </div>
+      {/if}
     </Card.Content>
   </Card.Root>
 
