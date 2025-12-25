@@ -1,6 +1,7 @@
 <script lang="ts">
 import { ArrowRight, Package, Layers, Wifi, Lock } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
+import * as Tabs from "$lib/components/ui/tabs/index.js";
 
 const screenshots = {
   app: {
@@ -44,19 +45,13 @@ let active: ScreenshotId = $state("app");
 
   <!-- Screenshot showcase -->
   <section class="showcase">
-    <div class="screenshot-tabs" role="tablist" aria-label="Screenshot view">
-      {#each screenshotIds as id}
-        <button
-          class="tab"
-          class:active={active === id}
-          onclick={() => (active = id)}
-          role="tab"
-          aria-selected={active === id}
-        >
-          {screenshots[id].label}
-        </button>
-      {/each}
-    </div>
+    <Tabs.Root bind:value={active}>
+      <Tabs.List aria-label="Screenshot view">
+        {#each screenshotIds as id}
+          <Tabs.Trigger value={id}>{screenshots[id].label}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
+    </Tabs.Root>
 
     <div class="screenshot-wrapper">
       <picture>
@@ -192,37 +187,6 @@ let active: ScreenshotId = $state("app");
     width: 100vw;
     margin-inline: calc(50% - 50vw);
     padding-inline: max(1.5rem, calc(50vw - 600px));
-  }
-
-  .screenshot-tabs {
-    display: flex;
-    gap: 0.25rem;
-    padding: 0.25rem;
-    background: var(--muted);
-    border-radius: var(--radius);
-  }
-
-  .tab {
-    font-family: "Space Grotesk Variable", sans-serif;
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.5rem 1.25rem;
-    border-radius: calc(var(--radius) - 2px);
-    background: transparent;
-    color: var(--muted-foreground);
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .tab:hover {
-    color: var(--foreground);
-  }
-
-  .tab.active {
-    background: var(--background);
-    color: var(--foreground);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
   }
 
   .screenshot-wrapper {
