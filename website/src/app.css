@@ -172,3 +172,20 @@
     }
   }
 }
+
+/* Christmas snowfall */
+@keyframes snowfall {
+  to {
+    top: 105vh;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(var(--dx));
+  }
+}
