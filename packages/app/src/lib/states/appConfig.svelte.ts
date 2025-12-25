@@ -35,6 +35,9 @@ export const appConfigState = {
   get autoStartDocker() {
     return config?.autoStartDocker ?? false;
   },
+  get showTrayIcon() {
+    return config?.showTrayIcon ?? true;
+  },
   async load() {
     if (initialized) {
       return;
@@ -61,6 +64,17 @@ export const appConfigState = {
       }
     } catch (e) {
       console.error(`Failed to update Docker auto-start preference: ${e}`);
+      throw e;
+    }
+  },
+  async setShowTrayIcon(enabled: boolean) {
+    try {
+      await coreClient.setShowTrayIcon(enabled);
+      if (config) {
+        config = { ...config, showTrayIcon: enabled };
+      }
+    } catch (e) {
+      console.error(`Failed to update tray icon preference: ${e}`);
       throw e;
     }
   },

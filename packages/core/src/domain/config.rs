@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    #[serde(default)]
     pub capabilities: Vec<String>,
-    #[serde(alias = "server_url")]
+    #[serde(default, alias = "server_url")]
     pub server_url: String,
     #[serde(default, alias = "last_server_url")]
     pub last_server_url: String,
@@ -14,6 +15,26 @@ pub struct Config {
     pub onboarding_completed: bool,
     #[serde(default, alias = "auto_start_docker")]
     pub auto_start_docker: bool,
+    #[serde(default = "default_show_tray_icon", alias = "show_tray_icon")]
+    pub show_tray_icon: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            capabilities: Vec::new(),
+            server_url: String::new(),
+            last_server_url: String::new(),
+            has_remote_server: false,
+            onboarding_completed: false,
+            auto_start_docker: false,
+            show_tray_icon: true,
+        }
+    }
+}
+
+fn default_show_tray_icon() -> bool {
+    true
 }
 
 impl Config {
@@ -34,6 +55,12 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::Config;
+
+    #[test]
+    fn default_enables_tray_icon() {
+        let config = Config::default();
+        assert!(config.show_tray_icon);
+    }
 
     #[test]
     fn normalizes_server_and_last_urls() {
