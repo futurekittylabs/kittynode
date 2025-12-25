@@ -10,6 +10,7 @@ use kittynode_core::api::types::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::LazyLock;
+// RunEvent::Reopen only exists on macOS (handles dock icon click when no windows visible)
 #[cfg(target_os = "macos")]
 use tauri::RunEvent;
 use tauri::{
@@ -466,7 +467,7 @@ pub fn run() -> Result<()> {
         .build(tauri::generate_context!())
         .map_err(|e| eyre::eyre!(e.to_string()))?
         .run(|app_handle, event| {
-            // Handle dock icon click to reopen window (macOS-only event)
+            // Reopen: dock icon clicked when no windows visible (macOS-only, no equivalent on Linux/Windows)
             #[cfg(target_os = "macos")]
             if let RunEvent::Reopen { .. } = event
                 && let Some(window) = app_handle.get_webview_window("main")
