@@ -138,6 +138,7 @@ test-coverage-all:
 
 # update dependencies
 update:
+    nix flake update
     cargo upgrade
     cd docs && bun update --latest
     cd packages/app && just update-shadcn && bun update --latest
