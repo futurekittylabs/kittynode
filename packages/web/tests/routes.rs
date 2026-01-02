@@ -17,7 +17,9 @@ struct TempHomeGuard {
 
 impl TempHomeGuard {
     fn new() -> Self {
-        let lock = ENV_LOCK.lock().expect("env lock");
+        let lock = ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let temp = tempfile::tempdir().expect("tempdir");
         let prev_home = env::var_os("HOME");
         unsafe {

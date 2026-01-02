@@ -20,6 +20,7 @@ const RELEASE_LATEST_PAGE_URL: &str =
     "https://github.com/ephemery-testnet/ephemery-genesis/releases/latest";
 const NETWORK_ARCHIVE_NAME: &str = "network-config.tar.gz";
 const USER_AGENT: &str = "kittynode";
+const CACHED_OFFLINE_TAG: &str = "cached-offline";
 
 #[derive(Clone)]
 pub struct EphemeryConfig {
@@ -83,7 +84,7 @@ fn ensure_ephemery_config_with(
                     "Failed to check for Ephemery updates, continuing with cached config: {error}"
                 );
                 if active_tag.is_none() {
-                    active_tag = Some("cached-offline".to_string());
+                    active_tag = Some(CACHED_OFFLINE_TAG.to_string());
                 }
             } else {
                 return Err(error.wrap_err(
@@ -268,7 +269,7 @@ mod tests {
         let config = ensure_ephemery_config_with(&base_dir, fetch_fails, download_and_install)
             .expect("should succeed offline with cached layout");
 
-        assert_eq!(config.tag, "cached-offline");
+        assert_eq!(config.tag, CACHED_OFFLINE_TAG);
         assert_eq!(
             config.execution_bootnodes,
             vec!["enode://abc", "enode://def"]

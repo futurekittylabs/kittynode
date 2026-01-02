@@ -444,8 +444,51 @@ fn get_package_without_docker(package: &Package) -> Result<PackageState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::package::PackageConfig;
     use std::fs;
+    use std::sync::{Mutex, MutexGuard};
     use tempfile::tempdir;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct TempHomeGuard {
+        _lock: MutexGuard<'static, ()>,
+        _temp: tempfile::TempDir,
+        prev_home: Option<std::ffi::OsString>,
+    }
+
+    impl TempHomeGuard {
+        fn new() -> Self {
+            let lock = ENV_LOCK
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+            let temp = tempfile::tempdir().expect("tempdir");
+            let prev_home = std::env::var_os("HOME");
+            unsafe {
+                std::env::set_var("HOME", temp.path());
+            }
+
+            Self {
+                _lock: lock,
+                _temp: temp,
+                prev_home,
+            }
+        }
+    }
+
+    impl Drop for TempHomeGuard {
+        fn drop(&mut self) {
+            match self.prev_home.take() {
+                Some(value) => unsafe {
+                    std::env::set_var("HOME", value);
+                },
+                None => unsafe {
+                    std::env::remove_var("HOME");
+                },
+            }
+        }
+    }
 
     #[test]
     fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
@@ -509,5 +552,47 @@ mod tests {
             !jwt_path.exists(),
             "all artifacts in the package directory should be removed"
         );
+    }
+
+    #[test]
+    fn get_package_without_docker_reports_not_installed_when_config_missing() {
+        let _home = TempHomeGuard::new();
+
+        let pkg = Package {
+            name: "ethereum".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let state = get_package_without_docker(&pkg).expect("state should compute");
+        assert!(state.install == InstallStatus::NotInstalled);
+        assert!(state.runtime == RuntimeStatus::NotRunning);
+        assert!(!state.config_present);
+        assert!(state.missing_containers.is_empty());
+    }
+
+    #[test]
+    fn get_package_without_docker_reports_partial_install_when_config_present() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, "ethereum");
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "values = {}\n").expect("write config");
+
+        let pkg = Package {
+            name: "ethereum".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let state = get_package_without_docker(&pkg).expect("state should compute");
+        assert!(state.install == InstallStatus::PartiallyInstalled);
+        assert!(state.runtime == RuntimeStatus::NotRunning);
+        assert!(state.config_present);
+        assert!(state.missing_containers.is_empty());
     }
 }
