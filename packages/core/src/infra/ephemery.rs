@@ -310,4 +310,36 @@ mod tests {
             "v9.9.9"
         );
     }
+
+    #[test]
+    fn ensure_ephemery_config_errors_offline_without_cache() {
+        let temp = tempdir().expect("temp dir");
+        let base_dir = temp.path().join("ephemery");
+
+        let fetch_fails = || Err(eyre!("offline"));
+
+        let err = match ensure_ephemery_config_with(&base_dir, fetch_fails, download_and_install) {
+            Ok(_) => panic!("expected failure without cached layout"),
+            Err(err) => err,
+        };
+        assert!(
+            err.to_string().contains("no cached copy is available"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn read_lines_returns_empty_when_file_missing() {
+        let temp = tempdir().expect("temp dir");
+        let missing = temp.path().join("does-not-exist.txt");
+        let values = read_lines(missing).expect("read should succeed");
+        assert!(values.is_empty());
+    }
+
+    #[test]
+    fn parse_tag_from_location_rejects_empty_tag_segment() {
+        let err = parse_tag_from_location("https://github.com/x/y/releases/tag/")
+            .expect_err("expected error");
+        assert!(err.to_string().contains("empty tag segment"));
+    }
 }
