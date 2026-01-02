@@ -9,4 +9,7 @@ coverage:
         informational: true
         branches:
           - main
-    patch: off
+    patch:
+      default:
+        informational: true
+        target: 80%
