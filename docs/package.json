@@ -17,11 +17,11 @@
     "@astrojs/starlight": "^0.37.1",
     "@fontsource-variable/literata": "^5.2.8",
     "astro": "^5.16.6",
-    "astro-embed": "^0.9.2",
+    "astro-embed": "^0.10.0",
     "sharp": "^0.34.5",
     "starlight-image-zoom": "^0.13.2",
     "starlight-links-validator": "^0.19.2",
-    "starlight-llms-txt": "^0.6.0",
+    "starlight-llms-txt": "^0.7.0",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
