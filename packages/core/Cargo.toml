@@ -39,3 +39,6 @@ types = { git = "https://github.com/futurekittylabs/lighthouse", tag = "v7.1.0",
 url = "2.5.7"
 zeroize = "1.8"
 dunce = "1"
+
+[dev-dependencies]
+tokio = { version = "1.48.0", features = ["macros", "rt"] }

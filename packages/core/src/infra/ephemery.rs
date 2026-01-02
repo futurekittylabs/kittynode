@@ -30,12 +30,24 @@ pub struct EphemeryConfig {
 }
 
 pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
-    let base_dir = kittynode_path()?
+    let base_dir = ephemery_dir(&kittynode_path()?);
+    ensure_ephemery_config_with(&base_dir, fetch_latest_release, download_and_install)
+}
+
+fn ephemery_dir(config_root: &Path) -> PathBuf {
+    config_root
         .join("packages")
         .join("ethereum")
         .join("networks")
-        .join(EPHEMERY_NETWORK_NAME);
-    fs::create_dir_all(&base_dir).wrap_err("Failed to prepare Ephemery network directory")?;
+        .join(EPHEMERY_NETWORK_NAME)
+}
+
+fn ensure_ephemery_config_with(
+    base_dir: &Path,
+    fetch_latest_release: fn() -> Result<(String, String)>,
+    download_and_install: fn(&Path, &str) -> Result<()>,
+) -> Result<EphemeryConfig> {
+    fs::create_dir_all(base_dir).wrap_err("Failed to prepare Ephemery network directory")?;
 
     let current_dir = base_dir.join("current");
     let metadata_dir = current_dir.join("metadata");
@@ -58,7 +70,7 @@ pub fn ensure_ephemery_config() -> Result<EphemeryConfig> {
                 || !metadata_dir.exists();
             if needs_fetch {
                 info!("Updating Ephemery network configuration to {latest_tag}");
-                download_and_install(&base_dir, &archive_url)?;
+                download_and_install(base_dir, &archive_url)?;
                 fs::write(&tag_file, &latest_tag)
                     .wrap_err("Failed to record Ephemery release tag")?;
             }
@@ -213,4 +225,88 @@ fn read_lines(path: PathBuf) -> Result<Vec<String>> {
         .filter(|line| !line.is_empty())
         .map(|line| line.to_string())
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn parse_tag_from_location_extracts_tag() {
+        let tag = parse_tag_from_location(
+            "https://github.com/ephemery-testnet/ephemery-genesis/releases/tag/v1.2.3",
+        )
+        .expect("tag should parse");
+        assert_eq!(tag, "v1.2.3");
+    }
+
+    #[test]
+    fn parse_tag_from_location_rejects_missing_segment() {
+        let err =
+            parse_tag_from_location("https://example.com/no-tag-here").expect_err("expected error");
+        assert!(err.to_string().contains("/tag/"));
+    }
+
+    #[test]
+    fn ensure_ephemery_config_works_offline_with_cached_layout() {
+        let temp = tempdir().expect("temp dir");
+        let base_dir = temp.path().join("ephemery");
+        let metadata_dir = base_dir.join("current").join("metadata");
+        fs::create_dir_all(&metadata_dir).expect("create metadata dir");
+        fs::write(
+            metadata_dir.join("enodes.txt"),
+            "enode://abc\n\nenode://def\n",
+        )
+        .expect("write enodes");
+        fs::write(metadata_dir.join("bootstrap_nodes.txt"), "node1\nnode2\n")
+            .expect("write bootstrap nodes");
+
+        let fetch_fails = || Err(eyre!("offline"));
+
+        let config = ensure_ephemery_config_with(&base_dir, fetch_fails, download_and_install)
+            .expect("should succeed offline with cached layout");
+
+        assert_eq!(config.tag, "cached-offline");
+        assert_eq!(
+            config.execution_bootnodes,
+            vec!["enode://abc", "enode://def"]
+        );
+        assert_eq!(config.consensus_bootnodes, vec!["node1", "node2"]);
+    }
+
+    #[test]
+    fn ensure_ephemery_config_refreshes_when_latest_tag_differs() {
+        let temp = tempdir().expect("temp dir");
+        let base_dir = temp.path().join("ephemery");
+
+        fn fetch_latest() -> Result<(String, String)> {
+            Ok((
+                "v9.9.9".to_string(),
+                "https://example.invalid/archive.tar.gz".to_string(),
+            ))
+        }
+
+        fn install_stub(base_dir: &Path, _url: &str) -> Result<()> {
+            let metadata_dir = base_dir.join("current").join("metadata");
+            fs::create_dir_all(&metadata_dir)?;
+            fs::write(metadata_dir.join("enodes.txt"), "enode://aaa\n")?;
+            fs::write(metadata_dir.join("bootstrap_nodes.txt"), "bbb\n")?;
+            Ok(())
+        }
+
+        let config = ensure_ephemery_config_with(&base_dir, fetch_latest, install_stub)
+            .expect("should refresh");
+
+        assert_eq!(config.tag, "v9.9.9");
+        assert_eq!(config.execution_bootnodes, vec!["enode://aaa"]);
+        assert_eq!(config.consensus_bootnodes, vec!["bbb"]);
+        let tag_file = base_dir.join("current_tag");
+        assert!(tag_file.exists(), "tag file should be written");
+        assert_eq!(
+            fs::read_to_string(tag_file).expect("tag readable").trim(),
+            "v9.9.9"
+        );
+    }
 }

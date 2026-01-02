@@ -70,8 +70,9 @@ pub async fn install_package_with_network(name: &str, network: Option<&str>) -> 
         InstallStatus::NotInstalled => {}
     }
 
-    generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
-    let package = package::get_package_by_name(name)?;
+    if !package.containers.is_empty() {
+        generate_jwt_secret(name).wrap_err("Failed to generate JWT secret")?;
+    }
 
     package::install_package(&package).await?;
     info!("Package '{name}' installed successfully");

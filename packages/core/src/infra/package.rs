@@ -60,22 +60,8 @@ pub async fn get_installed_packages() -> Result<Vec<Package>> {
 /// provided beforehand (e.g., selecting a network for Ethereum). When the
 /// package is not fully configured, installation fails with a clear error.
 pub async fn install_package(package: &Package) -> Result<()> {
+    validate_package_installable(package)?;
     let docker = get_docker_instance().await?;
-
-    if package.containers.is_empty() {
-        if package.name == Ethereum::NAME {
-            let network_choices = ethereum::supported_networks_display("|");
-            return Err(eyre::eyre!(
-                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
-                Ethereum::NAME,
-                network_choices
-            ));
-        }
-        return Err(eyre::eyre!(
-            "Package '{}' is not fully configured for installation",
-            package.name
-        ));
-    }
 
     let containers = package.containers.clone();
 
@@ -89,6 +75,30 @@ pub async fn install_package(package: &Package) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn validate_package_installable(package: &Package) -> Result<()> {
+    if !package.containers.is_empty() {
+        return Ok(());
+    }
+
+    if package.name == Ethereum::NAME {
+        let config = PackageConfigStore::load(Ethereum::NAME)?;
+        let network_missing = !config.values.contains_key("network");
+        if network_missing {
+            let network_choices = ethereum::supported_networks_display("|");
+            return Err(eyre::eyre!(
+                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
+                Ethereum::NAME,
+                network_choices
+            ));
+        }
+    }
+
+    Err(eyre::eyre!(
+        "Package '{}' is not fully configured for installation",
+        package.name
+    ))
 }
 
 pub async fn stop_package(package: &Package) -> Result<()> {
@@ -125,6 +135,30 @@ pub async fn delete_package(
     include_images: bool,
     purge_ephemery_cache: bool,
 ) -> Result<()> {
+    if package.containers.is_empty() {
+        if purge_ephemery_cache
+            && package.name == Ethereum::NAME
+            && let Ok(root) = kittynode_path()
+        {
+            let root_dir = root
+                .join("packages")
+                .join("ethereum")
+                .join("networks")
+                .join(EPHEMERY_NETWORK_NAME);
+            if root_dir.exists() {
+                info!("Removing directory '{}'...", root_dir.display());
+                fs::remove_dir_all(&root_dir)?;
+                info!("Directory '{}' removed successfully", root_dir.display());
+            }
+        }
+
+        if purge_ephemery_cache && let Ok(config_root) = kittynode_path() {
+            remove_package_config_artifacts(&config_root, package.name())?;
+        }
+
+        return Ok(());
+    }
+
     let docker = get_docker_instance().await?;
 
     // Track every resource that needs cleanup after containers are removed.
@@ -332,6 +366,9 @@ fn remove_package_config_artifacts(base_dir: &Path, package_name: &str) -> Resul
 
 /// Computes full package state.
 pub async fn get_package(package: &Package) -> Result<PackageState> {
+    if package.containers.is_empty() {
+        return get_package_without_docker(package);
+    }
     let docker = get_docker_instance().await?;
     get_package_with(&docker, package).await
 }
@@ -357,7 +394,13 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
         }
     }
 
-    let install = if config_present && missing.is_empty() {
+    let install = if total == 0 {
+        if config_present {
+            InstallStatus::PartiallyInstalled
+        } else {
+            InstallStatus::NotInstalled
+        }
+    } else if config_present && missing.is_empty() {
         InstallStatus::Installed
     } else if !config_present && missing.len() == total {
         InstallStatus::NotInstalled
@@ -378,6 +421,23 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
         runtime,
         config_present,
         missing_containers: missing,
+    })
+}
+
+fn get_package_without_docker(package: &Package) -> Result<PackageState> {
+    let base = kittynode_path()?;
+    let cfg = PackageConfigStore::config_file_path(&base, package.name());
+    let config_present = cfg.exists();
+    let install = if config_present {
+        InstallStatus::PartiallyInstalled
+    } else {
+        InstallStatus::NotInstalled
+    };
+    Ok(PackageState {
+        install,
+        runtime: RuntimeStatus::NotRunning,
+        config_present,
+        missing_containers: Vec::new(),
     })
 }
 

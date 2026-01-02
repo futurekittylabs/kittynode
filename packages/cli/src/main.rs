@@ -467,7 +467,8 @@ async fn main() -> Result<()> {
     log_control::init_logging();
 
     // Skip the update check when the CLI itself is being updated.
-    if std::env::args().nth(1).as_deref() != Some("update") {
+    let skip_update_check = std::env::var_os("KITTYNODE_SKIP_UPDATE_CHECK").is_some();
+    if !skip_update_check && std::env::args().nth(1).as_deref() != Some("update") {
         update_checker::check_and_print_update().await;
     }
 
