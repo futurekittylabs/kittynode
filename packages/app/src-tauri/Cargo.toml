@@ -36,6 +36,7 @@ tracing-subscriber = "0.3.22"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2.9.0"
+tauri-plugin-single-instance = "2.3.1"
 
 [dev-dependencies]
 axum = { version = "0.8.8", features = ["json", "macros"] }

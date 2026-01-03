@@ -376,7 +376,17 @@ pub fn run() -> Result<()> {
             .header("Cache-Control", "no-cache")
             .map_err(|e| eyre::eyre!("failed to configure updater header: {e}"))?
             .build();
-        builder.plugin(updater_plugin)
+        let single_instance_plugin = tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        });
+
+        builder
+            .plugin(updater_plugin)
+            .plugin(single_instance_plugin)
     };
 
     builder
