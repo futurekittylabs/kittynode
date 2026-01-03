@@ -371,23 +371,25 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_shell::init());
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let builder = {
-        let updater_plugin = tauri_plugin_updater::Builder::new()
-            .header("Cache-Control", "no-cache")
-            .map_err(|e| eyre::eyre!("failed to configure updater header: {e}"))?
-            .build();
-        let single_instance_plugin = tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
-        });
+    let updater_plugin = tauri_plugin_updater::Builder::new()
+        .header("Cache-Control", "no-cache")
+        .map_err(|e| eyre::eyre!("failed to configure updater header: {e}"))?
+        .build();
 
-        builder
-            .plugin(updater_plugin)
-            .plugin(single_instance_plugin)
-    };
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let single_instance_plugin = tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    });
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let builder = builder.plugin(updater_plugin);
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let builder = builder.plugin(single_instance_plugin);
 
     builder
         .setup(|app| {
