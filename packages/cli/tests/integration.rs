@@ -1,4 +1,5 @@
 use assert_cmd::cargo::cargo_bin_cmd;
+use predicates::str::contains;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
@@ -6,6 +7,7 @@ use tempfile::tempdir;
 #[test]
 fn get_packages_outputs_known_package() {
     let mut cmd = cargo_bin_cmd!("kittynode");
+    cmd.env("KITTYNODE_SKIP_UPDATE_CHECK", "1");
     let output = cmd
         .args(["package", "catalog"])
         .assert()
@@ -22,8 +24,11 @@ fn get_packages_outputs_known_package() {
 
 #[test]
 fn get_config_outputs_readable_text() {
-    let mut cmd = cargo_bin_cmd!("kittynode");
-    let output = cmd
+    let temp_home = tempdir().expect("failed to create temp home directory");
+
+    let output = cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
         .args(["config", "show"])
         .assert()
         .success()
@@ -38,12 +43,114 @@ fn get_config_outputs_readable_text() {
 }
 
 #[test]
+fn config_init_and_delete_create_and_remove_config_dir() {
+    let temp_home = tempdir().expect("failed to create temp home directory");
+    let config_dir = temp_home.path().join(".config").join("kittynode");
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["config", "init"])
+        .assert()
+        .success();
+
+    assert!(
+        config_dir.exists(),
+        "expected config dir to exist after init"
+    );
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["config", "delete"])
+        .assert()
+        .success();
+
+    assert!(
+        !config_dir.exists(),
+        "expected config dir to be removed after delete"
+    );
+}
+
+#[test]
+fn capability_add_list_remove_roundtrip() {
+    let temp_home = tempdir().expect("failed to create temp home directory");
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["capability", "list"])
+        .assert()
+        .success()
+        .stdout(contains("No capabilities configured"));
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["capability", "add", "ethereum"])
+        .assert()
+        .success();
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["capability", "list"])
+        .assert()
+        .success()
+        .stdout(contains("ethereum"));
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["capability", "remove", "ethereum"])
+        .assert()
+        .success();
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["capability", "list"])
+        .assert()
+        .success()
+        .stdout(contains("No capabilities configured"));
+}
+
+#[test]
+fn package_config_show_reports_empty_overrides() {
+    let temp_home = tempdir().expect("failed to create temp home directory");
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["package", "config", "show", "ethereum"])
+        .assert()
+        .success()
+        .stdout(contains("No overrides set for ethereum"));
+}
+
+#[test]
+fn package_install_ethereum_requires_network_flag() {
+    let temp_home = tempdir().expect("failed to create temp home directory");
+
+    cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+        .env("HOME", temp_home.path())
+        .args(["package", "install", "ethereum"])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "Network must be provided when installing ethereum",
+        ));
+}
+
+#[test]
 fn web_start_and_stop_roundtrip() {
     let temp_home = tempdir().expect("failed to create temp home directory");
     let sandbox = WebServiceSandbox::new(temp_home.path().to_path_buf());
     let port = find_free_port();
 
     let start_output = cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
         .args(["web", "start", "--port", &port.to_string()])
         .assert()
@@ -62,6 +169,7 @@ fn web_start_and_stop_roundtrip() {
     );
 
     let status_running = cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
         .args(["web", "status"])
         .assert()
@@ -76,6 +184,7 @@ fn web_start_and_stop_roundtrip() {
     );
 
     let stop_output = cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
         .args(["web", "stop"])
         .assert()
@@ -94,6 +203,7 @@ fn web_start_and_stop_roundtrip() {
     );
 
     let status_stopped = cargo_bin_cmd!("kittynode")
+        .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
         .args(["web", "status"])
         .assert()
@@ -139,7 +249,11 @@ impl WebServiceSandbox {
 
     fn stop(&self) {
         let mut cmd = cargo_bin_cmd!("kittynode");
-        let _ = cmd.env("HOME", self.home()).args(["web", "stop"]).output();
+        let _ = cmd
+            .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
+            .env("HOME", self.home())
+            .args(["web", "stop"])
+            .output();
     }
 }
 

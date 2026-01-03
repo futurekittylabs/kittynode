@@ -34,3 +34,25 @@ impl fmt::Display for Container {
         writeln!(f, "  Image: {}", self.image)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_includes_name_and_image() {
+        let container = Container {
+            name: "kittynode-test".to_string(),
+            image: "example/image:latest".to_string(),
+            cmd: vec!["echo".to_string(), "hi".to_string()],
+            port_bindings: HashMap::new(),
+            volume_bindings: Vec::new(),
+            file_bindings: Vec::new(),
+        };
+
+        assert_eq!(
+            container.to_string(),
+            "- Name: kittynode-test\n  Image: example/image:latest\n"
+        );
+    }
+}

@@ -60,22 +60,8 @@ pub async fn get_installed_packages() -> Result<Vec<Package>> {
 /// provided beforehand (e.g., selecting a network for Ethereum). When the
 /// package is not fully configured, installation fails with a clear error.
 pub async fn install_package(package: &Package) -> Result<()> {
+    validate_package_installable(package)?;
     let docker = get_docker_instance().await?;
-
-    if package.containers.is_empty() {
-        if package.name == Ethereum::NAME {
-            let network_choices = ethereum::supported_networks_display("|");
-            return Err(eyre::eyre!(
-                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
-                Ethereum::NAME,
-                network_choices
-            ));
-        }
-        return Err(eyre::eyre!(
-            "Package '{}' is not fully configured for installation",
-            package.name
-        ));
-    }
 
     let containers = package.containers.clone();
 
@@ -89,6 +75,30 @@ pub async fn install_package(package: &Package) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn validate_package_installable(package: &Package) -> Result<()> {
+    if !package.containers.is_empty() {
+        return Ok(());
+    }
+
+    if package.name == Ethereum::NAME {
+        let config = PackageConfigStore::load(Ethereum::NAME)?;
+        let network_missing = !config.values.contains_key("network");
+        if network_missing {
+            let network_choices = ethereum::supported_networks_display("|");
+            return Err(eyre::eyre!(
+                "Network must be selected before installing Ethereum. Install using `kittynode package install {} --network <{}>`",
+                Ethereum::NAME,
+                network_choices
+            ));
+        }
+    }
+
+    Err(eyre::eyre!(
+        "Package '{}' is not fully configured for installation",
+        package.name
+    ))
 }
 
 pub async fn stop_package(package: &Package) -> Result<()> {
@@ -125,6 +135,30 @@ pub async fn delete_package(
     include_images: bool,
     purge_ephemery_cache: bool,
 ) -> Result<()> {
+    if package.containers.is_empty() {
+        if purge_ephemery_cache
+            && package.name == Ethereum::NAME
+            && let Ok(root) = kittynode_path()
+        {
+            let root_dir = root
+                .join("packages")
+                .join("ethereum")
+                .join("networks")
+                .join(EPHEMERY_NETWORK_NAME);
+            if root_dir.exists() {
+                info!("Removing directory '{}'...", root_dir.display());
+                fs::remove_dir_all(&root_dir)?;
+                info!("Directory '{}' removed successfully", root_dir.display());
+            }
+        }
+
+        if purge_ephemery_cache && let Ok(config_root) = kittynode_path() {
+            remove_package_config_artifacts(&config_root, package.name())?;
+        }
+
+        return Ok(());
+    }
+
     let docker = get_docker_instance().await?;
 
     // Track every resource that needs cleanup after containers are removed.
@@ -332,6 +366,9 @@ fn remove_package_config_artifacts(base_dir: &Path, package_name: &str) -> Resul
 
 /// Computes full package state.
 pub async fn get_package(package: &Package) -> Result<PackageState> {
+    if package.containers.is_empty() {
+        return get_package_without_docker(package);
+    }
     let docker = get_docker_instance().await?;
     get_package_with(&docker, package).await
 }
@@ -357,7 +394,13 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
         }
     }
 
-    let install = if config_present && missing.is_empty() {
+    let install = if total == 0 {
+        if config_present {
+            InstallStatus::PartiallyInstalled
+        } else {
+            InstallStatus::NotInstalled
+        }
+    } else if config_present && missing.is_empty() {
         InstallStatus::Installed
     } else if !config_present && missing.len() == total {
         InstallStatus::NotInstalled
@@ -381,11 +424,72 @@ async fn get_package_with(docker: &Docker, package: &Package) -> Result<PackageS
     })
 }
 
+fn get_package_without_docker(package: &Package) -> Result<PackageState> {
+    let base = kittynode_path()?;
+    let cfg = PackageConfigStore::config_file_path(&base, package.name());
+    let config_present = cfg.exists();
+    let install = if config_present {
+        InstallStatus::PartiallyInstalled
+    } else {
+        InstallStatus::NotInstalled
+    };
+    Ok(PackageState {
+        install,
+        runtime: RuntimeStatus::NotRunning,
+        config_present,
+        missing_containers: Vec::new(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::container::Container;
+    use crate::domain::package::PackageConfig;
     use std::fs;
+    use std::sync::{Mutex, MutexGuard};
     use tempfile::tempdir;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct TempHomeGuard {
+        _lock: MutexGuard<'static, ()>,
+        _temp: tempfile::TempDir,
+        prev_home: Option<std::ffi::OsString>,
+    }
+
+    impl TempHomeGuard {
+        fn new() -> Self {
+            let lock = ENV_LOCK
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+            let temp = tempfile::tempdir().expect("tempdir");
+            let prev_home = std::env::var_os("HOME");
+            unsafe {
+                std::env::set_var("HOME", temp.path());
+            }
+
+            Self {
+                _lock: lock,
+                _temp: temp,
+                prev_home,
+            }
+        }
+    }
+
+    impl Drop for TempHomeGuard {
+        fn drop(&mut self) {
+            match self.prev_home.take() {
+                Some(value) => unsafe {
+                    std::env::set_var("HOME", value);
+                },
+                None => unsafe {
+                    std::env::remove_var("HOME");
+                },
+            }
+        }
+    }
 
     #[test]
     fn get_package_by_name_is_case_sensitive_with_lowercase_canonical() {
@@ -449,5 +553,223 @@ mod tests {
             !jwt_path.exists(),
             "all artifacts in the package directory should be removed"
         );
+    }
+
+    #[test]
+    fn get_package_without_docker_reports_not_installed_when_config_missing() {
+        let _home = TempHomeGuard::new();
+
+        let pkg = Package {
+            name: "ethereum".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let state = get_package_without_docker(&pkg).expect("state should compute");
+        assert!(state.install == InstallStatus::NotInstalled);
+        assert!(state.runtime == RuntimeStatus::NotRunning);
+        assert!(!state.config_present);
+        assert!(state.missing_containers.is_empty());
+    }
+
+    #[test]
+    fn get_package_without_docker_reports_partial_install_when_config_present() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, "ethereum");
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "values = {}\n").expect("write config");
+
+        let pkg = Package {
+            name: "ethereum".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let state = get_package_without_docker(&pkg).expect("state should compute");
+        assert!(state.install == InstallStatus::PartiallyInstalled);
+        assert!(state.runtime == RuntimeStatus::NotRunning);
+        assert!(state.config_present);
+        assert!(state.missing_containers.is_empty());
+    }
+
+    #[test]
+    fn validate_package_installable_allows_packages_with_containers() {
+        let pkg = Package {
+            name: "ethereum".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: vec![Container {
+                name: "dummy".to_string(),
+                image: "dummy".to_string(),
+                cmd: Vec::new(),
+                port_bindings: std::collections::HashMap::new(),
+                volume_bindings: Vec::new(),
+                file_bindings: Vec::new(),
+            }],
+            default_config: PackageConfig::default(),
+        };
+
+        validate_package_installable(&pkg).expect("should be installable");
+    }
+
+    #[test]
+    fn validate_package_installable_errors_for_unknown_package_without_containers() {
+        let pkg = Package {
+            name: "does-not-exist".to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let err = validate_package_installable(&pkg).expect_err("expected error");
+        assert!(
+            err.to_string().contains("not fully configured"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn validate_package_installable_errors_when_ethereum_has_network_config_but_no_containers() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, Ethereum::NAME);
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "[values]\nnetwork = \"mainnet\"\n").expect("write config");
+
+        let pkg = Package {
+            name: Ethereum::NAME.to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let err = validate_package_installable(&pkg).expect_err("expected error");
+        assert!(
+            err.to_string().contains("not fully configured"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn validate_package_installable_errors_on_invalid_config_file() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, Ethereum::NAME);
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "not-toml").expect("write config");
+
+        let pkg = Package {
+            name: Ethereum::NAME.to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        assert!(validate_package_installable(&pkg).is_err());
+    }
+
+    #[tokio::test]
+    async fn delete_package_without_containers_keeps_artifacts_when_not_purging() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, Ethereum::NAME);
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "values = {}\n").expect("write config");
+
+        let ephemery_dir = base_dir
+            .join("packages")
+            .join("ethereum")
+            .join("networks")
+            .join(EPHEMERY_NETWORK_NAME);
+        fs::create_dir_all(&ephemery_dir).expect("create ephemery dir");
+
+        let pkg = Package {
+            name: Ethereum::NAME.to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        delete_package(&pkg, false, false)
+            .await
+            .expect("delete should succeed");
+
+        assert!(
+            config_path.exists(),
+            "config should remain when not purging"
+        );
+        assert!(
+            ephemery_dir.exists(),
+            "ephemery directory should remain when not purging"
+        );
+    }
+
+    #[tokio::test]
+    async fn delete_package_without_containers_purges_ephemery_dir_and_config() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, Ethereum::NAME);
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "values = {}\n").expect("write config");
+
+        let ephemery_dir = base_dir
+            .join("packages")
+            .join("ethereum")
+            .join("networks")
+            .join(EPHEMERY_NETWORK_NAME);
+        fs::create_dir_all(&ephemery_dir).expect("create ephemery dir");
+        fs::write(ephemery_dir.join("dummy.txt"), "hi").expect("write dummy");
+
+        let pkg = Package {
+            name: Ethereum::NAME.to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        delete_package(&pkg, false, true)
+            .await
+            .expect("delete should succeed");
+
+        assert!(!config_path.exists(), "config should be removed");
+        assert!(
+            !ephemery_dir.exists(),
+            "ephemery directory should be removed"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_package_with_zero_containers_marks_config_as_partial_install() {
+        let home = TempHomeGuard::new();
+        let base_dir = home._temp.path().join(".config").join("kittynode");
+        let config_path = PackageConfigStore::config_file_path(&base_dir, Ethereum::NAME);
+        fs::create_dir_all(config_path.parent().expect("parent")).expect("create dirs");
+        fs::write(&config_path, "values = {}\n").expect("write config");
+
+        let docker =
+            Docker::connect_with_http("http://localhost:2375", 120, bollard::API_DEFAULT_VERSION)
+                .expect("docker client");
+        let pkg = Package {
+            name: Ethereum::NAME.to_string(),
+            description: "test".to_string(),
+            network_name: "test".to_string(),
+            containers: Vec::new(),
+            default_config: PackageConfig::default(),
+        };
+
+        let state = get_package_with(&docker, &pkg).await.expect("state");
+        assert!(state.install == InstallStatus::PartiallyInstalled);
+        assert!(state.runtime == RuntimeStatus::NotRunning);
+        assert!(state.config_present);
     }
 }
