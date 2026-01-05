@@ -368,7 +368,16 @@ pub fn run() -> Result<()> {
         .manage(core_client)
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init());
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // Another instance was launched - focus the existing window instead
+            info!("Another instance attempted to start, focusing existing window");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }));
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let builder = {
