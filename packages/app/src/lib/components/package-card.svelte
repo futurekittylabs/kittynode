@@ -1,82 +1,84 @@
 <script lang="ts">
-import * as Card from "$lib/components/ui/card";
-import { Button } from "$lib/components/ui/button";
-import * as Select from "$lib/components/ui/select";
-import { packagesState } from "$lib/states/packages.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { notifyError, notifySuccess } from "$lib/utils/notify";
-import { formatPackageName } from "$lib/utils";
-import {
-  defaultEthereumNetwork,
-  ethereumNetworks,
-} from "$lib/constants/ethereumNetworks";
-import { Package2, Download, CircleCheck, Settings2 } from "@lucide/svelte";
+  import * as Card from "$lib/components/ui/card";
+  import { Button } from "$lib/components/ui/button";
+  import * as Select from "$lib/components/ui/select";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { notifyError, notifySuccess } from "$lib/utils/notify";
+  import { formatPackageName } from "$lib/utils";
+  import {
+    defaultEthereumNetwork,
+    ethereumNetworks,
+  } from "$lib/constants/ethereum-networks";
+  import { Package2, Download, CircleCheck, Settings2 } from "@lucide/svelte";
 
-let {
-  name,
-  description,
-  onManage,
-  onInstalled,
-  showStatusBadge = true,
-} = $props<{
-  name: string;
-  description: string;
-  onManage: (packageName: string) => void;
-  onInstalled?: (packageName: string) => void;
-  showStatusBadge?: boolean;
-}>();
+  let {
+    name,
+    description,
+    onManage,
+    onInstalled,
+    showStatusBadge = true,
+  } = $props<{
+    name: string;
+    description: string;
+    onManage: (packageName: string) => void;
+    onInstalled?: (packageName: string) => void;
+    showStatusBadge?: boolean;
+  }>();
 
-const status = $derived(packagesState.installationStatus(name));
-let isInstalling = $state(false);
-let selectedEthereumNetwork = $state(defaultEthereumNetwork);
+  const status = $derived(packagesState.installationStatus(name));
+  let isInstalling = $state(false);
+  let selectedEthereumNetwork = $state(defaultEthereumNetwork);
 
-const defaultEthereumNetworkLabel =
-  ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
-    ?.label ?? defaultEthereumNetwork;
+  const defaultEthereumNetworkLabel =
+    ethereumNetworks.find((option) => option.value === defaultEthereumNetwork)
+      ?.label ?? defaultEthereumNetwork;
 
-const selectedEthereumNetworkLabel = $derived(
-  ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
-    ?.label || defaultEthereumNetworkLabel,
-);
+  const selectedEthereumNetworkLabel = $derived(
+    ethereumNetworks.find((option) => option.value === selectedEthereumNetwork)
+      ?.label || defaultEthereumNetworkLabel
+  );
 
-const installDisabled = $derived(
-  !operationalState.canInstall || status !== "available" || isInstalling,
-);
+  const installDisabled = $derived(
+    !operationalState.canInstall || status !== "available" || isInstalling
+  );
 
-async function handleInstall() {
-  if (!operationalState.canInstall) {
-    notifyError("Cannot install packages in the current operational state");
-    return;
+  async function handleInstall() {
+    if (!operationalState.canInstall) {
+      notifyError("Cannot install packages in the current operational state");
+      return;
+    }
+
+    const currentStatus = packagesState.installationStatus(name);
+
+    if (currentStatus === "unknown") {
+      notifyError(
+        "Package status is still loading. Try again once it finishes."
+      );
+      return;
+    }
+
+    if (currentStatus === "installed") {
+      notifyError(`${name} is already installed`);
+      return;
+    }
+
+    if (isInstalling) {
+      return;
+    }
+
+    isInstalling = true;
+    try {
+      const network = name === "ethereum" ? selectedEthereumNetwork : undefined;
+      await packagesState.installPackage(name, network);
+      notifySuccess(`Successfully installed ${name}`);
+      onInstalled?.(name);
+    } catch (error) {
+      notifyError(`Failed to install ${name}`, error);
+    } finally {
+      isInstalling = false;
+    }
   }
-
-  const currentStatus = packagesState.installationStatus(name);
-
-  if (currentStatus === "unknown") {
-    notifyError("Package status is still loading. Try again once it finishes.");
-    return;
-  }
-
-  if (currentStatus === "installed") {
-    notifyError(`${name} is already installed`);
-    return;
-  }
-
-  if (isInstalling) {
-    return;
-  }
-
-  isInstalling = true;
-  try {
-    const network = name === "ethereum" ? selectedEthereumNetwork : undefined;
-    await packagesState.installPackage(name, network);
-    notifySuccess(`Successfully installed ${name}`);
-    onInstalled?.(name);
-  } catch (error) {
-    notifyError(`Failed to install ${name}`, error);
-  } finally {
-    isInstalling = false;
-  }
-}
 </script>
 
 <Card.Root>
@@ -86,9 +88,7 @@ async function handleInstall() {
         <Package2 class="h-5 w-5 text-muted-foreground mt-0.5" />
         <div class="min-w-0 flex-1">
           <Card.Title class="text-base">{formatPackageName(name)}</Card.Title>
-          <Card.Description class="mt-1">
-            {description}
-          </Card.Description>
+          <Card.Description class="mt-1">{description}</Card.Description>
         </div>
       </div>
       {#if showStatusBadge && status === "installed"}

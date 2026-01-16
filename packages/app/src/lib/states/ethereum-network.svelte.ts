@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
-import { getEthereumNetworkLabel } from "$lib/constants/ethereumNetworks";
+import { getEthereumNetworkLabel } from "$lib/constants/ethereum-networks";
 
 let label = $state<string | null>(null);
 let loading = $state(false);

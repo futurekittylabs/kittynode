@@ -1,7 +1,7 @@
 import {
   type RuntimeStatus,
   fetchRuntimeStatuses,
-} from "$lib/runtime/packageRuntime.svelte";
+} from "$lib/runtime/package-runtime.svelte";
 
 type RuntimeStatusMap = Record<string, RuntimeStatus>;
 
@@ -62,7 +62,7 @@ function stop() {
 
 function buildStatusMap(
   names: string[],
-  source?: Partial<RuntimeStatusMap>,
+  source?: Partial<RuntimeStatusMap>
 ): RuntimeStatusMap {
   const result: RuntimeStatusMap = {};
   for (const name of names) {
@@ -73,7 +73,7 @@ function buildStatusMap(
 
 function sync(
   names: string[],
-  options: { enabled: boolean; pollInterval?: number },
+  options: { enabled: boolean; pollInterval?: number }
 ) {
   if (!options.enabled) {
     stop();

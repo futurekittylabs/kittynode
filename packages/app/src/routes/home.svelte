@@ -1,150 +1,153 @@
 <script lang="ts">
-import { onMount, onDestroy } from "svelte";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { platform } from "@tauri-apps/plugin-os";
-import { systemInfoState } from "$lib/states/systemInfo.svelte";
-import { packagesState } from "$lib/states/packages.svelte";
-import { appConfigState } from "$lib/states/appConfig.svelte";
-import { serverUrlState } from "$lib/states/serverUrl.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
-import { goto } from "$app/navigation";
-import { runtimeOverviewState } from "$lib/states/runtimeOverview.svelte";
-import { coreClient } from "$lib/client";
-import {
-  Package2,
-  Settings2,
-  Info,
-  Activity,
-  HardDrive,
-  Cpu,
-  ArrowRight,
-  CirclePause,
-  LoaderCircle,
-  CircleAlert,
-} from "@lucide/svelte";
-import { formatPackageName } from "$lib/utils";
-import { ethereumNetworkState } from "$lib/states/ethereumNetwork.svelte";
-import PackageCard from "$lib/components/PackageCard.svelte";
+  import { onMount, onDestroy } from "svelte";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { systemInfoState } from "$lib/states/system-info.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { appConfigState } from "$lib/states/app-config.svelte";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
+  import { goto } from "$app/navigation";
+  import { runtimeOverviewState } from "$lib/states/runtime-overview.svelte";
+  import { coreClient } from "$lib/client";
+  import {
+    Package2,
+    Settings2,
+    Info,
+    Activity,
+    HardDrive,
+    Cpu,
+    ArrowRight,
+    CirclePause,
+    LoaderCircle,
+    CircleAlert,
+  } from "@lucide/svelte";
+  import { formatPackageName } from "$lib/utils";
+  import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
+  import PackageCard from "$lib/components/package-card.svelte";
 
-const catalogState = $derived(packagesState.catalogState);
-const installedState = $derived(packagesState.installedState);
+  const catalogState = $derived(packagesState.catalogState);
+  const installedState = $derived(packagesState.installedState);
 
-const totalPackageCount = $derived(
-  catalogState.status === "ready"
-    ? Object.keys(packagesState.packages).length
-    : null,
-);
+  const totalPackageCount = $derived(
+    catalogState.status === "ready"
+      ? Object.keys(packagesState.packages).length
+      : null
+  );
 
-const installedPackageCount = $derived(
-  installedState.status === "ready"
-    ? packagesState.installedPackages.length
-    : null,
-);
+  const installedPackageCount = $derived(
+    installedState.status === "ready"
+      ? packagesState.installedPackages.length
+      : null
+  );
 
-const installedPackagesList = $derived(
-  installedState.status === "ready" ? packagesState.installedPackages : [],
-);
-const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
-let ethereumValidatorInstalled = $state<boolean | null>(null);
+  const installedPackagesList = $derived(
+    installedState.status === "ready" ? packagesState.installedPackages : []
+  );
+  const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
+  let ethereumValidatorInstalled = $state<boolean | null>(null);
 
-$effect(() => {
-  if (installedState.status !== "ready") {
-    ethereumValidatorInstalled = null;
-    return;
-  }
-  const hasEth = installedPackagesList.some((p) => p.name === "ethereum");
-  if (!hasEth) {
-    ethereumValidatorInstalled = null;
-    return;
-  }
-  (async () => {
-    try {
-      if (operationalState.canManage) {
-        ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
-      } else {
+  $effect(() => {
+    if (installedState.status !== "ready") {
+      ethereumValidatorInstalled = null;
+      return;
+    }
+    const hasEth = installedPackagesList.some((p) => p.name === "ethereum");
+    if (!hasEth) {
+      ethereumValidatorInstalled = null;
+      return;
+    }
+    (async () => {
+      try {
+        if (operationalState.canManage) {
+          ethereumValidatorInstalled = await coreClient.isValidatorInstalled();
+        } else {
+          ethereumValidatorInstalled = null;
+        }
+      } catch (e) {
         ethereumValidatorInstalled = null;
       }
-    } catch (e) {
-      ethereumValidatorInstalled = null;
-    }
-  })();
-});
+    })();
+  });
 
-const runtimeStatuses = $derived(runtimeOverviewState.statuses);
-const runtimeStatusesLoading = $derived(runtimeOverviewState.loading);
+  const runtimeStatuses = $derived(runtimeOverviewState.statuses);
+  const runtimeStatusesLoading = $derived(runtimeOverviewState.loading);
 
-const featuredAvailablePackages = $derived(
-  catalogState.status !== "ready" || installedState.status !== "ready"
-    ? null
-    : Object.entries(catalogState.packages)
-        .filter(([name]) => !Object.hasOwn(installedState.packages, name))
-        .slice(0, 3),
-);
-
-function managePackage(packageName: string) {
-  goto(`/node/${packageName}`);
-}
-
-function isMobileAndLocal() {
-  return (
-    ["ios", "android"].includes(platform()) && serverUrlState.serverUrl === ""
+  const featuredAvailablePackages = $derived(
+    catalogState.status !== "ready" || installedState.status !== "ready"
+      ? null
+      : Object.entries(catalogState.packages)
+          .filter(([name]) => !Object.hasOwn(installedState.packages, name))
+          .slice(0, 3)
   );
-}
 
-function isLocalDesktop() {
-  return (
-    !["ios", "android"].includes(platform()) && serverUrlState.serverUrl === ""
-  );
-}
-
-onMount(async () => {
-  if (!systemInfoState.systemInfo) systemInfoState.fetchSystemInfo();
-
-  try {
-    await appConfigState.load();
-  } catch (error) {
-    console.error(`Failed to load Kittynode config: ${error}`);
+  function managePackage(packageName: string) {
+    goto(`/node/${packageName}`);
   }
 
-  await operationalState.refresh();
+  function isMobileAndLocal() {
+    return (
+      ["ios", "android"].includes(platform()) && serverUrlState.serverUrl === ""
+    );
+  }
 
-  if (isLocalDesktop() && appConfigState.autoStartDocker) {
-    console.info("Attempting Docker auto-start based on user preference");
-    const result = await operationalState.startDockerIfNeeded();
-    if (result.status === "error") {
-      console.error(
-        `Docker auto-start failed: ${result.error}. Continuing without auto-start.`,
-      );
+  function isLocalDesktop() {
+    return (
+      !["ios", "android"].includes(platform()) &&
+      serverUrlState.serverUrl === ""
+    );
+  }
+
+  onMount(async () => {
+    if (!systemInfoState.systemInfo) {
+      systemInfoState.fetchSystemInfo();
     }
-  }
 
-  const pollingInterval = operationalState.isStarting ? 2000 : 5000;
-  operationalState.startPolling(pollingInterval);
+    try {
+      await appConfigState.load();
+    } catch (error) {
+      console.error(`Failed to load Kittynode config: ${error}`);
+    }
 
-  if (!isMobileAndLocal()) {
-    await packagesState.loadPackages();
-    await packagesState.syncInstalledPackages();
-  }
-});
+    await operationalState.refresh();
 
-$effect(() => {
-  if (installedState.status === "ready") {
-    const names = packagesState.installedPackages.map((pkg) => pkg.name);
-    runtimeOverviewState.sync(names, {
-      enabled: names.length > 0,
-      pollInterval: operationalState.isStarting ? 2000 : 5000,
-    });
-  } else {
+    if (isLocalDesktop() && appConfigState.autoStartDocker) {
+      console.info("Attempting Docker auto-start based on user preference");
+      const result = await operationalState.startDockerIfNeeded();
+      if (result.status === "error") {
+        console.error(
+          `Docker auto-start failed: ${result.error}. Continuing without auto-start.`
+        );
+      }
+    }
+
+    const pollingInterval = operationalState.isStarting ? 2000 : 5000;
+    operationalState.startPolling(pollingInterval);
+
+    if (!isMobileAndLocal()) {
+      await packagesState.loadPackages();
+      await packagesState.syncInstalledPackages();
+    }
+  });
+
+  $effect(() => {
+    if (installedState.status === "ready") {
+      const names = packagesState.installedPackages.map((pkg) => pkg.name);
+      runtimeOverviewState.sync(names, {
+        enabled: names.length > 0,
+        pollInterval: operationalState.isStarting ? 2000 : 5000,
+      });
+    } else {
+      runtimeOverviewState.stop();
+    }
+  });
+
+  onDestroy(() => {
+    operationalState.stopPolling();
     runtimeOverviewState.stop();
-  }
-});
-
-onDestroy(() => {
-  operationalState.stopPolling();
-  runtimeOverviewState.stop();
-});
+  });
 </script>
 
 <div class="space-y-6">
@@ -166,9 +169,7 @@ onDestroy(() => {
         </Card.Title>
       </Card.Header>
       <Card.Content>
-        <div class="text-2xl font-bold">
-          {installedPackageCount ?? "--"}
-        </div>
+        <div class="text-2xl font-bold">{installedPackageCount ?? "--"}</div>
         <p class="text-xs text-muted-foreground">
           of {totalPackageCount ?? "--"} available
         </p>

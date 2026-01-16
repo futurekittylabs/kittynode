@@ -1,41 +1,41 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { serverUrlState } from "$lib/states/serverUrl.svelte";
-import { systemInfoState } from "$lib/states/systemInfo.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { Skeleton } from "$lib/components/ui/skeleton";
-import { Progress } from "$lib/components/ui/progress";
-import * as Card from "$lib/components/ui/card";
-import { Button } from "$lib/components/ui/button";
-import DockerStatusCard from "$lib/components/DockerStatusCard.svelte";
-import {
-  Cpu,
-  HardDrive,
-  Activity,
-  Server,
-  RefreshCw,
-  Globe,
-  WifiOff,
-} from "@lucide/svelte";
+  import { onMount } from "svelte";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { systemInfoState } from "$lib/states/system-info.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { Skeleton } from "$lib/components/ui/skeleton";
+  import { Progress } from "$lib/components/ui/progress";
+  import * as Card from "$lib/components/ui/card";
+  import { Button } from "$lib/components/ui/button";
+  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
+  import {
+    Cpu,
+    HardDrive,
+    Activity,
+    Server,
+    RefreshCw,
+    Globe,
+    WifiOff,
+  } from "@lucide/svelte";
 
-function calculateUsagePercentage(used: number, total: number): number {
-  return Math.round((used / total) * 100);
-}
-
-function fetchSystemInfo() {
-  systemInfoState.fetchSystemInfo();
-}
-
-onMount(() => {
-  if (!systemInfoState.systemInfo) {
-    fetchSystemInfo();
+  function calculateUsagePercentage(used: number, total: number): number {
+    return Math.round((used / total) * 100);
   }
-  operationalState.startPolling();
 
-  return () => {
-    operationalState.stopPolling();
-  };
-});
+  function fetchSystemInfo() {
+    systemInfoState.fetchSystemInfo();
+  }
+
+  onMount(() => {
+    if (!systemInfoState.systemInfo) {
+      fetchSystemInfo();
+    }
+    operationalState.startPolling();
+
+    return () => {
+      operationalState.stopPolling();
+    };
+  });
 </script>
 
 <div class="space-y-6">
@@ -117,7 +117,8 @@ onMount(() => {
             <div>
               <p class="text-muted-foreground">Frequency</p>
               <p class="font-medium">
-                {systemInfoState.systemInfo.processor.frequencyGhz.toFixed(2)} GHz
+                {systemInfoState.systemInfo.processor.frequencyGhz.toFixed(2)}
+                GHz
               </p>
             </div>
           </div>

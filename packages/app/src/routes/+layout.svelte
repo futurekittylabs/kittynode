@@ -1,145 +1,146 @@
 <script lang="ts">
-import "../app.css";
-import { onMount } from "svelte";
-import { initializedState } from "$lib/states/initialized.svelte";
-import { appConfigState } from "$lib/states/appConfig.svelte";
-import { ModeWatcher, mode } from "mode-watcher";
-import Splash from "./Splash.svelte";
-import { platform } from "@tauri-apps/plugin-os";
-import { updates } from "$lib/states/updates.svelte";
-import { Toaster } from "svelte-sonner";
-import { formatPackageName } from "$lib/utils";
-import UpdateBanner from "$lib/components/UpdateBanner.svelte";
-import { Button } from "$lib/components/ui/button";
-import * as Sidebar from "$lib/components/ui/sidebar";
-import {
-  House,
-  HeartPulse,
-  Settings,
-  Package2,
-  Activity,
-  MessageCircleMore,
-  Globe,
-  Unlink,
-} from "@lucide/svelte";
-import { packagesState } from "$lib/states/packages.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { page } from "$app/state";
-import { serverUrlState } from "$lib/states/serverUrl.svelte";
-import { notifySuccess, notifyError } from "$lib/utils/notify";
-import { refetchStates } from "$lib/utils/refetchStates";
-import { coreClient } from "$lib/client";
-import { ethereumNetworkState } from "$lib/states/ethereumNetwork.svelte";
+  import "../app.css";
+  import { onMount } from "svelte";
+  import { initializedState } from "$lib/states/initialized.svelte";
+  import { appConfigState } from "$lib/states/app-config.svelte";
+  import { ModeWatcher, mode } from "mode-watcher";
+  import Splash from "./splash.svelte";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { updates } from "$lib/states/updates.svelte";
+  import { Toaster } from "svelte-sonner";
+  import { formatPackageName } from "$lib/utils";
+  import UpdateBanner from "$lib/components/update-banner.svelte";
+  import { Button } from "$lib/components/ui/button";
+  import * as Sidebar from "$lib/components/ui/sidebar";
+  import {
+    House,
+    HeartPulse,
+    Settings,
+    Package2,
+    Activity,
+    MessageCircleMore,
+    Globe,
+    Unlink,
+  } from "@lucide/svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { page } from "$app/state";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { notifySuccess, notifyError } from "$lib/utils/notify";
+  import { refetchStates } from "$lib/utils/refetch-states";
+  import { coreClient } from "$lib/client";
+  import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
 
-const { children } = $props();
+  const { children } = $props();
 
-const currentPath = $derived(
-  `${page.url?.pathname ?? "/"}`.replace(/\/index\.html$/, "") || "/",
-);
+  const currentPath = $derived(
+    `${page.url?.pathname ?? "/"}`.replace(/\/index\.html$/, "") || "/"
+  );
 
-const installedState = $derived(packagesState.installedState);
-const installedNodes = $derived(
-  installedState.status === "ready" ? packagesState.installedPackages : [],
-);
-const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
-const remoteServerUrl = $derived(serverUrlState.serverUrl);
-const remoteConnected = $derived(remoteServerUrl !== "");
-const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
-const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
-let remoteBannerLoading = $state(false);
+  const installedState = $derived(packagesState.installedState);
+  const installedNodes = $derived(
+    installedState.status === "ready" ? packagesState.installedPackages : []
+  );
+  const ethereumNetworkLabel = $derived(ethereumNetworkState.label);
+  const remoteServerUrl = $derived(serverUrlState.serverUrl);
+  const remoteConnected = $derived(remoteServerUrl !== "");
+  const validatorGuideUrl =
+    "https://docs.kittynode.com/guides/set-up-validator";
+  const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
+  let remoteBannerLoading = $state(false);
 
-$effect(() => {
-  packagesState.handleOperationalStateChange(operationalState.state);
-});
+  $effect(() => {
+    packagesState.handleOperationalStateChange(operationalState.state);
+  });
 
-async function setRemote(endpoint: string) {
-  if (remoteBannerLoading) {
-    return;
-  }
-
-  remoteBannerLoading = true;
-  const connectAction = endpoint !== "";
-  try {
-    if (connectAction) {
-      await coreClient.checkRemoteHealth(endpoint);
+  async function setRemote(endpoint: string) {
+    if (remoteBannerLoading) {
+      return;
     }
-    await appConfigState.setServerUrl(endpoint);
-    refetchStates();
-    notifySuccess(
-      connectAction ? "Connected to remote" : "Disconnected from remote",
-    );
-  } catch (error) {
-    notifyError(
-      connectAction
-        ? "Failed to connect to remote"
-        : "Failed to disconnect from remote",
-      error,
-      connectAction ? { description: remoteHelpDescription } : undefined,
-    );
-  } finally {
-    remoteBannerLoading = false;
-  }
-}
 
-const handleRemoteDisconnect = () => setRemote("");
-
-const navigationItems = [
-  { icon: House, label: "Dashboard", href: "/" },
-  { icon: Package2, label: "Package Store", href: "/packages" },
-  { icon: HeartPulse, label: "System Info", href: "/system-info" },
-  { icon: Settings, label: "Settings", href: "/settings" },
-];
-
-const nodeSubNavigation: Record<string, { label: string; href: string }[]> = {
-  ethereum: [
-    {
-      label: "Validator Config",
-      href: "/node/ethereum/validator-config",
-    },
-  ],
-};
-
-let onboardingCompleted = $state(false);
-let checkingOnboarding = $state(true);
-
-onMount(async () => {
-  try {
-    await appConfigState.load();
-  } catch (e) {
-    console.error(`Failed to load Kittynode config: ${e}`);
-  }
-
-  // Check if onboarding has been completed
-  try {
-    onboardingCompleted = await coreClient.getOnboardingCompleted();
-    if (onboardingCompleted) {
-      // Skip splash screen without re-initializing config
-      // Just set the initialized flag to bypass the splash
-      await initializedState.fakeInitialize();
+    remoteBannerLoading = true;
+    const connectAction = endpoint !== "";
+    try {
+      if (connectAction) {
+        await coreClient.checkRemoteHealth(endpoint);
+      }
+      await appConfigState.setServerUrl(endpoint);
+      refetchStates();
+      notifySuccess(
+        connectAction ? "Connected to remote" : "Disconnected from remote"
+      );
+    } catch (error) {
+      notifyError(
+        connectAction
+          ? "Failed to connect to remote"
+          : "Failed to disconnect from remote",
+        error,
+        connectAction ? { description: remoteHelpDescription } : undefined
+      );
+    } finally {
+      remoteBannerLoading = false;
     }
-  } catch (e) {
-    console.error(`Failed to check onboarding status: ${e}`);
-    // Treat as not completed if we can't check
-    onboardingCompleted = false;
   }
-  checkingOnboarding = false;
 
-  await packagesState.loadPackages();
-  await operationalState.refresh();
-  await packagesState.syncInstalledPackages();
+  const handleRemoteDisconnect = () => setRemote("");
 
-  try {
-    await updates.getUpdate();
-  } catch (e) {
-    console.error(`Failed to check for update: ${e}`);
-  }
-});
+  const navigationItems = [
+    { icon: House, label: "Dashboard", href: "/" },
+    { icon: Package2, label: "Package Store", href: "/packages" },
+    { icon: HeartPulse, label: "System Info", href: "/system-info" },
+    { icon: Settings, label: "Settings", href: "/settings" },
+  ];
+
+  const nodeSubNavigation: Record<string, { label: string; href: string }[]> = {
+    ethereum: [
+      {
+        label: "Validator Config",
+        href: "/node/ethereum/validator-config",
+      },
+    ],
+  };
+
+  let onboardingCompleted = $state(false);
+  let checkingOnboarding = $state(true);
+
+  onMount(async () => {
+    try {
+      await appConfigState.load();
+    } catch (e) {
+      console.error(`Failed to load Kittynode config: ${e}`);
+    }
+
+    // Check if onboarding has been completed
+    try {
+      onboardingCompleted = await coreClient.getOnboardingCompleted();
+      if (onboardingCompleted) {
+        // Skip splash screen without re-initializing config
+        // Just set the initialized flag to bypass the splash
+        await initializedState.fakeInitialize();
+      }
+    } catch (e) {
+      console.error(`Failed to check onboarding status: ${e}`);
+      // Treat as not completed if we can't check
+      onboardingCompleted = false;
+    }
+    checkingOnboarding = false;
+
+    await packagesState.loadPackages();
+    await operationalState.refresh();
+    await packagesState.syncInstalledPackages();
+
+    try {
+      await updates.getUpdate();
+    } catch (e) {
+      console.error(`Failed to check for update: ${e}`);
+    }
+  });
 </script>
 
 <ModeWatcher />
 <Toaster position="bottom-right" richColors theme={mode.current} />
 {#if checkingOnboarding}
-  <!-- Show nothing while checking onboarding status -->
+<!-- Show nothing while checking onboarding status -->
 {:else if !onboardingCompleted && !initializedState.initialized}
   <Splash />
 {:else}
@@ -151,7 +152,7 @@ onMount(async () => {
             src="/images/kittynode-logo-app-no-padding.png"
             alt="Kittynode Logo"
             class="h-8 w-8"
-          />
+          >
           <span class="kittynode-brand">Kittynode</span>
         </div>
       </Sidebar.Header>
@@ -254,7 +255,9 @@ onMount(async () => {
           aria-live="polite"
         >
           <div class="flex min-w-0 items-center gap-2">
-            <Globe class="h-5 w-5 shrink-0 text-primary dark:text-primary-foreground" />
+            <Globe
+              class="h-5 w-5 shrink-0 text-primary dark:text-primary-foreground"
+            />
             <span class="leading-tight">Remote connected</span>
           </div>
           <Button

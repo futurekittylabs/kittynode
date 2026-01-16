@@ -1,18 +1,18 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import { page } from "$app/state";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { ArrowLeft } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { ArrowLeft } from "@lucide/svelte";
 
-const packageName = $derived(page.params.name || "");
-const parentHref = $derived(packageName ? `/node/${packageName}` : "/node");
+  const packageName = $derived(page.params.name || "");
+  const parentHref = $derived(packageName ? `/node/${packageName}` : "/node");
 
-$effect(() => {
-  if (packageName && packageName !== "ethereum") {
-    void goto(parentHref);
-  }
-});
+  $effect(() => {
+    if (packageName && packageName !== "ethereum") {
+      void goto(parentHref);
+    }
+  });
 </script>
 
 {#if packageName === "ethereum"}
@@ -31,7 +31,9 @@ $effect(() => {
     <Card.Root>
       <Card.Content class="space-y-2">
         <p class="text-sm text-muted-foreground">
-          This is the validator config page, where soon you'll be able to manage your validator. In the meantime, you can manage your validators with the Kittynode CLI.
+          This is the validator config page, where soon you'll be able to manage
+          your validator. In the meantime, you can manage your validators with
+          the Kittynode CLI.
         </p>
         <p class="text-sm text-muted-foreground">
           Install it at

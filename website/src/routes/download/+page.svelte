@@ -1,124 +1,127 @@
 <script lang="ts">
-import { Monitor, Download, AppWindowMac, Terminal } from "@lucide/svelte";
-import { Button } from "$lib/components/ui/button/index.js";
-import * as Code from "$lib/components/ui/code";
-import * as Tabs from "$lib/components/ui/tabs/index.js";
-import appRelease from "$lib/app-release.json";
-import cliRelease from "$lib/cli-release.json";
+  import { Monitor, Download, AppWindowMac, Terminal } from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Code from "$lib/components/ui/code";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import appRelease from "$lib/app-release.json";
+  import cliRelease from "$lib/cli-release.json";
 
-const { version: appVersion, pub_date: appPubDate } = appRelease;
-const { version: cliVersion, date: cliPubDate } = cliRelease;
+  const { version: appVersion, pub_date: appPubDate } = appRelease;
+  const { version: cliVersion, date: cliPubDate } = cliRelease;
 
-const baseUrl = "https://github.com/futurekittylabs/kittynode";
-const changelogUrl = `${baseUrl}/releases`;
-const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
-const cliInstallCommandUnix = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
-const cliInstallCommandHomebrew = "brew install futurekittylabs/tap/kittynode";
-const cliInstallCommandWindows = `powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"`;
+  const baseUrl = "https://github.com/futurekittylabs/kittynode";
+  const changelogUrl = `${baseUrl}/releases`;
+  const releaseUrl = `${baseUrl}/releases/download/kittynode-app-${appVersion}`;
+  const cliInstallCommandUnix = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
+  const cliInstallCommandHomebrew =
+    "brew install futurekittylabs/tap/kittynode";
+  const cliInstallCommandWindows = `powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"`;
 
-const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
+  const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
-function formatReleaseDate(pubDate: string | undefined): string {
-  if (!pubDate) return "";
-  const parsed = new Date(pubDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return "";
+  function formatReleaseDate(pubDate: string | undefined): string {
+    if (!pubDate) {
+      return "";
+    }
+    const parsed = new Date(pubDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    return releaseDateFormatter.format(parsed);
   }
-  return releaseDateFormatter.format(parsed);
-}
 
-const appReleaseDate = formatReleaseDate(appPubDate);
-const cliReleaseDate = formatReleaseDate(cliPubDate);
+  const appReleaseDate = formatReleaseDate(appPubDate);
+  const cliReleaseDate = formatReleaseDate(cliPubDate);
 
-const appVersionLabel = `Version ${appVersion}`;
-const cliVersionLabel = `Version ${cliVersion}`;
-const installsContainerClass =
-  "mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-[48rem]";
+  const appVersionLabel = `Version ${appVersion}`;
+  const cliVersionLabel = `Version ${cliVersion}`;
+  const installsContainerClass =
+    "mx-auto flex w-full flex-col gap-4 max-w-full sm:max-w-xl lg:max-w-[48rem]";
 
-const downloads = [
-  {
-    name: "Linux",
-    icon: Terminal,
-    requirements: "Most Linux distros",
-    variants: [
-      {
-        label: "x86_64",
-        downloads: [
-          {
-            label: ".AppImage",
-            url: `${releaseUrl}/Kittynode_${appVersion}_amd64.AppImage`,
-            span: "full",
-          },
-          {
-            label: ".deb",
-            url: `${releaseUrl}/Kittynode_${appVersion}_amd64.deb`,
-          },
-          {
-            label: ".rpm",
-            url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    name: "macOS",
-    icon: AppWindowMac,
-    requirements: "macOS 10.15+",
-    variants: [
-      {
-        label: "Apple Silicon",
-        downloads: [
-          {
-            label: ".dmg",
-            url: `${releaseUrl}/Kittynode_${appVersion}_aarch64.dmg`,
-          },
-          {
-            label: ".app.tar.gz",
-            url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz`,
-          },
-        ],
-      },
-      {
-        label: "x86_64",
-        downloads: [
-          {
-            label: ".dmg",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64.dmg`,
-          },
-          {
-            label: ".app.tar.gz",
-            url: `${releaseUrl}/Kittynode_x64.app.tar.gz`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    name: "Windows",
-    icon: Monitor,
-    requirements: "Windows 7+",
-    variants: [
-      {
-        label: "x86_64",
-        downloads: [
-          {
-            label: ".exe",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup.exe`,
-          },
-          {
-            label: ".msi",
-            url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US.msi`,
-          },
-        ],
-      },
-    ],
-  },
-];
+  const downloads = [
+    {
+      name: "Linux",
+      icon: Terminal,
+      requirements: "Most Linux distros",
+      variants: [
+        {
+          label: "x86_64",
+          downloads: [
+            {
+              label: ".AppImage",
+              url: `${releaseUrl}/Kittynode_${appVersion}_amd64.AppImage`,
+              span: "full",
+            },
+            {
+              label: ".deb",
+              url: `${releaseUrl}/Kittynode_${appVersion}_amd64.deb`,
+            },
+            {
+              label: ".rpm",
+              url: `${releaseUrl}/Kittynode-${appVersion}-1.x86_64.rpm`,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: "macOS",
+      icon: AppWindowMac,
+      requirements: "macOS 10.15+",
+      variants: [
+        {
+          label: "Apple Silicon",
+          downloads: [
+            {
+              label: ".dmg",
+              url: `${releaseUrl}/Kittynode_${appVersion}_aarch64.dmg`,
+            },
+            {
+              label: ".app.tar.gz",
+              url: `${releaseUrl}/Kittynode_aarch64.app.tar.gz`,
+            },
+          ],
+        },
+        {
+          label: "x86_64",
+          downloads: [
+            {
+              label: ".dmg",
+              url: `${releaseUrl}/Kittynode_${appVersion}_x64.dmg`,
+            },
+            {
+              label: ".app.tar.gz",
+              url: `${releaseUrl}/Kittynode_x64.app.tar.gz`,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: "Windows",
+      icon: Monitor,
+      requirements: "Windows 7+",
+      variants: [
+        {
+          label: "x86_64",
+          downloads: [
+            {
+              label: ".exe",
+              url: `${releaseUrl}/Kittynode_${appVersion}_x64-setup.exe`,
+            },
+            {
+              label: ".msi",
+              url: `${releaseUrl}/Kittynode_${appVersion}_x64_en-US.msi`,
+            },
+          ],
+        },
+      ],
+    },
+  ];
 </script>
 
 <div class="my-16">
@@ -264,9 +267,14 @@ const downloads = [
               </div>
             </div>
             <Tabs.Root value="shell">
-              <Tabs.List aria-label="macOS install options" class="mb-3 flex gap-2">
+              <Tabs.List
+                aria-label="macOS install options"
+                class="mb-3 flex gap-2"
+              >
                 <Tabs.Trigger value="shell" class="px-3">shell</Tabs.Trigger>
-                <Tabs.Trigger value="homebrew" class="px-3">homebrew</Tabs.Trigger>
+                <Tabs.Trigger value="homebrew" class="px-3">
+                  homebrew
+                </Tabs.Trigger>
               </Tabs.List>
               <Tabs.Content value="shell">
                 <Code.Root

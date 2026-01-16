@@ -1,47 +1,51 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import * as Card from "$lib/components/ui/card";
-import { Button } from "$lib/components/ui/button";
-import { packagesState } from "$lib/states/packages.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { goto } from "$app/navigation";
-import { CircleAlert, Search } from "@lucide/svelte";
-import PackageCard from "$lib/components/PackageCard.svelte";
+  import { onMount } from "svelte";
+  import * as Card from "$lib/components/ui/card";
+  import { Button } from "$lib/components/ui/button";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { goto } from "$app/navigation";
+  import { CircleAlert, Search } from "@lucide/svelte";
+  import PackageCard from "$lib/components/package-card.svelte";
 
-let searchQuery = $state("");
+  let searchQuery = $state("");
 
-const catalogState = $derived(packagesState.catalogState);
-const installedState = $derived(packagesState.installedState);
+  const catalogState = $derived(packagesState.catalogState);
+  const installedState = $derived(packagesState.installedState);
 
-const filteredPackages = $derived(() => {
-  if (catalogState.status !== "ready") {
-    return [];
+  const filteredPackages = $derived(() => {
+    if (catalogState.status !== "ready") {
+      return [];
+    }
+
+    const query = searchQuery.toLowerCase();
+    return Object.entries(packagesState.packages)
+      .filter(
+        ([name, pkg]) =>
+          name.toLowerCase().includes(query) ||
+          pkg.description.toLowerCase().includes(query)
+      )
+      .sort(([a], [b]) => a.localeCompare(b));
+  });
+
+  function managePackage(packageName: string) {
+    goto(`/node/${packageName}`);
   }
 
-  const query = searchQuery.toLowerCase();
-  return Object.entries(packagesState.packages)
-    .filter(
-      ([name, pkg]) =>
-        name.toLowerCase().includes(query) ||
-        pkg.description.toLowerCase().includes(query),
-    )
-    .sort(([a], [b]) => a.localeCompare(b));
-});
+  onMount(() => {
+    operationalState.startPolling();
+    operationalState.refresh().catch((e) => {
+      console.error("Failed to refresh operational state:", e);
+    });
+    packagesState.loadPackages();
+    packagesState.syncInstalledPackages().catch((e) => {
+      console.error("Failed to sync installed packages:", e);
+    });
 
-function managePackage(packageName: string) {
-  goto(`/node/${packageName}`);
-}
-
-onMount(() => {
-  operationalState.startPolling();
-  operationalState.refresh().catch(() => {});
-  packagesState.loadPackages();
-  packagesState.syncInstalledPackages().catch(() => {});
-
-  return () => {
-    operationalState.stopPolling();
-  };
-});
+    return () => {
+      operationalState.stopPolling();
+    };
+  });
 </script>
 
 <div class="space-y-6">
@@ -61,7 +65,7 @@ onMount(() => {
       placeholder="Search packages..."
       bind:value={searchQuery}
       class="w-full rounded-md border bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-    />
+    >
   </div>
 
   {#if catalogState.status === "error"}

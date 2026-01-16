@@ -119,7 +119,9 @@ export const operationalState = {
     return state?.mode ?? null;
   },
   get dockerRunning(): boolean | null {
-    if (!state) return null;
+    if (!state) {
+      return null;
+    }
     return state.dockerRunning;
   },
   get canInstall(): boolean {

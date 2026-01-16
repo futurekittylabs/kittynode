@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
 import type { KittynodeConfig } from "$lib/types";
-import { serverUrlState, normalizeServerUrl } from "./serverUrl.svelte";
+import { serverUrlState, normalizeServerUrl } from "./server-url.svelte";
 
 let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);
@@ -81,7 +81,7 @@ export const appConfigState = {
   async setServerUrl(endpoint: string) {
     const normalizedEndpoint = normalizeServerUrl(endpoint);
     const previousLast = normalizeServerUrl(
-      config?.lastServerUrl ?? serverUrlState.lastServerUrl ?? "",
+      config?.lastServerUrl ?? serverUrlState.lastServerUrl ?? ""
     );
 
     try {
@@ -103,7 +103,7 @@ export const appConfigState = {
       console.error(`Failed to update server URL: ${e}`);
       serverUrlState.setFromConfig(
         config?.serverUrl ?? serverUrlState.serverUrl,
-        config?.lastServerUrl ?? previousLast,
+        config?.lastServerUrl ?? previousLast
       );
       throw e;
     }

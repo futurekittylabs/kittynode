@@ -1,1 +1,13 @@
-[{"pubkey": "952f207bf061b70812ccbedaffbed6789c5950336ffa2525bebc6103f7c27163e0b6a5f5f30ca2e73dde1f6672fc9433", "withdrawal_credentials": "02000000000000000000000048fe05daea0f8cc6958a72522db42b2edb3fda1a", "amount": 32000000000, "signature": "84dd105f5205839cec41af936b337385e6a2ddc9f1ce9cf169843ff2cc94b98d011d61fdb2dadf9a504bf34177e769e8171dbf5c64a518ec6de21f14a76fff6253ad3906d731693d1e11e8104d1390c9171a1aa0605b0dd31a065d69610e89a9", "deposit_message_root": "786a3410a0e34e54093dfcf623975e5c370d0e4f9c73890af16ea8d2859e9393", "deposit_data_root": "9874b0c81363eca4329f4cb23ff7a5d89934a8095d79605b8652ff58fb7ed6ca", "fork_version": "10000910", "network_name": "hoodi", "deposit_cli_version": "1.2.2"}]
+[
+  {
+    "pubkey": "952f207bf061b70812ccbedaffbed6789c5950336ffa2525bebc6103f7c27163e0b6a5f5f30ca2e73dde1f6672fc9433",
+    "withdrawal_credentials": "02000000000000000000000048fe05daea0f8cc6958a72522db42b2edb3fda1a",
+    "amount": 32000000000,
+    "signature": "84dd105f5205839cec41af936b337385e6a2ddc9f1ce9cf169843ff2cc94b98d011d61fdb2dadf9a504bf34177e769e8171dbf5c64a518ec6de21f14a76fff6253ad3906d731693d1e11e8104d1390c9171a1aa0605b0dd31a065d69610e89a9",
+    "deposit_message_root": "786a3410a0e34e54093dfcf623975e5c370d0e4f9c73890af16ea8d2859e9393",
+    "deposit_data_root": "9874b0c81363eca4329f4cb23ff7a5d89934a8095d79605b8652ff58fb7ed6ca",
+    "fork_version": "10000910",
+    "network_name": "hoodi",
+    "deposit_cli_version": "1.2.2"
+  }
+]
