@@ -8,11 +8,11 @@
     },
     "packages/app": {
       "entry": ["src/lib/components/ui/*/index.ts"],
-      "ignoreDependencies": ["$app/state", "$app/navigation"]
+      "ignoreUnresolved": ["^\\$app/.+"]
     },
     "website": {
       "entry": ["src/lib/components/ui/*/index.ts"],
-      "ignoreDependencies": ["$app/state", "$app/navigation"]
+      "ignoreUnresolved": ["^\\$app/.+"]
     }
   }
 }
