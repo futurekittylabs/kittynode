@@ -68,7 +68,7 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-    bun -F docs -F app -F website format-lint && bun -F app -F website check
+    bun -F docs -F app -F website format-lint && bun -F app -F website check && bun knip
 
 # lint and fix the javascript code
 lint-js-fix:

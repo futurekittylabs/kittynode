@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    "docs": {
+      "entry": ["src/styles/custom.css"],
+      "ignoreDependencies": ["sharp", "wrangler"]
+    },
+    "packages/app": {
+      "entry": ["src/lib/components/ui/*/index.ts"]
+    },
+    "website": {
+      "entry": ["src/lib/components/ui/*/index.ts"]
+    }
+  }
+}

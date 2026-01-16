@@ -35,11 +35,3 @@ export function notifyInfo(message: string, options?: NotifyOptions) {
   console.info(message);
   toast.info(message, options);
 }
-
-/**
- * Warning notification - logs to console and shows toast
- */
-export function notifyWarning(message: string, options?: NotifyOptions) {
-  console.info(`Warning: ${message}`);
-  toast.warning(message, options);
-}

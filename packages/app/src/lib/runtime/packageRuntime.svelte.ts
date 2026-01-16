@@ -56,12 +56,6 @@ export async function fetchRuntimeStatuses(
   return result;
 }
 
-export function getCachedRuntimeStatus(
-  name: string,
-): RuntimeStatus | undefined {
-  return statusCache.get(name);
-}
-
 interface RefreshOptions {
   force?: boolean;
   withSpinner?: boolean;

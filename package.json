@@ -6,8 +6,12 @@
     "packages/app",
     "website"
   ],
+  "scripts": {
+    "knip": "knip"
+  },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.6"
+    "@biomejs/biome": "^2.2.6",
+    "knip": "^5.81.0"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",

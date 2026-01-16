@@ -8,7 +8,7 @@ import type { SupportedLanguage } from "./shiki";
 import type { HTMLAttributes } from "svelte/elements";
 import type { CopyButtonPropsWithoutHTML } from "$lib/components/ui/copy-button/types";
 
-export type CodeRootPropsWithoutHTML = WithChildren<{
+type CodeRootPropsWithoutHTML = WithChildren<{
   ref?: HTMLDivElement | null;
   variant?: CodeVariant;
   lang?: SupportedLanguage;
@@ -21,15 +21,12 @@ export type CodeRootPropsWithoutHTML = WithChildren<{
 export type CodeRootProps = CodeRootPropsWithoutHTML &
   WithoutChildren<HTMLAttributes<HTMLDivElement>>;
 
-export type CodeCopyButtonPropsWithoutHTML = Omit<
-  CopyButtonPropsWithoutHTML,
-  "text"
->;
+type CodeCopyButtonPropsWithoutHTML = Omit<CopyButtonPropsWithoutHTML, "text">;
 
 export type CodeCopyButtonProps = CodeCopyButtonPropsWithoutHTML &
   WithoutChildren<HTMLAttributes<HTMLButtonElement>>;
 
-export type CodeOverflowPropsWithoutHTML = WithChildren<{
+type CodeOverflowPropsWithoutHTML = WithChildren<{
   collapsed?: boolean;
 }>;
 

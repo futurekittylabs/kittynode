@@ -25,3 +25,6 @@ jobs:
 
       - name: Svelte check
         run: bun -F app -F website check
+
+      - name: Knip
+        run: bun knip

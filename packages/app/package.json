@@ -9,8 +9,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format-lint": "biome format . && biome lint .",
-    "format-lint:fix": "biome format . --fix && biome lint . --fix",
-    "knip": "knip"
+    "format-lint:fix": "biome format . --fix && biome lint . --fix"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
@@ -33,7 +32,6 @@
     "@types/semver": "^7.7.1",
     "bits-ui": "^2.15.4",
     "clsx": "^2.1.1",
-    "knip": "^5.81.0",
     "svelte": "^5.46.4",
     "svelte-check": "^4.3.5",
     "tailwind-merge": "^3.4.0",

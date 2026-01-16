@@ -10,8 +10,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format-lint": "biome format . && biome lint .",
-    "format-lint:fix": "biome format . --fix && biome lint . --fix",
-    "knip": "knip"
+    "format-lint:fix": "biome format . --fix && biome lint . --fix"
   },
   "devDependencies": {
     "@internationalized/date": "^3.10.1",
@@ -24,7 +23,6 @@
     "@tailwindcss/vite": "^4.1.18",
     "bits-ui": "^2.15.4",
     "clsx": "^2.1.1",
-    "knip": "^5.81.0",
     "runed": "^0.37.1",
     "shiki": "^3.21.0",
     "svelte": "^5.46.4",
