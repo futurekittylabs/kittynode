@@ -9,8 +9,8 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "format-lint": "biome format . && biome lint .",
-    "format-lint:fix": "biome format . --fix && biome lint . --fix"
+    "format-lint": "biome check .",
+    "format-lint:fix": "biome check . --write"
   },
   "devDependencies": {
     "@internationalized/date": "^3.10.1",

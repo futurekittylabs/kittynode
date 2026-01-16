@@ -8,8 +8,8 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "format-lint": "biome format . && biome lint .",
-    "format-lint:fix": "biome format . --fix && biome lint . --fix"
+    "format-lint": "biome check .",
+    "format-lint:fix": "biome check . --write"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
