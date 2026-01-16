@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowRight, Package, Layers, Wifi, Lock } from "@lucide/svelte";
+  import { ArrowRight, Layers, Lock, Package, Wifi } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
 

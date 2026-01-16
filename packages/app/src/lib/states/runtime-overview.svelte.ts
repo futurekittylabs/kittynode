@@ -1,6 +1,6 @@
 import {
-  type RuntimeStatus,
   fetchRuntimeStatuses,
+  type RuntimeStatus,
 } from "$lib/runtime/package-runtime.svelte";
 
 type RuntimeStatusMap = Record<string, RuntimeStatus>;

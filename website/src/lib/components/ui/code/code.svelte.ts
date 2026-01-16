@@ -3,10 +3,10 @@
 */
 
 import { Context } from "runed";
-import type { ReadableBoxedValues, WritableBoxedValues } from "svelte-toolbelt";
-import type { CodeRootProps } from "./types";
-import { highlighter } from "./shiki";
 import type { HighlighterCore } from "shiki";
+import type { ReadableBoxedValues, WritableBoxedValues } from "svelte-toolbelt";
+import { highlighter } from "./shiki";
+import type { CodeRootProps } from "./types";
 
 type CodeOverflowStateProps = WritableBoxedValues<{
   collapsed: boolean;

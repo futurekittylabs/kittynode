@@ -1,32 +1,32 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import { Button } from "$lib/components/ui/button";
-  import * as Card from "$lib/components/ui/card";
-  import { platform } from "@tauri-apps/plugin-os";
-  import { systemInfoState } from "$lib/states/system-info.svelte";
-  import { packagesState } from "$lib/states/packages.svelte";
-  import { appConfigState } from "$lib/states/app-config.svelte";
-  import { serverUrlState } from "$lib/states/server-url.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
-  import { goto } from "$app/navigation";
-  import { runtimeOverviewState } from "$lib/states/runtime-overview.svelte";
-  import { coreClient } from "$lib/client";
   import {
+    Activity,
+    ArrowRight,
+    CircleAlert,
+    CirclePause,
+    Cpu,
+    HardDrive,
+    Info,
+    LoaderCircle,
     Package2,
     Settings2,
-    Info,
-    Activity,
-    HardDrive,
-    Cpu,
-    ArrowRight,
-    CirclePause,
-    LoaderCircle,
-    CircleAlert,
   } from "@lucide/svelte";
-  import { formatPackageName } from "$lib/utils";
-  import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { onDestroy, onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { coreClient } from "$lib/client";
+  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
   import PackageCard from "$lib/components/package-card.svelte";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { appConfigState } from "$lib/states/app-config.svelte";
+  import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { runtimeOverviewState } from "$lib/states/runtime-overview.svelte";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { systemInfoState } from "$lib/states/system-info.svelte";
+  import { formatPackageName } from "$lib/utils";
 
   const catalogState = $derived(packagesState.catalogState);
   const installedState = $derived(packagesState.installedState);

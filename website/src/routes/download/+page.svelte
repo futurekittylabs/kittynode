@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Monitor, Download, AppWindowMac, Terminal } from "@lucide/svelte";
+  import { AppWindowMac, Download, Monitor, Terminal } from "@lucide/svelte";
+  import appRelease from "$lib/app-release.json";
+  import cliRelease from "$lib/cli-release.json";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Code from "$lib/components/ui/code";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import appRelease from "$lib/app-release.json";
-  import cliRelease from "$lib/cli-release.json";
 
   const { version: appVersion, pub_date: appPubDate } = appRelease;
   const { version: cliVersion, date: cliPubDate } = cliRelease;

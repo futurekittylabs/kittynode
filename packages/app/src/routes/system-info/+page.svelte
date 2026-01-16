@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { serverUrlState } from "$lib/states/server-url.svelte";
-  import { systemInfoState } from "$lib/states/system-info.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import { Skeleton } from "$lib/components/ui/skeleton";
-  import { Progress } from "$lib/components/ui/progress";
-  import * as Card from "$lib/components/ui/card";
-  import { Button } from "$lib/components/ui/button";
-  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
   import {
-    Cpu,
-    HardDrive,
     Activity,
-    Server,
-    RefreshCw,
+    Cpu,
     Globe,
+    HardDrive,
+    RefreshCw,
+    Server,
     WifiOff,
   } from "@lucide/svelte";
+  import { onMount } from "svelte";
+  import DockerStatusCard from "$lib/components/docker-status-card.svelte";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { Progress } from "$lib/components/ui/progress";
+  import { Skeleton } from "$lib/components/ui/skeleton";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { systemInfoState } from "$lib/states/system-info.svelte";
 
   function calculateUsagePercentage(used: number, total: number): number {
     return Math.round((used / total) * 100);

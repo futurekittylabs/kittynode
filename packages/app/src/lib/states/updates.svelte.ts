@@ -1,10 +1,10 @@
-import { check } from "@tauri-apps/plugin-updater";
-import type { Update } from "@tauri-apps/plugin-updater";
 import { getVersion } from "@tauri-apps/api/app";
 import { platform } from "@tauri-apps/plugin-os";
+import type { Update } from "@tauri-apps/plugin-updater";
+import { check } from "@tauri-apps/plugin-updater";
 import { clean as semverClean, gt as semverGt } from "semver";
-import { notifyError, notifyInfo } from "$lib/utils/notify";
 import { coreClient, type LatestManifest } from "$lib/client";
+import { notifyError, notifyInfo } from "$lib/utils/notify";
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const LATEST_MANIFEST_URL =

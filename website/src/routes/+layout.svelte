@@ -1,7 +1,7 @@
 <script lang="ts">
   import "../app.css";
-  import { page } from "$app/state";
   import { ModeWatcher } from "mode-watcher";
+  import { page } from "$app/state";
 
   let { children } = $props();
 </script>

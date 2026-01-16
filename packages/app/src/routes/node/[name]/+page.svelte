@@ -1,16 +1,27 @@
 <script lang="ts">
+  import {
+    Activity,
+    ArrowUpRight,
+    CircleAlert,
+    CirclePause,
+    FileText,
+    Globe,
+    Play,
+    Settings,
+    ShieldCheck,
+    Square,
+    Terminal,
+    Trash2,
+  } from "@lucide/svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { coreClient } from "$lib/client";
+  import DockerLogs from "$lib/components/docker-logs.svelte";
+  import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
-  import { packagesState } from "$lib/states/packages.svelte";
-  import { onDestroy, onMount } from "svelte";
-  import DockerLogs from "$lib/components/docker-logs.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import { packageConfigState } from "$lib/states/package-config.svelte";
   import * as Select from "$lib/components/ui/select";
-  import * as Alert from "$lib/components/ui/alert";
-  import { coreClient } from "$lib/client";
-  import { goto } from "$app/navigation";
   import {
     defaultEthereumNetwork,
     ethereumNetworks,
@@ -18,22 +29,11 @@
     formatEthereumNetworks,
   } from "$lib/constants/ethereum-networks";
   import { createPackageRuntimeController } from "$lib/runtime/package-runtime.svelte";
-  import {
-    Terminal,
-    Trash2,
-    Play,
-    Square,
-    Activity,
-    Globe,
-    Settings,
-    FileText,
-    CircleAlert,
-    CirclePause,
-    ShieldCheck,
-    ArrowUpRight,
-  } from "@lucide/svelte";
-  import { notifyError, notifySuccess } from "$lib/utils/notify";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packageConfigState } from "$lib/states/package-config.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
   import { formatPackageName } from "$lib/utils";
+  import { notifyError, notifySuccess } from "$lib/utils/notify";
 
   let deletingPackages = $state<Set<string>>(new Set());
 

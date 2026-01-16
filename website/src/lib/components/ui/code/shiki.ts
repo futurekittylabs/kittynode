@@ -2,9 +2,9 @@
 	Installed from @ieedan/shadcn-svelte-extras
 */
 
+import { createHighlighterCore } from "shiki/core";
 // Follows the best practices established in https://shiki.matsu.io/guide/best-performance
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import { createHighlighterCore } from "shiki/core";
 
 const bundledLanguages = {
   bash: () => import("@shikijs/langs/bash"),

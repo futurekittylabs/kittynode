@@ -1,8 +1,8 @@
 import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
 import type { OperationalState } from "$lib/types/operational";
-import { operationalState } from "./operational.svelte";
 import { ethereumNetworkState } from "./ethereum-network.svelte";
+import { operationalState } from "./operational.svelte";
 
 type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";

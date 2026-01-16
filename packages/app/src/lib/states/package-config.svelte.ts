@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
-import type { PackageConfig } from "$lib/types";
 import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
+import type { PackageConfig } from "$lib/types";
 
 export const packageConfigState = {
   async getConfig(packageName: string): Promise<PackageConfig> {

@@ -1,35 +1,35 @@
 <script lang="ts">
+  import {
+    ArrowUpRight,
+    Download,
+    Globe,
+    HardDrive,
+    Link2,
+    Monitor,
+    Moon,
+    Sun,
+    Trash2,
+    Unlink,
+  } from "@lucide/svelte";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { setMode, userPrefersMode } from "mode-watcher";
+  import { onMount } from "svelte";
   import { coreClient } from "$lib/client";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
-  import { platform } from "@tauri-apps/plugin-os";
-  import {
-    serverUrlState,
-    normalizeServerUrl,
-  } from "$lib/states/server-url.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import { updates } from "$lib/states/updates.svelte";
-  import { appConfigState } from "$lib/states/app-config.svelte";
-  import { onMount } from "svelte";
-  import { Switch } from "$lib/components/ui/switch";
-  import { Input } from "$lib/components/ui/input";
   import * as Dialog from "$lib/components/ui/dialog";
-  import {
-    Globe,
-    Moon,
-    Sun,
-    Monitor,
-    HardDrive,
-    Download,
-    ArrowUpRight,
-    Trash2,
-    Link2,
-    Unlink,
-  } from "@lucide/svelte";
-  import { refetchStates } from "$lib/utils/refetch-states";
-  import { notifySuccess, notifyError, notifyInfo } from "$lib/utils/notify";
-  import { setMode, userPrefersMode } from "mode-watcher";
+  import { Input } from "$lib/components/ui/input";
   import * as Select from "$lib/components/ui/select";
+  import { Switch } from "$lib/components/ui/switch";
+  import { appConfigState } from "$lib/states/app-config.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import {
+    normalizeServerUrl,
+    serverUrlState,
+  } from "$lib/states/server-url.svelte";
+  import { updates } from "$lib/states/updates.svelte";
+  import { notifyError, notifyInfo, notifySuccess } from "$lib/utils/notify";
+  import { refetchStates } from "$lib/utils/refetch-states";
 
   let currentTheme = $state<"light" | "dark" | "system">(
     userPrefersMode.current

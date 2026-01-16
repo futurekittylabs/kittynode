@@ -1,35 +1,35 @@
 <script lang="ts">
   import "../app.css";
-  import { onMount } from "svelte";
-  import { initializedState } from "$lib/states/initialized.svelte";
-  import { appConfigState } from "$lib/states/app-config.svelte";
-  import { ModeWatcher, mode } from "mode-watcher";
-  import Splash from "./splash.svelte";
-  import { platform } from "@tauri-apps/plugin-os";
-  import { updates } from "$lib/states/updates.svelte";
-  import { Toaster } from "svelte-sonner";
-  import { formatPackageName } from "$lib/utils";
-  import UpdateBanner from "$lib/components/update-banner.svelte";
-  import { Button } from "$lib/components/ui/button";
-  import * as Sidebar from "$lib/components/ui/sidebar";
   import {
-    House,
-    HeartPulse,
-    Settings,
-    Package2,
     Activity,
-    MessageCircleMore,
     Globe,
+    HeartPulse,
+    House,
+    MessageCircleMore,
+    Package2,
+    Settings,
     Unlink,
   } from "@lucide/svelte";
-  import { packagesState } from "$lib/states/packages.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { ModeWatcher, mode } from "mode-watcher";
+  import { onMount } from "svelte";
+  import { Toaster } from "svelte-sonner";
   import { page } from "$app/state";
-  import { serverUrlState } from "$lib/states/server-url.svelte";
-  import { notifySuccess, notifyError } from "$lib/utils/notify";
-  import { refetchStates } from "$lib/utils/refetch-states";
   import { coreClient } from "$lib/client";
+  import { Button } from "$lib/components/ui/button";
+  import * as Sidebar from "$lib/components/ui/sidebar";
+  import UpdateBanner from "$lib/components/update-banner.svelte";
+  import { appConfigState } from "$lib/states/app-config.svelte";
   import { ethereumNetworkState } from "$lib/states/ethereum-network.svelte";
+  import { initializedState } from "$lib/states/initialized.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { serverUrlState } from "$lib/states/server-url.svelte";
+  import { updates } from "$lib/states/updates.svelte";
+  import { formatPackageName } from "$lib/utils";
+  import { notifyError, notifySuccess } from "$lib/utils/notify";
+  import { refetchStates } from "$lib/utils/refetch-states";
+  import Splash from "./splash.svelte";
 
   const { children } = $props();
 

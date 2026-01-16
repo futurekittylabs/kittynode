@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { ArrowLeft } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
-  import { ArrowLeft } from "@lucide/svelte";
 
   const packageName = $derived(page.params.name || "");
   const parentHref = $derived(packageName ? `/node/${packageName}` : "/node");

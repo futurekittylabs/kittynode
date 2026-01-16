@@ -1,16 +1,16 @@
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card";
+  import { CircleCheck, Download, Package2, Settings2 } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
   import * as Select from "$lib/components/ui/select";
-  import { packagesState } from "$lib/states/packages.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import { notifyError, notifySuccess } from "$lib/utils/notify";
-  import { formatPackageName } from "$lib/utils";
   import {
     defaultEthereumNetwork,
     ethereumNetworks,
   } from "$lib/constants/ethereum-networks";
-  import { Package2, Download, CircleCheck, Settings2 } from "@lucide/svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { formatPackageName } from "$lib/utils";
+  import { notifyError, notifySuccess } from "$lib/utils/notify";
 
   let {
     name,

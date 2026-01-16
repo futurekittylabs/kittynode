@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import * as Card from "$lib/components/ui/card";
-  import { Button } from "$lib/components/ui/button";
-  import { packagesState } from "$lib/states/packages.svelte";
-  import { operationalState } from "$lib/states/operational.svelte";
-  import { goto } from "$app/navigation";
   import { CircleAlert, Search } from "@lucide/svelte";
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import PackageCard from "$lib/components/package-card.svelte";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packagesState } from "$lib/states/packages.svelte";
 
   let searchQuery = $state("");
 

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { initializedState } from "$lib/states/initialized.svelte";
-  import { goto } from "$app/navigation";
+  import { ArrowUpRight, TriangleAlert } from "@lucide/svelte";
   import { platform } from "@tauri-apps/plugin-os";
-  import { coreClient } from "$lib/client";
+  import { mode } from "mode-watcher";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
+  import { goto } from "$app/navigation";
+  import { coreClient } from "$lib/client";
   import { Button } from "$lib/components/ui/button";
   import { Progress } from "$lib/components/ui/progress";
-  import { mode } from "mode-watcher";
-  import { TriangleAlert, ArrowUpRight } from "@lucide/svelte";
+  import { initializedState } from "$lib/states/initialized.svelte";
 
   let currentPlatform = $state("");
   let currentStep = $state(0);

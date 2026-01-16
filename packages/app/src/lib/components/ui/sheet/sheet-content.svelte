@@ -21,13 +21,12 @@
 </script>
 
 <script lang="ts">
-  import { Dialog as SheetPrimitive } from "bits-ui";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { Snippet } from "svelte";
-  import SheetPortal from "./sheet-portal.svelte";
-  import SheetOverlay from "./sheet-overlay.svelte";
+  import { Dialog as SheetPrimitive } from "bits-ui";
+  import type { ComponentProps, Snippet } from "svelte";
   import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
-  import type { ComponentProps } from "svelte";
+  import SheetOverlay from "./sheet-overlay.svelte";
+  import SheetPortal from "./sheet-portal.svelte";
 
   let {
     ref = $bindable(null),

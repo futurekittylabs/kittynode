@@ -1,6 +1,6 @@
 import { coreClient } from "$lib/client";
 import type { KittynodeConfig } from "$lib/types";
-import { serverUrlState, normalizeServerUrl } from "./server-url.svelte";
+import { normalizeServerUrl, serverUrlState } from "./server-url.svelte";
 
 let config = $state<KittynodeConfig | null>(null);
 let loading = $state(false);

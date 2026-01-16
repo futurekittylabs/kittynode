@@ -1,12 +1,12 @@
 <script lang="ts">
+  import {
+    CircleAlert,
+    CircleCheck,
+    LoaderCircle,
+    Server,
+  } from "@lucide/svelte";
   import * as Card from "$lib/components/ui/card";
   import { operationalState } from "$lib/states/operational.svelte";
-  import {
-    CircleCheck,
-    CircleAlert,
-    Server,
-    LoaderCircle,
-  } from "@lucide/svelte";
 
   const { showServerIcon = false } = $props<{ showServerIcon?: boolean }>();
 

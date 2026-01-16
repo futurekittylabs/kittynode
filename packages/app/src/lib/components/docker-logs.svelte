@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import { coreClient } from "$lib/client";
   import Convert from "ansi-to-html";
+  import { onDestroy, onMount } from "svelte";
+  import { coreClient } from "$lib/client";
 
   let {
     containerName,

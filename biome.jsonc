@@ -53,14 +53,6 @@
       }
     }
   },
-  "assist": {
-    "enabled": true,
-    "actions": {
-      "source": {
-        "organizeImports": "off"
-      }
-    }
-  },
   "overrides": [
     {
       "includes": ["**/*.svelte", "**/*.astro"],
