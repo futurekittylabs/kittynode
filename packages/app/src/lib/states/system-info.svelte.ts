@@ -1,5 +1,5 @@
 import { coreClient } from "$lib/client";
-import type { SystemInfo } from "$lib/types/system_info";
+import type { SystemInfo } from "$lib/types/system-info";
 
 let systemInfo = $state<SystemInfo>();
 

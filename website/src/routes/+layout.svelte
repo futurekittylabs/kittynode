@@ -1,24 +1,24 @@
 <script lang="ts">
-import "../app.css";
-import { page } from "$app/state";
-import { ModeWatcher } from "mode-watcher";
+  import "../app.css";
+  import { page } from "$app/state";
+  import { ModeWatcher } from "mode-watcher";
 
-let { children } = $props();
+  let { children } = $props();
 </script>
 
 <ModeWatcher />
 
 <svelte:head>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <title>Kittynode | Run the world computer</title>
-  <meta property="og:site_name" content="Kittynode" />
+  <meta property="og:site_name" content="Kittynode">
   <meta
     name="description"
     content="Control center for world computer operators."
-  />
+  >
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
@@ -29,7 +29,7 @@ let { children } = $props();
           <source
             type="image/webp"
             srcset="/kittynode-logo-app-no-padding-160.webp"
-          />
+          >
           <img
             src="/kittynode-logo-app-no-padding-160.png"
             alt="Kittynode logo"
@@ -37,13 +37,16 @@ let { children } = $props();
             width="40"
             height="40"
             decoding="async"
-          />
+          >
         </picture>
         <span class="wordmark-text">Kittynode</span>
       </a>
 
       <nav class="flex items-center gap-6">
-        <a href="https://docs.kittynode.com/start-here/getting-started" class="nav-link">
+        <a
+          href="https://docs.kittynode.com/start-here/getting-started"
+          class="nav-link"
+        >
           Docs
         </a>
         <a
@@ -57,28 +60,28 @@ let { children } = $props();
       </nav>
     </header>
 
-    <main class="flex-1">
-      {@render children?.()}
-    </main>
+    <main class="flex-1">{@render children?.()}</main>
 
     <footer class="border-t py-6">
       <div class="flex flex-col items-center gap-5">
         <div class="flex items-center gap-8 text-sm">
-          <a href="https://discord.kittynode.com" class="nav-link">
-            Discord
-          </a>
+          <a href="https://discord.kittynode.com" class="nav-link"> Discord </a>
           <a href="https://farcaster.xyz/kittynode" class="nav-link">
             Farcaster
           </a>
-          <a href="https://github.com/futurekittylabs/kittynode" class="nav-link">
+          <a
+            href="https://github.com/futurekittylabs/kittynode"
+            class="nav-link"
+          >
             GitHub
           </a>
         </div>
         <div class="text-center text-sm text-muted-foreground">
-          Kittynode is <a
-            href="https://github.com/futurekittylabs/kittynode"
-            class="link">free software</a
-          > released under the MIT License.
+          Kittynode is
+          <a href="https://github.com/futurekittylabs/kittynode" class="link"
+            >free software</a
+          >
+          released under the MIT License.
         </div>
       </div>
     </footer>

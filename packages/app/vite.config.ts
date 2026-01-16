@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   clearScreen: false,
   server: {
-    host: host || false,
+    host,
     port: 1420,
     strictPort: true,
     hmr: host

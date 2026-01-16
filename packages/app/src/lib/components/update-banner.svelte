@@ -1,12 +1,12 @@
 <script lang="ts">
-import { Button } from "$lib/components/ui/button";
-import { ArrowUpRight, Download } from "@lucide/svelte";
-import { updates } from "$lib/states/updates.svelte";
+  import { Button } from "$lib/components/ui/button";
+  import { ArrowUpRight, Download } from "@lucide/svelte";
+  import { updates } from "$lib/states/updates.svelte";
 
-const downloadsUrl = "https://kittynode.com/download";
+  const downloadsUrl = "https://kittynode.com/download";
 
-const handleInstall = () => updates.installUpdate();
-const handleDismiss = () => updates.dismiss();
+  const handleInstall = () => updates.installUpdate();
+  const handleDismiss = () => updates.dismiss();
 </script>
 
 <div

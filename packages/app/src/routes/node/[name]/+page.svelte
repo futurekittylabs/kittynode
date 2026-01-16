@@ -1,350 +1,354 @@
 <script lang="ts">
-import { page } from "$app/state";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { packagesState } from "$lib/states/packages.svelte";
-import { onDestroy, onMount } from "svelte";
-import DockerLogs from "$lib/components/DockerLogs.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { packageConfigState } from "$lib/states/packageConfig.svelte";
-import * as Select from "$lib/components/ui/select";
-import * as Alert from "$lib/components/ui/alert";
-import { coreClient } from "$lib/client";
-import { goto } from "$app/navigation";
-import {
-  defaultEthereumNetwork,
-  ethereumNetworks,
-  ethereumNetworkValues,
-  formatEthereumNetworks,
-} from "$lib/constants/ethereumNetworks";
-import { createPackageRuntimeController } from "$lib/runtime/packageRuntime.svelte";
-import {
-  Terminal,
-  Trash2,
-  Play,
-  Square,
-  Activity,
-  Globe,
-  Settings,
-  FileText,
-  CircleAlert,
-  CirclePause,
-  ShieldCheck,
-  ArrowUpRight,
-} from "@lucide/svelte";
-import { notifyError, notifySuccess } from "$lib/utils/notify";
-import { formatPackageName } from "$lib/utils";
+  import { page } from "$app/state";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { packagesState } from "$lib/states/packages.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import DockerLogs from "$lib/components/docker-logs.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { packageConfigState } from "$lib/states/package-config.svelte";
+  import * as Select from "$lib/components/ui/select";
+  import * as Alert from "$lib/components/ui/alert";
+  import { coreClient } from "$lib/client";
+  import { goto } from "$app/navigation";
+  import {
+    defaultEthereumNetwork,
+    ethereumNetworks,
+    ethereumNetworkValues,
+    formatEthereumNetworks,
+  } from "$lib/constants/ethereum-networks";
+  import { createPackageRuntimeController } from "$lib/runtime/package-runtime.svelte";
+  import {
+    Terminal,
+    Trash2,
+    Play,
+    Square,
+    Activity,
+    Globe,
+    Settings,
+    FileText,
+    CircleAlert,
+    CirclePause,
+    ShieldCheck,
+    ArrowUpRight,
+  } from "@lucide/svelte";
+  import { notifyError, notifySuccess } from "$lib/utils/notify";
+  import { formatPackageName } from "$lib/utils";
 
-let deletingPackages = $state<Set<string>>(new Set());
+  let deletingPackages = $state<Set<string>>(new Set());
 
-function isDeleting(packageName: string): boolean {
-  return deletingPackages.has(packageName);
-}
-
-async function deletePackage(
-  packageName: string,
-  options?: { redirectToDashboard?: boolean },
-): Promise<boolean> {
-  if (!operationalState.canManage) {
-    notifyError("Cannot manage packages in the current operational state");
-    return false;
+  function isDeleting(packageName: string): boolean {
+    return deletingPackages.has(packageName);
   }
 
-  const status = packagesState.installationStatus(packageName);
-
-  if (status === "unknown") {
-    notifyError("Package status is still loading. Try again once it finishes.");
-    return false;
-  }
-
-  if (status !== "installed") {
-    notifyError(`${packageName} is not currently installed`);
-    return false;
-  }
-
-  if (deletingPackages.has(packageName)) {
-    return false;
-  }
-
-  deletingPackages = new Set([...deletingPackages, packageName]);
-  try {
-    await packagesState.deletePackage(packageName);
-    notifySuccess(`Successfully deleted ${packageName}`);
-
-    if (options?.redirectToDashboard) {
-      await goto("/");
+  async function deletePackage(
+    packageName: string,
+    options?: { redirectToDashboard?: boolean }
+  ): Promise<boolean> {
+    if (!operationalState.canManage) {
+      notifyError("Cannot manage packages in the current operational state");
+      return false;
     }
 
-    return true;
-  } catch (error) {
-    notifyError(`Failed to delete ${packageName}`, error);
-    return false;
-  } finally {
-    const next = new Set(deletingPackages);
-    next.delete(packageName);
-    deletingPackages = next;
-  }
-}
+    const status = packagesState.installationStatus(packageName);
 
-const packageName = $derived(page.params.name || "");
-const pkg = $derived(
-  packageName ? packagesState.packages[packageName] : undefined,
-);
-const installedState = $derived(packagesState.installedState);
-const packageStatus = $derived(
-  pkg ? packagesState.installationStatus(pkg.name) : "unknown",
-);
-
-const runtime = createPackageRuntimeController();
-let lastLoadedConfig: string | null = null;
-
-const LOG_TYPES = ["execution", "consensus", "validator"] as const;
-type LogType = (typeof LOG_TYPES)[number];
-
-let activeLogTypes = $state<LogType[]>(["execution"]);
-let configLoading = $state(false);
-let selectedNetwork = $state<string>(defaultEthereumNetwork);
-let currentNetwork = $state<string>(defaultEthereumNetwork);
-let isValidatorInstalled = $state(false);
-
-const networks = ethereumNetworks;
-const supportedNetworkValues: string[] = [...ethereumNetworkValues];
-const defaultNetworkLabel =
-  networks.find((option) => option.value === defaultEthereumNetwork)?.label ??
-  defaultEthereumNetwork;
-const supportedNetworksMessage = formatEthereumNetworks(", ");
-const RESOURCE_PREFIX = "kittynode-";
-
-const logSources = {
-  execution: {
-    description: "Execution client logs",
-    containerName: `${RESOURCE_PREFIX}reth-node`,
-  },
-  consensus: {
-    description: "Consensus client logs",
-    containerName: `${RESOURCE_PREFIX}lighthouse-node`,
-  },
-  validator: {
-    description: "Validator client logs",
-    containerName: `${RESOURCE_PREFIX}lighthouse-validator`,
-  },
-} as const;
-
-const availableLogTypes = $derived(
-  LOG_TYPES.filter((type) => type !== "validator" || isValidatorInstalled),
-);
-
-const activeLogSources = $derived(
-  LOG_TYPES.filter((type) => activeLogTypes.includes(type))
-    .filter((type) => type !== "validator" || isValidatorInstalled)
-    .map((type) => ({ type, ...logSources[type] })),
-);
-
-const allLogsActive = $derived(
-  availableLogTypes.length > 0 &&
-    availableLogTypes.every((type) => activeLogTypes.includes(type)),
-);
-
-$effect(() => {
-  if (!isValidatorInstalled && activeLogTypes.includes("validator")) {
-    activeLogTypes = activeLogTypes.filter((type) => type !== "validator");
-  }
-});
-
-const networkTriggerContent = $derived(
-  networks.find((n) => n.value === selectedNetwork)?.label ||
-    defaultNetworkLabel,
-);
-
-const currentNetworkDisplay = $derived(
-  networks.find((n) => n.value === currentNetwork)?.label ??
-    (!currentNetwork ? "Not configured" : `${currentNetwork} (unsupported)`),
-);
-
-const installedStatus = $derived(installedState.status);
-const isInstalled = $derived(packageStatus === "installed");
-const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
-const statusKind = $derived(
-  runtime.lifecycle === "stopping"
-    ? "stopping"
-    : runtime.lifecycle === "starting"
-      ? "starting"
-      : runtime.loading && runtime.status === "checking"
-        ? "checking"
-        : runtime.status,
-);
-
-const canStopNode = $derived(
-  runtime.lifecycle === "idle" &&
-    runtime.status === "running" &&
-    operationalState.canManage,
-);
-
-const canStartNode = $derived(
-  runtime.lifecycle === "idle" &&
-    runtime.status === "stopped" &&
-    operationalState.canManage,
-);
-
-async function handleDeletePackage(name: string) {
-  await deletePackage(name, { redirectToDashboard: true });
-}
-
-function toggleLogs(logType: LogType) {
-  if (logType === "validator" && !isValidatorInstalled) {
-    return;
-  }
-
-  if (activeLogTypes.includes(logType)) {
-    activeLogTypes = activeLogTypes.filter((type) => type !== logType);
-    return;
-  }
-
-  activeLogTypes = LOG_TYPES.filter(
-    (type): type is LogType =>
-      [...activeLogTypes, logType].includes(type) &&
-      (type !== "validator" || isValidatorInstalled),
-  );
-}
-
-function toggleAllLogs() {
-  if (!availableLogTypes.length) {
-    return;
-  }
-
-  if (allLogsActive) {
-    activeLogTypes = [];
-    return;
-  }
-
-  activeLogTypes = [...availableLogTypes];
-}
-
-async function refreshValidatorInstalled() {
-  try {
-    const installed = await coreClient.isValidatorInstalled();
-    isValidatorInstalled = installed;
-  } catch (error) {
-    console.error("Failed to check validator status", error);
-  }
-}
-
-async function loadConfigFor(name: string) {
-  if (!name || lastLoadedConfig === name) {
-    return;
-  }
-
-  try {
-    const config = await packageConfigState.getConfig(name);
-    const network = config.values.network || defaultEthereumNetwork;
-    currentNetwork = network;
-
-    if (!supportedNetworkValues.includes(network)) {
+    if (status === "unknown") {
       notifyError(
-        `Network "${network}" is not supported. Please choose ${supportedNetworksMessage}.`,
+        "Package status is still loading. Try again once it finishes."
       );
-      selectedNetwork = defaultEthereumNetwork;
-    } else {
-      selectedNetwork = network;
+      return false;
     }
-    lastLoadedConfig = name;
-  } catch (error) {
-    notifyError("Failed to get package config", error);
-  }
-}
 
-async function stopNode() {
-  if (!packageName || !canStopNode) {
-    if (!operationalState.canManage) {
-      notifyError("Cannot manage packages in the current operational state");
+    if (status !== "installed") {
+      notifyError(`${packageName} is not currently installed`);
+      return false;
     }
-    return;
-  }
 
-  try {
-    const success = await runtime.performLifecycle("stopping", () =>
-      packagesState.stopPackage(packageName),
-    );
-    if (success) {
-      notifySuccess(`Stopped ${packageName}`);
-      await refreshValidatorInstalled();
+    if (deletingPackages.has(packageName)) {
+      return false;
     }
-  } catch (error) {
-    notifyError(`Failed to stop ${packageName}`, error);
-  }
-}
 
-async function startNode() {
-  if (!packageName || !canStartNode) {
-    if (!operationalState.canManage) {
-      notifyError("Cannot manage packages in the current operational state");
+    deletingPackages = new Set([...deletingPackages, packageName]);
+    try {
+      await packagesState.deletePackage(packageName);
+      notifySuccess(`Successfully deleted ${packageName}`);
+
+      if (options?.redirectToDashboard) {
+        await goto("/");
+      }
+
+      return true;
+    } catch (error) {
+      notifyError(`Failed to delete ${packageName}`, error);
+      return false;
+    } finally {
+      const next = new Set(deletingPackages);
+      next.delete(packageName);
+      deletingPackages = next;
     }
-    return;
   }
 
-  try {
-    const success = await runtime.performLifecycle("starting", () =>
-      packagesState.startPackage(packageName),
-    );
-    if (success) {
-      notifySuccess(`Started ${packageName}`);
-      await refreshValidatorInstalled();
+  const packageName = $derived(page.params.name || "");
+  const pkg = $derived(
+    packageName ? packagesState.packages[packageName] : undefined
+  );
+  const installedState = $derived(packagesState.installedState);
+  const packageStatus = $derived(
+    pkg ? packagesState.installationStatus(pkg.name) : "unknown"
+  );
+
+  const runtime = createPackageRuntimeController();
+  let lastLoadedConfig: string | null = null;
+
+  const LOG_TYPES = ["execution", "consensus", "validator"] as const;
+  type LogType = (typeof LOG_TYPES)[number];
+
+  let activeLogTypes = $state<LogType[]>(["execution"]);
+  let configLoading = $state(false);
+  let selectedNetwork = $state<string>(defaultEthereumNetwork);
+  let currentNetwork = $state<string>(defaultEthereumNetwork);
+  let isValidatorInstalled = $state(false);
+
+  const networks = ethereumNetworks;
+  const supportedNetworkValues: string[] = [...ethereumNetworkValues];
+  const defaultNetworkLabel =
+    networks.find((option) => option.value === defaultEthereumNetwork)?.label ??
+    defaultEthereumNetwork;
+  const supportedNetworksMessage = formatEthereumNetworks(", ");
+  const RESOURCE_PREFIX = "kittynode-";
+
+  const logSources = {
+    execution: {
+      description: "Execution client logs",
+      containerName: `${RESOURCE_PREFIX}reth-node`,
+    },
+    consensus: {
+      description: "Consensus client logs",
+      containerName: `${RESOURCE_PREFIX}lighthouse-node`,
+    },
+    validator: {
+      description: "Validator client logs",
+      containerName: `${RESOURCE_PREFIX}lighthouse-validator`,
+    },
+  } as const;
+
+  const availableLogTypes = $derived(
+    LOG_TYPES.filter((type) => type !== "validator" || isValidatorInstalled)
+  );
+
+  const activeLogSources = $derived(
+    LOG_TYPES.filter((type) => activeLogTypes.includes(type))
+      .filter((type) => type !== "validator" || isValidatorInstalled)
+      .map((type) => ({ type, ...logSources[type] }))
+  );
+
+  const allLogsActive = $derived(
+    availableLogTypes.length > 0 &&
+      availableLogTypes.every((type) => activeLogTypes.includes(type))
+  );
+
+  $effect(() => {
+    if (!isValidatorInstalled && activeLogTypes.includes("validator")) {
+      activeLogTypes = activeLogTypes.filter((type) => type !== "validator");
     }
-  } catch (error) {
-    notifyError(`Failed to start ${packageName}`, error);
-  }
-}
-
-async function updateConfig() {
-  if (!packageName) return;
-
-  configLoading = true;
-  try {
-    await packageConfigState.updateConfig(packageName, {
-      values: {
-        network: selectedNetwork,
-      },
-    });
-    currentNetwork = selectedNetwork;
-    lastLoadedConfig = packageName;
-    notifySuccess("Configuration updated successfully");
-  } catch (error) {
-    notifyError("Failed to update package config", error);
-  } finally {
-    configLoading = false;
-  }
-}
-
-$effect(() => {
-  const name = isInstalled && packageName ? packageName : null;
-  runtime.attach({
-    name,
-    enabled: Boolean(name),
-    pollInterval: operationalState.isStarting ? 2000 : 5000,
   });
 
-  if (name) {
-    void loadConfigFor(name);
-    void refreshValidatorInstalled();
-  } else {
-    lastLoadedConfig = null;
-    selectedNetwork = defaultEthereumNetwork;
-    currentNetwork = defaultEthereumNetwork;
-    isValidatorInstalled = false;
+  const networkTriggerContent = $derived(
+    networks.find((n) => n.value === selectedNetwork)?.label ||
+      defaultNetworkLabel
+  );
+
+  const currentNetworkDisplay = $derived(
+    networks.find((n) => n.value === currentNetwork)?.label ??
+      (currentNetwork ? `${currentNetwork} (unsupported)` : "Not configured")
+  );
+
+  const installedStatus = $derived(installedState.status);
+  const isInstalled = $derived(packageStatus === "installed");
+  const isDeletingPackage = $derived(pkg ? isDeleting(pkg.name) : false);
+  const statusKind = $derived(
+    runtime.lifecycle === "stopping"
+      ? "stopping"
+      : runtime.lifecycle === "starting"
+        ? "starting"
+        : runtime.loading && runtime.status === "checking"
+          ? "checking"
+          : runtime.status
+  );
+
+  const canStopNode = $derived(
+    runtime.lifecycle === "idle" &&
+      runtime.status === "running" &&
+      operationalState.canManage
+  );
+
+  const canStartNode = $derived(
+    runtime.lifecycle === "idle" &&
+      runtime.status === "stopped" &&
+      operationalState.canManage
+  );
+
+  async function handleDeletePackage(name: string) {
+    await deletePackage(name, { redirectToDashboard: true });
   }
-});
 
-onMount(async () => {
-  operationalState.startPolling();
-  await operationalState.refresh();
-  await packagesState.syncInstalledPackages();
-  await refreshValidatorInstalled();
-});
+  function toggleLogs(logType: LogType) {
+    if (logType === "validator" && !isValidatorInstalled) {
+      return;
+    }
 
-onDestroy(() => {
-  operationalState.stopPolling();
-  runtime.stop();
-});
+    if (activeLogTypes.includes(logType)) {
+      activeLogTypes = activeLogTypes.filter((type) => type !== logType);
+      return;
+    }
+
+    activeLogTypes = LOG_TYPES.filter(
+      (type): type is LogType =>
+        [...activeLogTypes, logType].includes(type) &&
+        (type !== "validator" || isValidatorInstalled)
+    );
+  }
+
+  function toggleAllLogs() {
+    if (!availableLogTypes.length) {
+      return;
+    }
+
+    if (allLogsActive) {
+      activeLogTypes = [];
+      return;
+    }
+
+    activeLogTypes = [...availableLogTypes];
+  }
+
+  async function refreshValidatorInstalled() {
+    try {
+      const installed = await coreClient.isValidatorInstalled();
+      isValidatorInstalled = installed;
+    } catch (error) {
+      console.error("Failed to check validator status", error);
+    }
+  }
+
+  async function loadConfigFor(name: string) {
+    if (!name || lastLoadedConfig === name) {
+      return;
+    }
+
+    try {
+      const config = await packageConfigState.getConfig(name);
+      const network = config.values.network || defaultEthereumNetwork;
+      currentNetwork = network;
+
+      if (supportedNetworkValues.includes(network)) {
+        selectedNetwork = network;
+      } else {
+        notifyError(
+          `Network "${network}" is not supported. Please choose ${supportedNetworksMessage}.`
+        );
+        selectedNetwork = defaultEthereumNetwork;
+      }
+      lastLoadedConfig = name;
+    } catch (error) {
+      notifyError("Failed to get package config", error);
+    }
+  }
+
+  async function stopNode() {
+    if (!(packageName && canStopNode)) {
+      if (!operationalState.canManage) {
+        notifyError("Cannot manage packages in the current operational state");
+      }
+      return;
+    }
+
+    try {
+      const success = await runtime.performLifecycle("stopping", () =>
+        packagesState.stopPackage(packageName)
+      );
+      if (success) {
+        notifySuccess(`Stopped ${packageName}`);
+        await refreshValidatorInstalled();
+      }
+    } catch (error) {
+      notifyError(`Failed to stop ${packageName}`, error);
+    }
+  }
+
+  async function startNode() {
+    if (!(packageName && canStartNode)) {
+      if (!operationalState.canManage) {
+        notifyError("Cannot manage packages in the current operational state");
+      }
+      return;
+    }
+
+    try {
+      const success = await runtime.performLifecycle("starting", () =>
+        packagesState.startPackage(packageName)
+      );
+      if (success) {
+        notifySuccess(`Started ${packageName}`);
+        await refreshValidatorInstalled();
+      }
+    } catch (error) {
+      notifyError(`Failed to start ${packageName}`, error);
+    }
+  }
+
+  async function updateConfig() {
+    if (!packageName) {
+      return;
+    }
+
+    configLoading = true;
+    try {
+      await packageConfigState.updateConfig(packageName, {
+        values: {
+          network: selectedNetwork,
+        },
+      });
+      currentNetwork = selectedNetwork;
+      lastLoadedConfig = packageName;
+      notifySuccess("Configuration updated successfully");
+    } catch (error) {
+      notifyError("Failed to update package config", error);
+    } finally {
+      configLoading = false;
+    }
+  }
+
+  $effect(() => {
+    const name = isInstalled && packageName ? packageName : null;
+    runtime.attach({
+      name,
+      enabled: Boolean(name),
+      pollInterval: operationalState.isStarting ? 2000 : 5000,
+    });
+
+    if (name) {
+      void loadConfigFor(name);
+      void refreshValidatorInstalled();
+    } else {
+      lastLoadedConfig = null;
+      selectedNetwork = defaultEthereumNetwork;
+      currentNetwork = defaultEthereumNetwork;
+      isValidatorInstalled = false;
+    }
+  });
+
+  onMount(async () => {
+    operationalState.startPolling();
+    await operationalState.refresh();
+    await packagesState.syncInstalledPackages();
+    await refreshValidatorInstalled();
+  });
+
+  onDestroy(() => {
+    operationalState.stopPolling();
+    runtime.stop();
+  });
 </script>
 
 {#if pkg}
@@ -438,9 +442,7 @@ onDestroy(() => {
       <Alert.Root>
         <Terminal class="size-4" />
         <Alert.Title>Docker is not running</Alert.Title>
-        <Alert.Description>
-          Start Docker to manage this node.
-        </Alert.Description>
+        <Alert.Description>Start Docker to manage this node.</Alert.Description>
       </Alert.Root>
     {:else if installedStatus === "error"}
       <Card.Root>
@@ -461,9 +463,7 @@ onDestroy(() => {
       <Alert.Root>
         <Terminal class="size-4" />
         <Alert.Title>Docker is not available</Alert.Title>
-        <Alert.Description>
-          Start Docker to manage this node.
-        </Alert.Description>
+        <Alert.Description>Start Docker to manage this node.</Alert.Description>
       </Alert.Root>
     {:else if packageStatus === "unknown"}
       <Card.Root>
@@ -618,7 +618,10 @@ onDestroy(() => {
                   <Select.Content>
                     <Select.Group>
                       {#each networks as network}
-                        <Select.Item value={network.value} label={network.label}>
+                        <Select.Item
+                          value={network.value}
+                          label={network.label}
+                        >
                           {network.label}
                         </Select.Item>
                       {/each}
@@ -628,16 +631,12 @@ onDestroy(() => {
               </div>
               <Button
                 type="submit"
-                disabled={
-                  configLoading ||
+                disabled={configLoading ||
                   selectedNetwork === currentNetwork ||
-                  isValidatorInstalled
-                }
-                title={
-                  isValidatorInstalled
+                  isValidatorInstalled}
+                title={isValidatorInstalled
                     ? "Stop the validator before updating configuration"
-                    : undefined
-                }
+                    : undefined}
                 size="sm"
               >
                 {configLoading ? "Updating..." : "Update Configuration"}
@@ -659,7 +658,9 @@ onDestroy(() => {
             </Card.Header>
             <Card.Content class="flex h-full flex-col">
               <p class="text-sm text-muted-foreground">
-                Currently, validator management is only supported through the Kittynode CLI. Install the Kittynode CLI, and you'll be able to monitor your validators from here!
+                Currently, validator management is only supported through the
+                Kittynode CLI. Install the Kittynode CLI, and you'll be able to
+                monitor your validators from here!
               </p>
               <div class="mt-4 sm:mt-auto sm:pt-4">
                 <Button
@@ -698,7 +699,8 @@ onDestroy(() => {
                 : "outline"}
               onclick={() => toggleLogs("execution")}
             >
-              {activeLogTypes.includes("execution") ? "Hide" : "Show"} Execution Logs
+              {activeLogTypes.includes("execution") ? "Hide" : "Show"} Execution
+              Logs
             </Button>
             <Button
               size="sm"
@@ -707,7 +709,8 @@ onDestroy(() => {
                 : "outline"}
               onclick={() => toggleLogs("consensus")}
             >
-              {activeLogTypes.includes("consensus") ? "Hide" : "Show"} Consensus Logs
+              {activeLogTypes.includes("consensus") ? "Hide" : "Show"} Consensus
+              Logs
             </Button>
             {#if isValidatorInstalled}
               <Button
@@ -717,7 +720,8 @@ onDestroy(() => {
                   : "outline"}
                 onclick={() => toggleLogs("validator")}
               >
-                {activeLogTypes.includes("validator") ? "Hide" : "Show"} Validator Logs
+                {activeLogTypes.includes("validator") ? "Hide" : "Show"}
+                Validator Logs
               </Button>
             {/if}
             <Button

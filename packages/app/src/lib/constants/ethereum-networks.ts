@@ -7,7 +7,7 @@ export const ethereumNetworks = [
 
 export const defaultEthereumNetwork = ethereumNetworks[0].value;
 export const ethereumNetworkValues = ethereumNetworks.map(
-  (network) => network.value,
+  (network) => network.value
 );
 
 export function formatEthereumNetworks(delimiter: string): string {
@@ -15,7 +15,7 @@ export function formatEthereumNetworks(delimiter: string): string {
 }
 
 export function getEthereumNetworkLabel(
-  value: string | null | undefined,
+  value: string | null | undefined
 ): string | null {
   if (!value) {
     return null;
@@ -28,7 +28,7 @@ export function getEthereumNetworkLabel(
 
   const normalized = trimmed.toLowerCase();
   const match = ethereumNetworks.find(
-    (network) => network.value === normalized,
+    (network) => network.value === normalized
   );
   if (match) {
     return match.label;

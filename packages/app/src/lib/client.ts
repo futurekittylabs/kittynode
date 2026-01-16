@@ -50,7 +50,7 @@ export const coreClient = {
 
   getContainerLogs(
     containerName: string,
-    tailLines: number | null,
+    tailLines: number | null
   ): Promise<string[]> {
     return invoke("get_container_logs", { containerName, tailLines });
   },

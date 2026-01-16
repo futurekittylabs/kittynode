@@ -1,30 +1,30 @@
 <script lang="ts">
-import { ArrowRight, Package, Layers, Wifi, Lock } from "@lucide/svelte";
-import { Button } from "$lib/components/ui/button/index.js";
-import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import { ArrowRight, Package, Layers, Wifi, Lock } from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
 
-const screenshots = {
-  app: {
-    label: "Desktop",
-    alt: "Kittynode desktop app dashboard",
-    height: 602,
-  },
-  cli: {
-    label: "Terminal",
-    alt: "Kittynode command-line interface overview",
-    height: 602,
-  },
-} as const;
+  const screenshots = {
+    app: {
+      label: "Desktop",
+      alt: "Kittynode desktop app dashboard",
+      height: 602,
+    },
+    cli: {
+      label: "Terminal",
+      alt: "Kittynode command-line interface overview",
+      height: 602,
+    },
+  } as const;
 
-type ScreenshotId = keyof typeof screenshots;
-const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
+  type ScreenshotId = keyof typeof screenshots;
+  const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
 
-const src = (id: ScreenshotId, theme: "light" | "dark") =>
-  `/images/kittynode-${id}-${theme}-960.webp`;
-const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
-  `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
+  const src = (id: ScreenshotId, theme: "light" | "dark") =>
+    `/images/kittynode-${id}-${theme}-960.webp`;
+  const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
+    `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
 
-let active: ScreenshotId = $state("app");
+  let active: ScreenshotId = $state("app");
 </script>
 
 <div class="page">
@@ -48,7 +48,9 @@ let active: ScreenshotId = $state("app");
     <Tabs.Root bind:value={active}>
       <Tabs.List aria-label="Screenshot view" class="h-10">
         {#each screenshotIds as id}
-          <Tabs.Trigger value={id} class="px-5">{screenshots[id].label}</Tabs.Trigger>
+          <Tabs.Trigger value={id} class="px-5">
+            {screenshots[id].label}
+          </Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>
@@ -59,12 +61,12 @@ let active: ScreenshotId = $state("app");
           media="(prefers-color-scheme: dark)"
           srcset={srcset(active, "dark")}
           sizes="(min-width: 1200px) 1100px, 92vw"
-        />
+        >
         <source
           media="(prefers-color-scheme: light)"
           srcset={srcset(active, "light")}
           sizes="(min-width: 1200px) 1100px, 92vw"
-        />
+        >
         <img
           src={src(active, "light")}
           alt={screenshots[active].alt}
@@ -72,7 +74,7 @@ let active: ScreenshotId = $state("app");
           height={screenshots[active].height * 2}
           loading="eager"
           decoding="async"
-        />
+        >
       </picture>
     </div>
   </section>
@@ -96,8 +98,8 @@ let active: ScreenshotId = $state("app");
       </div>
       <h2>One core, every surface</h2>
       <p>
-        CLI, desktop, and mobile apps share the same Rust core. Write once,
-        run everywhere.
+        CLI, desktop, and mobile apps share the same Rust core. Write once, run
+        everywhere.
       </p>
     </div>
 
@@ -107,8 +109,8 @@ let active: ScreenshotId = $state("app");
       </div>
       <h2>Remote access</h2>
       <p>
-        Monitor and manage your node from anywhere. Upgrade from your phone
-        when it matters.
+        Monitor and manage your node from anywhere. Upgrade from your phone when
+        it matters.
       </p>
     </div>
 
@@ -118,8 +120,8 @@ let active: ScreenshotId = $state("app");
       </div>
       <h2>Minimal by default</h2>
       <p>
-        Tiny, auditable codebase. Capabilities are opt-in. Read-only mode
-        until you need more.
+        Tiny, auditable codebase. Capabilities are opt-in. Read-only mode until
+        you need more.
       </p>
     </div>
   </section>

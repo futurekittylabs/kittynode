@@ -2,10 +2,10 @@
 	Installed from @ieedan/shadcn-svelte-extras
 */
 
-type Options = {
+interface Options {
   /** The time before the copied status is reset. */
   delay: number;
-};
+}
 
 /** Use this hook to copy text to the clipboard and show a copied state.
  *
@@ -31,7 +31,7 @@ type Options = {
  */
 export class UseClipboard {
   #copiedStatus = $state<"success" | "failure">();
-  private delay: number;
+  private readonly delay: number;
   private timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
   constructor({ delay = 500 }: Partial<Options> = {}) {

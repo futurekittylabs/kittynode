@@ -35,7 +35,7 @@ async function requestStatus(name: string): Promise<RuntimeStatus> {
 }
 
 export async function fetchRuntimeStatuses(
-  packageNames: string[],
+  packageNames: string[]
 ): Promise<Record<string, RuntimeStatus>> {
   if (packageNames.length === 0) {
     return {};
@@ -87,7 +87,7 @@ export function createPackageRuntimeController(initialInterval = 5000) {
   }
 
   function startPolling() {
-    if (!target || !enabled || lifecycle !== "idle" || destroyed) {
+    if (!(target && enabled) || lifecycle !== "idle" || destroyed) {
       return;
     }
     clearPolling();
@@ -99,7 +99,7 @@ export function createPackageRuntimeController(initialInterval = 5000) {
   async function refresh(options: RefreshOptions = {}) {
     const { force = false, withSpinner = false } = options;
 
-    if (!target || !enabled || destroyed) {
+    if (!(target && enabled) || destroyed) {
       status = "unknown";
       loading = false;
       return;
@@ -168,7 +168,7 @@ export function createPackageRuntimeController(initialInterval = 5000) {
       nextInterval > 0 &&
       nextInterval !== pollInterval;
 
-    if (!name && !nextEnabled) {
+    if (!(name || nextEnabled)) {
       clearPolling();
       target = null;
       enabled = false;
@@ -182,7 +182,7 @@ export function createPackageRuntimeController(initialInterval = 5000) {
       pollInterval = nextInterval;
     }
 
-    if (!target || !enabled) {
+    if (!(target && enabled)) {
       clearPolling();
       resetState();
       return;
@@ -218,7 +218,7 @@ export function createPackageRuntimeController(initialInterval = 5000) {
 
   async function performLifecycle(
     phase: Exclude<LifecyclePhase, "idle">,
-    action: () => Promise<void>,
+    action: () => Promise<void>
   ) {
     if (!target || lifecycle !== "idle" || destroyed) {
       return false;

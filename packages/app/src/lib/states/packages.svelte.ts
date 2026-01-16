@@ -2,22 +2,22 @@ import { coreClient } from "$lib/client";
 import type { Package } from "$lib/types";
 import type { OperationalState } from "$lib/types/operational";
 import { operationalState } from "./operational.svelte";
-import { ethereumNetworkState } from "./ethereumNetwork.svelte";
+import { ethereumNetworkState } from "./ethereum-network.svelte";
 
 type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 
-type CatalogState = {
+interface CatalogState {
   status: CatalogStatus;
   packages: Record<string, Package>;
   error?: string;
-};
+}
 
-type InstalledState = {
+interface InstalledState {
   status: InstalledStatus;
   packages: Record<string, Package>;
   error?: string;
-};
+}
 
 let catalogState = $state<CatalogState>({
   status: "idle",
@@ -96,9 +96,11 @@ export const packagesState = {
   },
 
   installationStatus(
-    packageName: string | undefined,
+    packageName: string | undefined
   ): "unknown" | "installed" | "available" {
-    if (!packageName) return "unknown";
+    if (!packageName) {
+      return "unknown";
+    }
     if (installedState.status !== "ready") {
       return "unknown";
     }
@@ -106,7 +108,9 @@ export const packagesState = {
   },
 
   isInstalled(packageName: string | undefined): boolean {
-    if (!packageName) return false;
+    if (!packageName) {
+      return false;
+    }
     return Boolean(installedState.packages[packageName]);
   },
 
@@ -312,7 +316,7 @@ export const packagesState = {
     lastOperationalSnapshot = { canManage: state.canManage };
 
     if (state.canManage) {
-      if (!previous || !previous.canManage) {
+      if (!previous?.canManage) {
         void this.loadInstalledPackages({ force: true });
       }
       return;

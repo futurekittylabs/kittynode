@@ -1,170 +1,174 @@
 <script lang="ts">
-import { initializedState } from "$lib/states/initialized.svelte";
-import { goto } from "$app/navigation";
-import { platform } from "@tauri-apps/plugin-os";
-import { coreClient } from "$lib/client";
-import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
-import { Button } from "$lib/components/ui/button";
-import { Progress } from "$lib/components/ui/progress";
-import { mode } from "mode-watcher";
-import { TriangleAlert, ArrowUpRight } from "@lucide/svelte";
+  import { initializedState } from "$lib/states/initialized.svelte";
+  import { goto } from "$app/navigation";
+  import { platform } from "@tauri-apps/plugin-os";
+  import { coreClient } from "$lib/client";
+  import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
+  import { Button } from "$lib/components/ui/button";
+  import { Progress } from "$lib/components/ui/progress";
+  import { mode } from "mode-watcher";
+  import { TriangleAlert, ArrowUpRight } from "@lucide/svelte";
 
-let currentPlatform = $state("");
-let currentStep = $state(0);
+  let currentPlatform = $state("");
+  let currentStep = $state(0);
 
-const totalSteps = 4;
-const isFirstStep = $derived(currentStep === 0);
-const isLastStep = $derived(currentStep === totalSteps - 1);
-const progressValue = $derived(
-  totalSteps <= 1 ? 100 : (currentStep / (totalSteps - 1)) * 100,
-);
-const isInitializing = $derived(initializedState.initializing);
+  const totalSteps = 4;
+  const isFirstStep = $derived(currentStep === 0);
+  const isLastStep = $derived(currentStep === totalSteps - 1);
+  const progressValue = $derived(
+    totalSteps <= 1 ? 100 : (currentStep / (totalSteps - 1)) * 100
+  );
+  const isInitializing = $derived(initializedState.initializing);
 
-let canvasElement: HTMLCanvasElement;
-let animationFrameId: number;
-let ctx: CanvasRenderingContext2D;
+  let canvasElement: HTMLCanvasElement;
+  let animationFrameId: number;
+  let ctx: CanvasRenderingContext2D;
 
-type NodePoint = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-};
-
-onMount(() => {
-  currentPlatform = platform();
-
-  const canvas = canvasElement;
-  const context = canvas?.getContext("2d");
-  if (!context) {
-    console.error("Please report this error: Failed to get 2D context.");
-    return;
-  }
-  ctx = context;
-
-  const nodes: NodePoint[] = [];
-  const maxVelocity = 1.2;
-  const nodeDensity = 0.00008;
-
-  function calculateNumNodes() {
-    return Math.round(window.innerWidth * window.innerHeight * nodeDensity);
+  interface NodePoint {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
   }
 
-  function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = `${window.innerWidth}px`;
-    canvas.style.height = `${window.innerHeight}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  onMount(() => {
+    currentPlatform = platform();
 
-    const newNumNodes = calculateNumNodes();
-    if (newNumNodes > nodes.length) {
-      const nodesToAdd = newNumNodes - nodes.length;
-      for (let i = 0; i < nodesToAdd; i++) {
-        nodes.push({
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-          vx: (Math.random() - 0.5) * maxVelocity,
-          vy: (Math.random() - 0.5) * maxVelocity,
-        });
-      }
-    } else if (newNumNodes < nodes.length) {
-      nodes.splice(0, nodes.length - newNumNodes);
+    const canvas = canvasElement;
+    const context = canvas?.getContext("2d");
+    if (!context) {
+      console.error("Please report this error: Failed to get 2D context.");
+      return;
+    }
+    ctx = context;
+
+    const nodes: NodePoint[] = [];
+    const maxVelocity = 1.2;
+    const nodeDensity = 0.000_08;
+
+    function calculateNumNodes() {
+      return Math.round(window.innerWidth * window.innerHeight * nodeDensity);
     }
 
-    for (const node of nodes) {
-      if (node.x > window.innerWidth) {
-        node.x = Math.random() * window.innerWidth;
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const newNumNodes = calculateNumNodes();
+      if (newNumNodes > nodes.length) {
+        const nodesToAdd = newNumNodes - nodes.length;
+        for (let i = 0; i < nodesToAdd; i++) {
+          nodes.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * maxVelocity,
+            vy: (Math.random() - 0.5) * maxVelocity,
+          });
+        }
+      } else if (newNumNodes < nodes.length) {
+        nodes.splice(0, nodes.length - newNumNodes);
       }
-      if (node.y > window.innerHeight) {
-        node.y = Math.random() * window.innerHeight;
-      }
-    }
-  }
 
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
-
-  function animate() {
-    ctx.fillStyle = mode.current === "dark" ? "#09090b" : "#f5f5f7";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (const node of nodes) {
-      node.x += node.vx;
-      node.y += node.vy;
-      if (node.x <= 0 || node.x >= window.innerWidth) node.vx *= -1;
-      if (node.y <= 0 || node.y >= window.innerHeight) node.vy *= -1;
-
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = mode.current === "dark" ? "#FFFFFF" : "#111111";
-      ctx.fill();
-    }
-
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const dx = nodes[i].x - nodes[j].x;
-        const dy = nodes[i].y - nodes[j].y;
-        const distance = Math.hypot(dx, dy);
-
-        if (distance < 110) {
-          ctx.beginPath();
-          ctx.moveTo(nodes[i].x, nodes[i].y);
-          ctx.lineTo(nodes[j].x, nodes[j].y);
-          const color = mode.current === "dark" ? "255,255,255" : "17,17,17";
-          ctx.strokeStyle = `rgba(${color}, ${1 - distance / 110})`;
-          ctx.lineWidth = 0.9;
-          ctx.stroke();
+      for (const node of nodes) {
+        if (node.x > window.innerWidth) {
+          node.x = Math.random() * window.innerWidth;
+        }
+        if (node.y > window.innerHeight) {
+          node.y = Math.random() * window.innerHeight;
         }
       }
     }
 
-    animationFrameId = requestAnimationFrame(animate);
-  }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
 
-  animate();
+    function animate() {
+      ctx.fillStyle = mode.current === "dark" ? "#09090b" : "#f5f5f7";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  return () => {
-    cancelAnimationFrame(animationFrameId);
-    window.removeEventListener("resize", resizeCanvas);
-  };
-});
+      for (const node of nodes) {
+        node.x += node.vx;
+        node.y += node.vy;
+        if (node.x <= 0 || node.x >= window.innerWidth) {
+          node.vx *= -1;
+        }
+        if (node.y <= 0 || node.y >= window.innerHeight) {
+          node.vy *= -1;
+        }
 
-function nextStep() {
-  if (!isLastStep) {
-    currentStep += 1;
-  }
-}
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = mode.current === "dark" ? "#FFFFFF" : "#111111";
+        ctx.fill();
+      }
 
-function prevStep() {
-  if (!isFirstStep) {
-    currentStep -= 1;
-  }
-}
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const distance = Math.hypot(dx, dy);
 
-async function initKittynode() {
-  try {
-    if (["ios", "android"].includes(currentPlatform)) {
-      await initializedState.fakeInitialize();
-    } else {
-      await initializedState.initialize();
+          if (distance < 110) {
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            const color = mode.current === "dark" ? "255,255,255" : "17,17,17";
+            ctx.strokeStyle = `rgba(${color}, ${1 - distance / 110})`;
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+          }
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
     }
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  });
+
+  function nextStep() {
+    if (!isLastStep) {
+      currentStep += 1;
+    }
+  }
+
+  function prevStep() {
+    if (!isFirstStep) {
+      currentStep -= 1;
+    }
+  }
+
+  async function initKittynode() {
     try {
-      await coreClient.setOnboardingCompleted(true);
+      if (["ios", "android"].includes(currentPlatform)) {
+        await initializedState.fakeInitialize();
+      } else {
+        await initializedState.initialize();
+      }
+      try {
+        await coreClient.setOnboardingCompleted(true);
+      } catch (e) {
+        console.error(`Failed to save onboarding state: ${e}`);
+        toast.error("Failed to save onboarding progress");
+      }
     } catch (e) {
-      console.error(`Failed to save onboarding state: ${e}`);
-      toast.error("Failed to save onboarding progress");
+      console.error(`Failed to initialize kittynode: ${e}`);
+      toast.error("Failed to initialize Kittynode");
+      return;
     }
-  } catch (e) {
-    console.error(`Failed to initialize kittynode: ${e}`);
-    toast.error("Failed to initialize Kittynode");
-    return;
-  }
 
-  await goto("/");
-}
+    await goto("/");
+  }
 </script>
 
 <canvas class="fixed inset-0 -z-10" bind:this={canvasElement}></canvas>
@@ -182,7 +186,7 @@ async function initKittynode() {
             src="/images/kittynode-logo-app-no-padding.png"
             alt="Kittynode Logo"
             class="h-12 w-12"
-          />
+          >
           <span
             class="kittynode-brand text-[1.9rem] leading-none sm:text-[2.1rem]"
             >Kittynode</span
@@ -216,7 +220,8 @@ async function initKittynode() {
               Try Kittynode CLI
             </h2>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Install Ethereum on a dedicated machine using Kittynode CLI, and connect to your installation from anywhere with the Kittynode app!
+              Install Ethereum on a dedicated machine using Kittynode CLI, and
+              connect to your installation from anywhere with the Kittynode app!
             </p>
             <p class="text-base text-muted-foreground sm:text-lg">
               This requires both machines to be in the same Tailscale network.
@@ -232,11 +237,13 @@ async function initKittynode() {
               Install Docker
             </h2>
             <p class="text-base text-muted-foreground sm:text-lg">
-              Kittynode isolates your node stack inside Docker, so you'll need it to install Ethereum. Install Docker on whatever machine(s) you
+              Kittynode isolates your node stack inside Docker, so you'll need
+              it to install Ethereum. Install Docker on whatever machine(s) you
               plan to run Ethereum on.
             </p>
             <p class="text-base text-muted-foreground sm:text-lg">
-              If using a remote dedicated machine, you only need to install Docker there.
+              If using a remote dedicated machine, you only need to install
+              Docker there.
             </p>
           </div>
         </div>
@@ -259,8 +266,9 @@ async function initKittynode() {
               <p>
                 Kittynode has <strong>not been audited</strong>, and may not be
                 using audited subcomponents at this time. It is
-                <strong>not recommended for mainnet validators</strong>. For
-                guidance on mainnet validators please visit
+                <strong
+                  >not recommended for mainnet validators</strong
+                >. For guidance on mainnet validators please visit
                 <a
                   class="link inline-flex items-center gap-1 font-medium"
                   href="https://ethereum.org/staking/solo"

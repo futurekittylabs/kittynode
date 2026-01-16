@@ -53,7 +53,9 @@ export const updates = {
   },
 
   get isDismissed() {
-    if (!dismissedTime) return false;
+    if (!dismissedTime) {
+      return false;
+    }
     return Date.now() < dismissedTime + TWENTY_FOUR_HOURS;
   },
 
@@ -91,7 +93,7 @@ export const updates = {
           case "Started":
             contentLength = event.data.contentLength as number;
             console.info(
-              `Started downloading ${event.data.contentLength} bytes.`,
+              `Started downloading ${event.data.contentLength} bytes.`
             );
             break;
           case "Progress":
@@ -100,6 +102,8 @@ export const updates = {
             break;
           case "Finished":
             console.info("Download finished.");
+            break;
+          default:
             break;
         }
       });
@@ -123,7 +127,7 @@ async function checkLinuxManifest(): Promise<boolean> {
   const manifestVersion = semverClean(manifest.version);
   if (!manifestVersion) {
     throw new Error(
-      `Latest manifest contains an invalid semver version: ${manifest.version}`,
+      `Latest manifest contains an invalid semver version: ${manifest.version}`
     );
   }
 

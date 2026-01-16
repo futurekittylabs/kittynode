@@ -1,279 +1,282 @@
 <script lang="ts">
-import { coreClient } from "$lib/client";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { platform } from "@tauri-apps/plugin-os";
-import {
-  serverUrlState,
-  normalizeServerUrl,
-} from "$lib/states/serverUrl.svelte";
-import { operationalState } from "$lib/states/operational.svelte";
-import { updates } from "$lib/states/updates.svelte";
-import { appConfigState } from "$lib/states/appConfig.svelte";
-import { onMount } from "svelte";
-import { Switch } from "$lib/components/ui/switch";
-import { Input } from "$lib/components/ui/input";
-import * as Dialog from "$lib/components/ui/dialog";
-import {
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
-  HardDrive,
-  Download,
-  ArrowUpRight,
-  Trash2,
-  Link2,
-  Unlink,
-} from "@lucide/svelte";
-import { refetchStates } from "$lib/utils/refetchStates";
-import { notifySuccess, notifyError, notifyInfo } from "$lib/utils/notify";
-import { setMode, userPrefersMode } from "mode-watcher";
-import * as Select from "$lib/components/ui/select";
+  import { coreClient } from "$lib/client";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import { platform } from "@tauri-apps/plugin-os";
+  import {
+    serverUrlState,
+    normalizeServerUrl,
+  } from "$lib/states/server-url.svelte";
+  import { operationalState } from "$lib/states/operational.svelte";
+  import { updates } from "$lib/states/updates.svelte";
+  import { appConfigState } from "$lib/states/app-config.svelte";
+  import { onMount } from "svelte";
+  import { Switch } from "$lib/components/ui/switch";
+  import { Input } from "$lib/components/ui/input";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import {
+    Globe,
+    Moon,
+    Sun,
+    Monitor,
+    HardDrive,
+    Download,
+    ArrowUpRight,
+    Trash2,
+    Link2,
+    Unlink,
+  } from "@lucide/svelte";
+  import { refetchStates } from "$lib/utils/refetch-states";
+  import { notifySuccess, notifyError, notifyInfo } from "$lib/utils/notify";
+  import { setMode, userPrefersMode } from "mode-watcher";
+  import * as Select from "$lib/components/ui/select";
 
-let currentTheme = $state<"light" | "dark" | "system">(userPrefersMode.current);
-let updatingAutoStartDocker = $state(false);
-let updatingShowTrayIcon = $state(false);
-let remoteServerDialogOpen = $state(false);
-let remoteServerUrlInput = $state("");
-let remoteServerError = $state("");
-let remoteDialogLoading = $state(false);
-let remoteDialogAction = $state<"connect" | null>(null);
-let remoteInlineLoading = $state(false);
-let remoteInlineAction = $state<"connect" | "disconnect" | null>(null);
+  let currentTheme = $state<"light" | "dark" | "system">(
+    userPrefersMode.current
+  );
+  let updatingAutoStartDocker = $state(false);
+  let updatingShowTrayIcon = $state(false);
+  let remoteServerDialogOpen = $state(false);
+  let remoteServerUrlInput = $state("");
+  let remoteServerError = $state("");
+  let remoteDialogLoading = $state(false);
+  let remoteDialogAction = $state<"connect" | null>(null);
+  let remoteInlineLoading = $state(false);
+  let remoteInlineAction = $state<"connect" | "disconnect" | null>(null);
 
-const autoStartDockerEnabled = $derived(appConfigState.autoStartDocker);
-const showTrayIconEnabled = $derived(appConfigState.showTrayIcon);
-const configInitialized = $derived(appConfigState.initialized);
-const configLoading = $derived(appConfigState.loading);
-const downloadsUrl = "https://kittynode.com/download";
-const remoteServerConnected = $derived(serverUrlState.serverUrl !== "");
-const validatorGuideUrl = "https://docs.kittynode.com/guides/set-up-validator";
-const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
+  const autoStartDockerEnabled = $derived(appConfigState.autoStartDocker);
+  const showTrayIconEnabled = $derived(appConfigState.showTrayIcon);
+  const configInitialized = $derived(appConfigState.initialized);
+  const configLoading = $derived(appConfigState.loading);
+  const downloadsUrl = "https://kittynode.com/download";
+  const remoteServerConnected = $derived(serverUrlState.serverUrl !== "");
+  const validatorGuideUrl =
+    "https://docs.kittynode.com/guides/set-up-validator";
+  const remoteHelpDescription = `Follow the validator guide: ${validatorGuideUrl}`;
 
-onMount(() => {
-  void appConfigState.load().catch((e) => {
-    console.error(`Failed to load Kittynode config: ${e}`);
-  });
-});
-
-async function handleAutoStartDockerChange(enabled: boolean) {
-  if (!configInitialized) {
-    return;
-  }
-
-  if (enabled === autoStartDockerEnabled) {
-    return;
-  }
-
-  if (updatingAutoStartDocker) {
-    return;
-  }
-
-  updatingAutoStartDocker = true;
-  try {
-    await appConfigState.setAutoStartDocker(enabled);
-    notifySuccess(
-      enabled ? "Docker auto-start enabled" : "Docker auto-start disabled",
-    );
-  } catch (e) {
-    notifyError("Failed to update Docker auto-start preference", e);
-    try {
-      await appConfigState.reload();
-    } catch (reloadError) {
-      console.error(`Failed to reload Kittynode config: ${reloadError}`);
-    }
-  } finally {
-    updatingAutoStartDocker = false;
-  }
-}
-
-async function handleShowTrayIconChange(enabled: boolean) {
-  if (!configInitialized) {
-    return;
-  }
-
-  if (enabled === showTrayIconEnabled) {
-    return;
-  }
-
-  if (updatingShowTrayIcon) {
-    return;
-  }
-
-  updatingShowTrayIcon = true;
-  try {
-    await appConfigState.setShowTrayIcon(enabled);
-    notifySuccess(
-      enabled ? "System tray icon enabled" : "System tray icon disabled",
-    );
-  } catch (e) {
-    notifyError("Failed to update system tray preference", e);
-    try {
-      await appConfigState.reload();
-    } catch (reloadError) {
-      console.error(`Failed to reload Kittynode config: ${reloadError}`);
-    }
-  } finally {
-    updatingShowTrayIcon = false;
-  }
-}
-
-function validateRemoteUrl(url: string) {
-  const normalized = normalizeServerUrl(url);
-  if (!normalized) {
-    return "Remote URL cannot be empty";
-  }
-
-  try {
-    const parsed = new URL(normalized);
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      return "Remote URL must use http or https";
-    }
-    if (!parsed.hostname) {
-      return "Remote URL must include a host";
-    }
-    if (parsed.username || parsed.password) {
-      return "Remote URL cannot include credentials";
-    }
-  } catch {
-    return "Remote URL must be a valid URL";
-  }
-
-  return null;
-}
-
-function openRemoteDialog() {
-  remoteServerUrlInput =
-    serverUrlState.serverUrl ||
-    serverUrlState.lastServerUrl ||
-    "http://127.0.0.1:3000";
-  remoteServerError = "";
-  remoteDialogAction = null;
-  remoteServerDialogOpen = true;
-}
-
-async function applyRemoteConnection(url: string) {
-  try {
-    await coreClient.checkRemoteHealth(url);
-    await appConfigState.setServerUrl(url);
-    await operationalState.refresh();
-    refetchStates();
-    notifySuccess("Connected to remote");
-    return true;
-  } catch (e) {
-    notifyError("Failed to connect to remote", e, {
-      description: remoteHelpDescription,
+  onMount(() => {
+    void appConfigState.load().catch((e) => {
+      console.error(`Failed to load Kittynode config: ${e}`);
     });
-    return false;
-  }
-}
-
-async function clearRemoteConnection() {
-  try {
-    await appConfigState.setServerUrl("");
-    await operationalState.refresh();
-    refetchStates();
-    notifySuccess("Disconnected from remote");
-    return true;
-  } catch (e) {
-    notifyError("Failed to disconnect from remote", e);
-    return false;
-  }
-}
-
-async function submitRemoteDialog() {
-  const validationError = validateRemoteUrl(remoteServerUrlInput);
-  if (validationError) {
-    remoteServerError = validationError;
-    notifyError(validationError);
-    return;
-  }
-
-  remoteServerError = "";
-  const normalized = normalizeServerUrl(remoteServerUrlInput);
-  remoteServerUrlInput = normalized;
-  remoteDialogAction = "connect";
-  remoteDialogLoading = true;
-  try {
-    const success = await applyRemoteConnection(normalized);
-    if (success) {
-      remoteServerDialogOpen = false;
-    }
-  } finally {
-    remoteDialogLoading = false;
-    remoteDialogAction = null;
-  }
-}
-
-async function quickConnectToLastServer() {
-  const candidateUrl =
-    serverUrlState.serverUrl || serverUrlState.lastServerUrl || "";
-
-  if (!candidateUrl) {
-    openRemoteDialog();
-    return;
-  }
-
-  remoteInlineAction = "connect";
-  remoteInlineLoading = true;
-  try {
-    const success = await applyRemoteConnection(candidateUrl);
-    if (!success) {
-      openRemoteDialog();
-    }
-  } finally {
-    remoteInlineLoading = false;
-    remoteInlineAction = null;
-  }
-}
-
-async function disconnectRemote() {
-  remoteInlineAction = "disconnect";
-  remoteInlineLoading = true;
-  try {
-    await clearRemoteConnection();
-  } finally {
-    remoteInlineLoading = false;
-    remoteInlineAction = null;
-  }
-}
-
-async function deleteKittynode() {
-  try {
-    await coreClient.deleteKittynode();
-    // Immediately restart the app with fresh config
-    await coreClient.restartApp();
-  } catch (e) {
-    notifyError("Failed to delete Kittynode data", e);
-  }
-}
-
-async function handleUpdate() {
-  notifyInfo("Installing update...", {
-    description: "Kittynode will restart when the update is complete.",
   });
-  await updates.installUpdate();
-}
 
-async function checkForUpdates() {
-  try {
-    await updates.getUpdate(true);
-    if (!updates.hasUpdate) {
-      notifySuccess("You're up to date!", {
-        description: "No updates available at this time.",
-      });
-    } else {
-      notifyInfo("Update available!", {
-        description: updates.requiresManualInstall
-          ? "Download the latest version from kittynode.com/download."
-          : "A new version of Kittynode is ready to install.",
-      });
+  async function handleAutoStartDockerChange(enabled: boolean) {
+    if (!configInitialized) {
+      return;
     }
-  } catch (e) {
-    notifyError("Failed to check for updates", e);
+
+    if (enabled === autoStartDockerEnabled) {
+      return;
+    }
+
+    if (updatingAutoStartDocker) {
+      return;
+    }
+
+    updatingAutoStartDocker = true;
+    try {
+      await appConfigState.setAutoStartDocker(enabled);
+      notifySuccess(
+        enabled ? "Docker auto-start enabled" : "Docker auto-start disabled"
+      );
+    } catch (e) {
+      notifyError("Failed to update Docker auto-start preference", e);
+      try {
+        await appConfigState.reload();
+      } catch (reloadError) {
+        console.error(`Failed to reload Kittynode config: ${reloadError}`);
+      }
+    } finally {
+      updatingAutoStartDocker = false;
+    }
   }
-}
+
+  async function handleShowTrayIconChange(enabled: boolean) {
+    if (!configInitialized) {
+      return;
+    }
+
+    if (enabled === showTrayIconEnabled) {
+      return;
+    }
+
+    if (updatingShowTrayIcon) {
+      return;
+    }
+
+    updatingShowTrayIcon = true;
+    try {
+      await appConfigState.setShowTrayIcon(enabled);
+      notifySuccess(
+        enabled ? "System tray icon enabled" : "System tray icon disabled"
+      );
+    } catch (e) {
+      notifyError("Failed to update system tray preference", e);
+      try {
+        await appConfigState.reload();
+      } catch (reloadError) {
+        console.error(`Failed to reload Kittynode config: ${reloadError}`);
+      }
+    } finally {
+      updatingShowTrayIcon = false;
+    }
+  }
+
+  function validateRemoteUrl(url: string) {
+    const normalized = normalizeServerUrl(url);
+    if (!normalized) {
+      return "Remote URL cannot be empty";
+    }
+
+    try {
+      const parsed = new URL(normalized);
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        return "Remote URL must use http or https";
+      }
+      if (!parsed.hostname) {
+        return "Remote URL must include a host";
+      }
+      if (parsed.username || parsed.password) {
+        return "Remote URL cannot include credentials";
+      }
+    } catch {
+      return "Remote URL must be a valid URL";
+    }
+
+    return null;
+  }
+
+  function openRemoteDialog() {
+    remoteServerUrlInput =
+      serverUrlState.serverUrl ||
+      serverUrlState.lastServerUrl ||
+      "http://127.0.0.1:3000";
+    remoteServerError = "";
+    remoteDialogAction = null;
+    remoteServerDialogOpen = true;
+  }
+
+  async function applyRemoteConnection(url: string) {
+    try {
+      await coreClient.checkRemoteHealth(url);
+      await appConfigState.setServerUrl(url);
+      await operationalState.refresh();
+      refetchStates();
+      notifySuccess("Connected to remote");
+      return true;
+    } catch (e) {
+      notifyError("Failed to connect to remote", e, {
+        description: remoteHelpDescription,
+      });
+      return false;
+    }
+  }
+
+  async function clearRemoteConnection() {
+    try {
+      await appConfigState.setServerUrl("");
+      await operationalState.refresh();
+      refetchStates();
+      notifySuccess("Disconnected from remote");
+      return true;
+    } catch (e) {
+      notifyError("Failed to disconnect from remote", e);
+      return false;
+    }
+  }
+
+  async function submitRemoteDialog() {
+    const validationError = validateRemoteUrl(remoteServerUrlInput);
+    if (validationError) {
+      remoteServerError = validationError;
+      notifyError(validationError);
+      return;
+    }
+
+    remoteServerError = "";
+    const normalized = normalizeServerUrl(remoteServerUrlInput);
+    remoteServerUrlInput = normalized;
+    remoteDialogAction = "connect";
+    remoteDialogLoading = true;
+    try {
+      const success = await applyRemoteConnection(normalized);
+      if (success) {
+        remoteServerDialogOpen = false;
+      }
+    } finally {
+      remoteDialogLoading = false;
+      remoteDialogAction = null;
+    }
+  }
+
+  async function quickConnectToLastServer() {
+    const candidateUrl =
+      serverUrlState.serverUrl || serverUrlState.lastServerUrl || "";
+
+    if (!candidateUrl) {
+      openRemoteDialog();
+      return;
+    }
+
+    remoteInlineAction = "connect";
+    remoteInlineLoading = true;
+    try {
+      const success = await applyRemoteConnection(candidateUrl);
+      if (!success) {
+        openRemoteDialog();
+      }
+    } finally {
+      remoteInlineLoading = false;
+      remoteInlineAction = null;
+    }
+  }
+
+  async function disconnectRemote() {
+    remoteInlineAction = "disconnect";
+    remoteInlineLoading = true;
+    try {
+      await clearRemoteConnection();
+    } finally {
+      remoteInlineLoading = false;
+      remoteInlineAction = null;
+    }
+  }
+
+  async function deleteKittynode() {
+    try {
+      await coreClient.deleteKittynode();
+      // Immediately restart the app with fresh config
+      await coreClient.restartApp();
+    } catch (e) {
+      notifyError("Failed to delete Kittynode data", e);
+    }
+  }
+
+  async function handleUpdate() {
+    notifyInfo("Installing update...", {
+      description: "Kittynode will restart when the update is complete.",
+    });
+    await updates.installUpdate();
+  }
+
+  async function checkForUpdates() {
+    try {
+      await updates.getUpdate(true);
+      if (updates.hasUpdate) {
+        notifyInfo("Update available!", {
+          description: updates.requiresManualInstall
+            ? "Download the latest version from kittynode.com/download."
+            : "A new version of Kittynode is ready to install.",
+        });
+      } else {
+        notifySuccess("You're up to date!", {
+          description: "No updates available at this time.",
+        });
+      }
+    } catch (e) {
+      notifyError("Failed to check for updates", e);
+    }
+  }
 </script>
 
 <div class="space-y-6">

@@ -18,7 +18,7 @@ export function notifySuccess(message: string, options?: NotifyOptions) {
 export function notifyError(
   message: string,
   error?: unknown,
-  options?: NotifyOptions,
+  options?: NotifyOptions
 ) {
   const errorMessage = error ? `${message}: ${error}` : message;
   console.error(errorMessage);
