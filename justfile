@@ -136,9 +136,9 @@ test-coverage:
 test-coverage-all:
     cargo llvm-cov nextest -- --include-ignored
 
-# show code coverage summary
+# show code coverage percentage
 coverage:
-    cargo llvm-cov --all-features --workspace
+    @cargo llvm-cov --all-features --workspace 2>&1 | awk '/^TOTAL/ {print $4}'
 
 # update dependencies
 update:
