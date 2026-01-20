@@ -136,6 +136,10 @@ test-coverage:
 test-coverage-all:
     cargo llvm-cov nextest -- --include-ignored
 
+# show code coverage summary
+coverage:
+    cargo llvm-cov --all-features --workspace
+
 # update dependencies
 update:
     nix flake update
