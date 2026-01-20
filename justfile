@@ -136,9 +136,9 @@ test-coverage:
 test-coverage-all:
     cargo llvm-cov nextest -- --include-ignored
 
-# show line coverage percentage (matches codecov)
+# show coverage with codecov percentage at the end
 coverage:
-    @cargo llvm-cov --all-features --workspace 2>&1 | awk '/^TOTAL/ {print $4}'
+    cargo llvm-cov --all-features --workspace 2>&1 | awk '{print} /^TOTAL/ {pct=$4} END {print "\ncodecov: " pct}'
 
 # update dependencies
 update:
