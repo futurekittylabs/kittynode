@@ -136,6 +136,10 @@ test-coverage:
 test-coverage-all:
     cargo llvm-cov nextest -- --include-ignored
 
+# show coverage with codecov percentage at the end
+coverage:
+    cargo llvm-cov --all-features --workspace 2>&1 | awk '{print} /^TOTAL/ {pct=$4} END {print "\ncodecov: " pct}'
+
 # update dependencies
 update:
     nix flake update
