@@ -14,9 +14,9 @@
   "dependencies": {
     "@astrojs/check": "^0.9.6",
     "@astrojs/cloudflare": "^12.6.12",
-    "@astrojs/starlight": "^0.37.3",
+    "@astrojs/starlight": "^0.37.4",
     "@fontsource-variable/literata": "^5.2.8",
-    "astro": "^5.16.11",
+    "astro": "^5.16.15",
     "sharp": "^0.34.5",
     "starlight-image-zoom": "^0.13.2",
     "starlight-links-validator": "^0.19.2",
@@ -24,6 +24,6 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "wrangler": "^4.59.2"
+    "wrangler": "^4.60.0"
   }
 }
