@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import appLogo from "../../assets/kittynode-logo-app.png";
 
 const main = "https://kittynode.com/";
@@ -7,13 +8,7 @@ const self = "/start-here/getting-started";
 
 <span class="site-title sl-flex">
   <a class="wordmark" href={main} aria-label="Kittynode">
-    <img
-      src={appLogo.src}
-      alt=""
-      class="app-logo"
-      width={appLogo.width}
-      height={appLogo.height}
-    >
+    <Image src={appLogo} alt="" class="app-logo" />
     <span class="wordmark-text">Kittynode</span>
   </a>
   <a class="docs-text" href={self} aria-label="Docs">Docs</a>
