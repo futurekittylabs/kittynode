@@ -10,7 +10,7 @@
     "knip": "knip"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.3.12",
     "knip": "^5.81.0",
     "ultracite": "7.0.11"
   },
