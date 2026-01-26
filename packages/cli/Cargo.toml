@@ -37,7 +37,7 @@ serde_json = "1.0.149"
 zeroize = "1.8"
 bip39 = { package = "tiny-bip39", version = "2" }
 arboard = "3"
-bollard = "0.19.4"
+bollard = "0.20.0"
 dunce = "1"
 
 [dev-dependencies]
