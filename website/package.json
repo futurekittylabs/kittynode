@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@internationalized/date": "^3.10.1",
-    "@lucide/svelte": "^0.563.1",
+    "@lucide/svelte": "^0.564.0",
     "@shikijs/langs": "^3.21.0",
     "@shikijs/themes": "^3.21.0",
     "@sveltejs/adapter-cloudflare": "^7.2.6",
