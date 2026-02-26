@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> Kittynode development and maintenance has taken a pause. More updates are expected in the future. Use at your own risk.
+
 # Kittynode
 
 [![CI - Rust](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-rust.yml/badge.svg)](https://github.com/futurekittylabs/kittynode/actions/workflows/ci-rust.yml)
