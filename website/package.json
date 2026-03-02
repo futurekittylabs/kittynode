@@ -16,7 +16,7 @@
     "@internationalized/date": "^3.10.1",
     "@lucide/svelte": "^0.563.1",
     "@shikijs/langs": "^3.21.0",
-    "@shikijs/themes": "^3.21.0",
+    "@shikijs/themes": "^4.0.0",
     "@sveltejs/adapter-cloudflare": "^7.2.6",
     "@sveltejs/kit": "^2.50.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
