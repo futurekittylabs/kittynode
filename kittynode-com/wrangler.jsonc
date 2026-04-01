@@ -3,9 +3,7 @@
   "name": "kittynode-com",
   "main": ".svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2025-09-10",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare"
