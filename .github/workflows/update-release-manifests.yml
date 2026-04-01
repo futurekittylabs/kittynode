@@ -70,7 +70,7 @@ jobs:
           DATE="$(date +"%B %-d, %Y")"
           case "${{ steps.meta.outputs.component }}" in
             kittynode-app)
-              FILE="website/src/lib/app-release.json"
+              FILE="kittynode-com/src/lib/app-release.json"
               mkdir -p "$(dirname "$FILE")"
               if [[ -z "${MANIFEST_FILE:-}" || ! -f "$MANIFEST_FILE" ]]; then
                 echo "Missing downloaded manifest for app release" >&2
@@ -80,7 +80,7 @@ jobs:
               mv "$FILE.tmp" "$FILE"
               ;;
             kittynode-cli)
-              FILE="website/src/lib/cli-release.json"
+              FILE="kittynode-com/src/lib/cli-release.json"
               mkdir -p "$(dirname "$FILE")"
               if [[ -f "$FILE" ]]; then
                 CONTENT=$(cat "$FILE")
@@ -126,10 +126,10 @@ jobs:
 
           case "${{ steps.meta.outputs.component }}" in
             kittynode-app)
-              TARGET_FILE="website/src/lib/app-release.json"
+              TARGET_FILE="kittynode-com/src/lib/app-release.json"
               ;;
             kittynode-cli)
-              TARGET_FILE="website/src/lib/cli-release.json"
+              TARGET_FILE="kittynode-com/src/lib/cli-release.json"
               ;;
           esac
 

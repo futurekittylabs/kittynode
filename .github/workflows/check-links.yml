@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "**/README.md"
-      - docs/**
+      - kittynode-docs/**
 
 jobs:
   check-links:
