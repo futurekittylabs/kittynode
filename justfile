@@ -11,8 +11,8 @@ clean:
     rm -rf tmp && mkdir tmp
 
 # start the docs dev server
-docs:
-    bun --cwd docs dev --open
+kittynode-docs:
+    bun --cwd kittynode-docs dev --open
 
 # generate the kittynode-core docs
 docs-rs:
@@ -29,16 +29,16 @@ icons:
     mv tmp/ios/* packages/app/src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
     rm -rf tmp
 
-# optimize homepage screenshots for the website hero
+# optimize homepage screenshots for the dot-com hero
 optimize-homepage-images:
-    bunx sharp-cli -i screenshots/app-light.png -o website/static/images/kittynode-app-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/app-light.png -o website/static/images/kittynode-app-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/app-dark.png -o website/static/images/kittynode-app-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/app-dark.png -o website/static/images/kittynode-app-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-light.png -o website/static/images/kittynode-cli-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-light.png -o website/static/images/kittynode-cli-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-dark.png -o website/static/images/kittynode-cli-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-dark.png -o website/static/images/kittynode-cli-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/app-light.png -o kittynode-com/static/images/kittynode-app-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/app-light.png -o kittynode-com/static/images/kittynode-app-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/app-dark.png -o kittynode-com/static/images/kittynode-app-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/app-dark.png -o kittynode-com/static/images/kittynode-app-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/cli-light.png -o kittynode-com/static/images/kittynode-cli-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/cli-light.png -o kittynode-com/static/images/kittynode-cli-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/cli-dark.png -o kittynode-com/static/images/kittynode-cli-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
+    bunx sharp-cli -i screenshots/cli-dark.png -o kittynode-com/static/images/kittynode-cli-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
 
 # install dev tools
 install-dev-tools:
@@ -68,11 +68,11 @@ kittynode *args='':
 
 # lint the javascript code
 lint-js:
-    bun -F docs -F app -F website format-lint && bun -F app -F website check && bun knip
+    bun -F kittynode-docs -F app -F kittynode-com format-lint && bun -F app -F kittynode-com check && bun knip
 
 # lint and fix the javascript code
 lint-js-fix:
-    bun -F docs -F app -F website format-lint:fix && bun -F app -F website check
+    bun -F kittynode-docs -F app -F kittynode-com format-lint:fix && bun -F app -F kittynode-com check
 
 # lint the rust code
 lint-rs:
@@ -144,9 +144,9 @@ coverage:
 update:
     nix flake update
     cargo upgrade
-    cd docs && bun update --latest
+    cd kittynode-docs && bun update --latest
     cd packages/app && just update-shadcn && bun update --latest
-    cd website && bun update --latest
+    cd kittynode-com && bun update --latest
     just lint-js-fix
 
 # update shadcn dependencies
@@ -157,6 +157,6 @@ update-shadcn:
 web:
     cargo run -p kittynode-web
 
-# start the website
-website:
-    bun --cwd website dev --open
+# start the dot-com site
+kittynode-com:
+    bun --cwd kittynode-com dev --open

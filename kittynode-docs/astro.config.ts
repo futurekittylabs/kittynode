@@ -23,7 +23,8 @@ export default defineConfig({
       ],
       title: "Kittynode Docs",
       editLink: {
-        baseUrl: "https://github.com/futurekittylabs/kittynode/edit/main/docs/",
+        baseUrl:
+          "https://github.com/futurekittylabs/kittynode/edit/main/kittynode-docs/",
       },
       components: {
         Footer: "./src/components/overrides/Footer.astro",

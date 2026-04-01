@@ -3,7 +3,8 @@ name: CI - JavaScript
 on:
   push:
     paths:
-      - docs/**
+      - kittynode-docs/**
+      - kittynode-com/**
       - packages/app/*
       - packages/app/src/**
 
@@ -21,10 +22,10 @@ jobs:
         run: bun install
 
       - name: Format and lint
-        run: bun -F docs -F app -F website format-lint
+        run: bun -F kittynode-docs -F app -F kittynode-com format-lint
 
       - name: Svelte check
-        run: bun -F app -F website check
+        run: bun -F app -F kittynode-com check
 
       - name: Knip
         run: bun knip

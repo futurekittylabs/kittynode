@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreExportsUsedInFile": true,
   "workspaces": {
-    "docs": {
+    "kittynode-docs": {
       "entry": ["src/styles/custom.css"],
       "ignoreDependencies": ["sharp", "wrangler"]
     },
@@ -10,7 +10,7 @@
       "entry": ["src/lib/components/ui/*/index.ts"],
       "ignoreUnresolved": ["^\\$app/.+"]
     },
-    "website": {
+    "kittynode-com": {
       "entry": ["src/lib/components/ui/*/index.ts"],
       "ignoreUnresolved": ["^\\$app/.+"]
     }

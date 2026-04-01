@@ -9,8 +9,8 @@
     "includes": [
       "!packages/app/src/app.css",
       "!packages/app/src/lib/utils.ts",
-      "!website/src/app.css",
-      "!website/src/lib/utils.ts"
+      "!kittynode-com/src/app.css",
+      "!kittynode-com/src/lib/utils.ts"
     ],
     "ignoreUnknown": false
   },
@@ -75,7 +75,7 @@
     {
       "includes": [
         "packages/app/src/lib/components/ui/**",
-        "website/src/lib/components/ui/**"
+        "kittynode-com/src/lib/components/ui/**"
       ],
       "linter": {
         "enabled": false
@@ -92,7 +92,7 @@
       }
     },
     {
-      "includes": ["docs/src/components/overrides/**"],
+      "includes": ["kittynode-docs/src/components/overrides/**"],
       "linter": {
         "rules": {
           "style": {

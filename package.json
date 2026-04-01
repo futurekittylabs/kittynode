@@ -2,9 +2,9 @@
   "name": "kittynode",
   "private": true,
   "workspaces": [
-    "docs",
+    "kittynode-docs",
     "packages/app",
-    "website"
+    "kittynode-com"
   ],
   "scripts": {
     "knip": "knip"
@@ -16,6 +16,6 @@
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",
-    "website"
+    "kittynode-com"
   ]
 }
