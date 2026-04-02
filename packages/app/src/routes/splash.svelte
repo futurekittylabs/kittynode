@@ -26,10 +26,10 @@
   let ctx: CanvasRenderingContext2D;
 
   interface NodePoint {
-    x: number;
-    y: number;
     vx: number;
     vy: number;
+    x: number;
+    y: number;
   }
 
   onMount(() => {
@@ -266,9 +266,8 @@
               <p>
                 Kittynode has <strong>not been audited</strong>, and may not be
                 using audited subcomponents at this time. It is
-                <strong
-                  >not recommended for mainnet validators</strong
-                >. For guidance on mainnet validators please visit
+                <strong>not recommended for mainnet validators</strong>. For
+                guidance on mainnet validators please visit
                 <a
                   class="link inline-flex items-center gap-1 font-medium"
                   href="https://ethereum.org/staking/solo"

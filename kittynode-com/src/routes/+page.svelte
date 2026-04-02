@@ -82,9 +82,7 @@
   <!-- Features -->
   <section class="features">
     <div class="feature">
-      <div class="feature-icon">
-        <Package class="h-6 w-6" />
-      </div>
+      <div class="feature-icon"><Package class="h-6 w-6" /></div>
       <h2>Package ecosystem</h2>
       <p>
         Ethereum nodes install as packages. Each install is secure, consistent
@@ -93,9 +91,7 @@
     </div>
 
     <div class="feature">
-      <div class="feature-icon">
-        <Layers class="h-6 w-6" />
-      </div>
+      <div class="feature-icon"><Layers class="h-6 w-6" /></div>
       <h2>One core, every surface</h2>
       <p>
         CLI, desktop, and mobile apps share the same Rust core. Write once, run
@@ -104,9 +100,7 @@
     </div>
 
     <div class="feature">
-      <div class="feature-icon">
-        <Wifi class="h-6 w-6" />
-      </div>
+      <div class="feature-icon"><Wifi class="h-6 w-6" /></div>
       <h2>Remote access</h2>
       <p>
         Monitor and manage your node from anywhere. Upgrade from your phone when
@@ -115,9 +109,7 @@
     </div>
 
     <div class="feature">
-      <div class="feature-icon">
-        <Lock class="h-6 w-6" />
-      </div>
+      <div class="feature-icon"><Lock class="h-6 w-6" /></div>
       <h2>Minimal by default</h2>
       <p>
         Tiny, auditable codebase. Capabilities are opt-in. Read-only mode until
@@ -147,30 +139,30 @@
   .hero {
     display: flex;
     flex-direction: column;
+    gap: 1.25rem;
     align-items: center;
     text-align: center;
-    gap: 1.25rem;
   }
 
   .hero h1 {
     font-size: clamp(2.1rem, 5.25vw, 3.25rem);
     font-weight: 500;
-    letter-spacing: -0.02em;
     line-height: 1.1;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
   .subtitle {
     font-size: clamp(1.1rem, 1.9vw, 1.3rem);
-    color: var(--muted-foreground);
     line-height: 1.6;
+    color: var(--muted-foreground);
   }
 
   .cta-group {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 0.75rem;
+    align-items: center;
     margin-top: 0.25rem;
   }
 
@@ -184,29 +176,29 @@
   .showcase {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 1.25rem;
+    align-items: center;
     width: 100vw;
-    margin-inline: calc(50% - 50vw);
     padding-inline: max(1.5rem, calc(50vw - 600px));
+    margin-inline: calc(50% - 50vw);
   }
 
   .screenshot-wrapper {
     width: 100%;
     max-width: 1040px;
-    border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid var(--border);
     background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     box-shadow:
       0 5px 22px rgb(0 0 0 / 0.065),
       0 0 0 1px rgb(0 0 0 / 0.02);
   }
 
   .screenshot-wrapper img {
+    display: block;
     width: 100%;
     height: auto;
-    display: block;
   }
 
   /* Features */
@@ -215,8 +207,8 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem 2.5rem;
     max-width: 800px;
-    margin-inline: auto;
     padding-inline: 1rem;
+    margin-inline: auto;
   }
 
   @media (max-width: 600px) {
@@ -237,9 +229,9 @@
     justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: var(--radius);
-    background: var(--muted);
     color: var(--primary);
+    background: var(--muted);
+    border-radius: var(--radius);
   }
 
   .feature h2 {
@@ -251,8 +243,8 @@
 
   .feature p {
     font-size: 1rem;
-    color: var(--muted-foreground);
     line-height: 1.6;
+    color: var(--muted-foreground);
   }
 
   /* Bottom CTA */
@@ -263,8 +255,8 @@
 
   .docs-link {
     display: inline-flex;
-    align-items: center;
     gap: 0.5rem;
+    align-items: center;
     font-family: "Space Grotesk Variable", sans-serif;
     font-size: 1rem;
     font-weight: 500;

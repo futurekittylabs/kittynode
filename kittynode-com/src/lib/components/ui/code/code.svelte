@@ -38,9 +38,9 @@
   :global(.dark) {
     :global(.shiki),
     :global(.shiki span) {
-      color: var(--shiki-dark) !important;
       font-style: var(--shiki-dark-font-style) !important;
       font-weight: var(--shiki-dark-font-weight) !important;
+      color: var(--shiki-dark) !important;
       text-decoration: var(--shiki-dark-text-decoration) !important;
     }
   }
@@ -48,25 +48,25 @@
   /* Shiki see: https://shiki.matsu.io/guide/dual-themes#class-based-dark-mode */
   :global(html.dark .shiki),
   :global(html.dark .shiki span) {
-    color: var(--shiki-dark) !important;
     font-style: var(--shiki-dark-font-style) !important;
     font-weight: var(--shiki-dark-font-weight) !important;
+    color: var(--shiki-dark) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
 
   :global(pre.shiki) {
-    overflow-x: auto;
-    border-radius: 0.5rem;
-    background-color: inherit;
     padding-top: 1rem;
     padding-bottom: 1rem;
+    overflow-x: auto;
     font-size: 0.875rem;
     line-height: 1.25rem;
+    background-color: inherit;
+    border-radius: 0.5rem;
   }
 
   :global(pre.shiki:not([data-code-overflow] *):not([data-code-overflow])) {
-    overflow-y: auto;
     max-height: min(100%, 650px);
+    overflow-y: auto;
   }
 
   :global(pre.shiki code) {
@@ -87,12 +87,12 @@
   }
 
   :global(pre.line-numbers .line::before) {
-    content: counter(step);
-    counter-increment: step;
     display: inline-block;
     width: 1.8rem;
     margin-right: 1.4rem;
     text-align: right;
+    content: counter(step);
+    counter-increment: step;
   }
 
   :global(pre.line-numbers .line::before) {
@@ -109,16 +109,16 @@
 
   :global(pre .line) {
     display: inline-block;
-    min-height: 1rem;
     width: 100%;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    min-height: 1rem;
     padding-top: 0.125rem;
+    padding-right: 1rem;
     padding-bottom: 0.125rem;
+    padding-left: 1rem;
   }
 
   :global(pre.line-numbers .line) {
-    padding-left: 0.5rem;
     padding-right: 0.5rem;
+    padding-left: 0.5rem;
   }
 </style>

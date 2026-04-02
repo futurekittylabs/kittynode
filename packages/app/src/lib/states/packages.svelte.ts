@@ -8,15 +8,15 @@ type CatalogStatus = "idle" | "loading" | "ready" | "error";
 type InstalledStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 
 interface CatalogState {
-  status: CatalogStatus;
-  packages: Record<string, Package>;
   error?: string;
+  packages: Record<string, Package>;
+  status: CatalogStatus;
 }
 
 interface InstalledState {
-  status: InstalledStatus;
-  packages: Record<string, Package>;
   error?: string;
+  packages: Record<string, Package>;
+  status: InstalledStatus;
 }
 
 let catalogState = $state<CatalogState>({

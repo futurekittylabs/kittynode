@@ -62,8 +62,8 @@ interface RefreshOptions {
 }
 
 interface AttachOptions {
-  name: string | null;
   enabled: boolean;
+  name: string | null;
   pollInterval?: number;
 }
 

@@ -1,9 +1,9 @@
 export interface Package {
-  name: string;
-  description: string;
-  networkName: string;
-  defaultConfig: PackageConfig;
   containers: Container[];
+  defaultConfig: PackageConfig;
+  description: string;
+  name: string;
+  networkName: string;
 }
 
 export interface PackageConfig {
@@ -11,12 +11,12 @@ export interface PackageConfig {
 }
 
 export interface Container {
-  name: string;
-  image: string;
   cmd: string[];
+  fileBindings: Binding[];
+  image: string;
+  name: string;
   portBindings: Record<string, PortBinding[]>;
   volumeBindings: Binding[];
-  fileBindings: Binding[];
 }
 
 export interface PortBinding {
@@ -25,17 +25,17 @@ export interface PortBinding {
 }
 
 export interface Binding {
-  source: string;
   destination: string;
   options?: string;
+  source: string;
 }
 
 export type InstallStatus = "notInstalled" | "partiallyInstalled" | "installed";
 export type RuntimeStatus = "notRunning" | "partiallyRunning" | "running";
 
 export interface PackageState {
-  install: InstallStatus;
-  runtime: RuntimeStatus;
   configPresent: boolean;
+  install: InstallStatus;
   missingContainers: string[];
+  runtime: RuntimeStatus;
 }

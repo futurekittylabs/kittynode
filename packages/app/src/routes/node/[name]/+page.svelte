@@ -699,8 +699,8 @@
                 : "outline"}
               onclick={() => toggleLogs("execution")}
             >
-              {activeLogTypes.includes("execution") ? "Hide" : "Show"} Execution
-              Logs
+              {activeLogTypes.includes("execution") ? "Hide" : "Show"}
+              Execution Logs
             </Button>
             <Button
               size="sm"
@@ -709,8 +709,8 @@
                 : "outline"}
               onclick={() => toggleLogs("consensus")}
             >
-              {activeLogTypes.includes("consensus") ? "Hide" : "Show"} Consensus
-              Logs
+              {activeLogTypes.includes("consensus") ? "Hide" : "Show"}
+              Consensus Logs
             </Button>
             {#if isValidatorInstalled}
               <Button
@@ -729,7 +729,8 @@
               variant={allLogsActive ? "default" : "outline"}
               onclick={toggleAllLogs}
             >
-              {allLogsActive ? "Hide" : "Show"} All Logs
+              {allLogsActive ? "Hide" : "Show"}
+              All Logs
             </Button>
           </div>
 

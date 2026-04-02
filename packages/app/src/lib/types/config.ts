@@ -1,9 +1,9 @@
 export interface KittynodeConfig {
-  capabilities: string[];
-  serverUrl: string;
-  lastServerUrl: string;
-  hasRemoteServer: boolean;
-  onboardingCompleted: boolean;
   autoStartDocker: boolean;
+  capabilities: string[];
+  hasRemoteServer: boolean;
+  lastServerUrl: string;
+  onboardingCompleted: boolean;
+  serverUrl: string;
   showTrayIcon: boolean;
 }

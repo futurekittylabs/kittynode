@@ -91,19 +91,19 @@
 <style>
   .wordmark {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    text-decoration: none;
     flex-shrink: 0;
+    gap: 0.75rem;
+    align-items: center;
+    text-decoration: none;
   }
 
   .app-logo {
-    height: 2.25rem;
+    flex-shrink: 0;
     width: 2.25rem;
-    min-height: 2.25rem;
     min-width: 2.25rem;
     max-width: none;
-    flex-shrink: 0;
+    height: 2.25rem;
+    min-height: 2.25rem;
   }
 
   .wordmark-text {

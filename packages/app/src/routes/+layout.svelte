@@ -141,7 +141,7 @@
 <Toaster position="bottom-right" richColors theme={mode.current} />
 {#if checkingOnboarding}
 <!-- Show nothing while checking onboarding status -->
-{:else if !onboardingCompleted && !initializedState.initialized}
+{:else if !(onboardingCompleted || initializedState.initialized)}
   <Splash />
 {:else}
   <Sidebar.Provider>
@@ -168,7 +168,7 @@
                 >
                   {#snippet child({ props })}
                     <a href={item.href} {...props}>
-                      <item.icon class="h-4 w-4" />
+                      <svelte:component this={item.icon} class="h-4 w-4" />
                       <span>{item.label}</span>
                     </a>
                   {/snippet}

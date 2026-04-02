@@ -188,7 +188,8 @@
         </Card.Header>
         <Card.Content>
           <div class="text-2xl font-bold">
-            {systemInfoState.systemInfo.processor.cores} cores
+            {systemInfoState.systemInfo.processor.cores}
+            cores
           </div>
           <p class="text-xs text-muted-foreground">
             {systemInfoState.systemInfo.processor.name}
@@ -424,9 +425,9 @@
       </Card.Root>
     {:else if featuredAvailablePackages && featuredAvailablePackages.length > 0}
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {#each featuredAvailablePackages as [name, pkg]}
+        {#each featuredAvailablePackages as [ name, pkg ]}
           <PackageCard
-            name={name}
+            {name}
             description={pkg.description}
             onManage={managePackage}
             onInstalled={managePackage}

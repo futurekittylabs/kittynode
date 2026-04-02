@@ -1,14 +1,14 @@
 export interface SystemInfo {
-  processor: ProcessorInfo;
   memory: MemoryInfo;
+  processor: ProcessorInfo;
   storage: StorageInfo;
 }
 
 export interface ProcessorInfo {
-  name: string;
+  architecture: string;
   cores: number;
   frequencyGhz: number;
-  architecture: string;
+  name: string;
 }
 
 export interface MemoryInfo {
@@ -21,12 +21,12 @@ export interface StorageInfo {
 }
 
 export interface DiskInfo {
-  name: string;
-  mountPoint: string;
-  totalBytes: number;
   availableBytes: number;
-  totalDisplay: string;
-  usedDisplay: string;
   availableDisplay: string;
   diskType: string;
+  mountPoint: string;
+  name: string;
+  totalBytes: number;
+  totalDisplay: string;
+  usedDisplay: string;
 }
