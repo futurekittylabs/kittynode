@@ -7,12 +7,10 @@
       "ignoreDependencies": ["sharp", "wrangler"]
     },
     "packages/app": {
-      "entry": ["src/lib/components/ui/*/index.ts"],
-      "ignoreUnresolved": ["^\\$app/.+"]
+      "entry": ["src/lib/components/ui/*/index.ts"]
     },
     "kittynode-com": {
-      "entry": ["src/lib/components/ui/*/index.ts"],
-      "ignoreUnresolved": ["^\\$app/.+"]
+      "entry": ["src/lib/components/ui/*/index.ts"]
     }
   }
 }
