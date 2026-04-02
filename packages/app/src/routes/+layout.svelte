@@ -5,7 +5,6 @@
     Globe,
     HeartPulse,
     House,
-    MessageCircleMore,
     Package2,
     Settings,
     Unlink,
@@ -223,27 +222,6 @@
           </Sidebar.Group>
         {/if}
       </Sidebar.Content>
-
-      <Sidebar.Footer class="px-2 py-2 md:p-2">
-        <Sidebar.Separator />
-        <Sidebar.Menu>
-          <Sidebar.MenuItem>
-            <Sidebar.MenuButton>
-              {#snippet child({ props })}
-                <a
-                  href="https://discord.kittynode.com"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  {...props}
-                >
-                  <MessageCircleMore class="h-4 w-4" />
-                  <span>Discord</span>
-                </a>
-              {/snippet}
-            </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
-        </Sidebar.Menu>
-      </Sidebar.Footer>
 
       <Sidebar.Rail />
     </Sidebar.Root>
