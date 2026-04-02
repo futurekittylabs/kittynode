@@ -161,6 +161,7 @@
         <Sidebar.Group class="px-2 py-2 md:p-2">
           <Sidebar.Menu>
             {#each navigationItems as item}
+              {@const Icon = item.icon}
               <Sidebar.MenuItem>
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href ||
@@ -168,7 +169,7 @@
                 >
                   {#snippet child({ props })}
                     <a href={item.href} {...props}>
-                      <svelte:component this={item.icon} class="h-4 w-4" />
+                      <Icon class="h-4 w-4" />
                       <span>{item.label}</span>
                     </a>
                   {/snippet}
