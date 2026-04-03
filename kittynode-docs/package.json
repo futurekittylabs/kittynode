@@ -21,7 +21,7 @@
     "starlight-image-zoom": "^0.13.2",
     "starlight-links-validator": "^0.19.2",
     "starlight-llms-txt": "^0.7.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "devDependencies": {
     "wrangler": "^4.60.0"
