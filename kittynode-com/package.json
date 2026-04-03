@@ -21,7 +21,7 @@
     "@sveltejs/kit": "^2.50.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@tailwindcss/vite": "^4.1.18",
-    "bits-ui": "^2.15.4",
+    "bits-ui": "^2.16.5",
     "clsx": "^2.1.1",
     "runed": "^0.37.1",
     "shiki": "^3.21.0",
