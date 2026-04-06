@@ -14,7 +14,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-os": "^2.3.2",
-    "@tauri-apps/plugin-updater": "^2.9.0",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "ansi-to-html": "^0.7.2",
     "mode-watcher": "^1.1.0",
     "semver": "^7.7.3",
