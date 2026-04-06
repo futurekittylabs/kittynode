@@ -12,7 +12,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "knip": "^5.81.0",
-    "ultracite": "7.2.4"
+    "ultracite": "7.4.3"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",
