@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { ArrowRight, Layers, Lock, Package, Wifi } from "@lucide/svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
+import { ArrowRight, Layers, Lock, Package, Wifi } from "@lucide/svelte";
+import { Button } from "$lib/components/ui/button/index.js";
+import * as Tabs from "$lib/components/ui/tabs/index.js";
 
-  const screenshots = {
-    app: {
-      label: "Desktop",
-      alt: "Kittynode desktop app dashboard",
-      height: 602,
-    },
-    cli: {
-      label: "Terminal",
-      alt: "Kittynode command-line interface overview",
-      height: 602,
-    },
-  } as const;
+const screenshots = {
+  app: {
+    label: "Desktop",
+    alt: "Kittynode desktop app dashboard",
+    height: 602,
+  },
+  cli: {
+    label: "Terminal",
+    alt: "Kittynode command-line interface overview",
+    height: 602,
+  },
+} as const;
 
-  type ScreenshotId = keyof typeof screenshots;
-  const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
+type ScreenshotId = keyof typeof screenshots;
+const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
 
-  const src = (id: ScreenshotId, theme: "light" | "dark") =>
-    `/images/kittynode-${id}-${theme}-960.webp`;
-  const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
-    `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
+const src = (id: ScreenshotId, theme: "light" | "dark") =>
+  `/images/kittynode-${id}-${theme}-960.webp`;
+const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
+  `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
 
-  let active: ScreenshotId = $state("app");
+let active: ScreenshotId = $state("app");
 </script>
 
 <div class="page">

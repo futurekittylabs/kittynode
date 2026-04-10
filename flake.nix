@@ -18,7 +18,6 @@
   # Flake outputs that other flakes can use
   outputs =
     {
-      self,
       flake-schemas,
       nixpkgs,
       rust-overlay,
@@ -57,33 +56,16 @@
         {
           default = pkgs.mkShell {
             # Pinned packages available in the environment
-            packages =
-              with pkgs;
-              [
-                rustToolchain
-                cargo-edit
-                cargo-udeps
-                cargo-nextest
-                nixpkgs-fmt
-                just
-                bun
-                cargo-tauri
-                nodejs
-                git
-              ]
-              # Linux-only system dependencies for Tauri
-              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-                pkgs.webkitgtk_4_1 # libwebkit2gtk-4.1-dev
-                pkgs.gcc # build-essential → gcc/g++
-                pkgs.gnumake # build-essential → make
-                pkgs.curl # curl
-                pkgs.wget # wget
-                pkgs.file # file
-                pkgs.xdotool # libxdo-dev
-                pkgs.openssl # libssl-dev
-                pkgs.libayatana-appindicator # libayatana-appindicator3-dev
-                pkgs.librsvg # librsvg2-dev
-              ];
+            packages = with pkgs; [
+              rustToolchain
+              cargo-edit
+              cargo-udeps
+              cargo-nextest
+              nixpkgs-fmt
+              just
+              bun
+              git
+            ];
             # Environment variables
             env = {
               RUST_BACKTRACE = "1";

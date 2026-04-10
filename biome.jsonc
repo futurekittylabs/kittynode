@@ -6,12 +6,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "!packages/app/src/app.css",
-      "!packages/app/src/lib/utils.ts",
-      "!kittynode-com/src/app.css",
-      "!kittynode-com/src/lib/utils.ts"
-    ],
     "ignoreUnknown": false
   },
   "formatter": {
@@ -20,7 +14,8 @@
   },
   "css": {
     "parser": {
-      "cssModules": true
+      "cssModules": true,
+      "tailwindDirectives": true
     }
   },
   "linter": {
@@ -28,16 +23,6 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noRestrictedImports": {
-          "level": "error",
-          "options": {
-            "paths": {
-              "@tauri-apps/api/core": {
-                "message": "Import invoke via $lib/client instead of using @tauri-apps/api/core directly."
-              }
-            }
-          }
-        },
         "noNestedTernary": "off"
       },
       "complexity": {
@@ -55,7 +40,10 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.svelte", "**/*.astro"],
+      "includes": [
+        "**/*.svelte",
+        "**/*.astro"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -75,7 +63,6 @@
     },
     {
       "includes": [
-        "packages/app/src/lib/components/ui/**",
         "kittynode-com/src/lib/components/ui/**"
       ],
       "linter": {
@@ -83,17 +70,9 @@
       }
     },
     {
-      "includes": ["packages/app/src/lib/client.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["kittynode-docs/src/components/overrides/**"],
+      "includes": [
+        "kittynode-docs/src/components/overrides/**"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -103,7 +82,9 @@
       }
     },
     {
-      "includes": ["**/app.d.ts"],
+      "includes": [
+        "**/app.d.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -112,6 +93,5 @@
         }
       }
     }
-  ],
-  "extends": ["ultracite/biome/core", "ultracite/biome/svelte"]
+  ]
 }

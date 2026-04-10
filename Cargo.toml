@@ -2,7 +2,6 @@
 members = [
   "packages/cli",
   "packages/core",
-  "packages/app/src-tauri",
   "packages/web",
 ]
 resolver = "2"

@@ -11,8 +11,6 @@ node_modules
 dist
 build
 target
-gen
-!**/gen-overrides/**
 
 # OS
 .DS_Store

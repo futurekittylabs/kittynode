@@ -5,8 +5,6 @@ on:
     paths:
       - kittynode-docs/**
       - kittynode-com/**
-      - packages/app/*
-      - packages/app/src/**
 
 jobs:
   format-lint:
@@ -22,10 +20,7 @@ jobs:
         run: bun install
 
       - name: Format and lint
-        run: bun -F kittynode-docs -F app -F kittynode-com format-lint
+        run: bun -F kittynode-docs -F kittynode-com format-lint
 
       - name: Svelte check
-        run: bun -F app -F kittynode-com check
-
-      - name: Knip
-        run: bun knip
+        run: bun -F kittynode-com check
