@@ -3,6 +3,8 @@ name: CI - Rust
 on:
   push:
     paths:
+      - Cargo.toml
+      - Cargo.lock
       - packages/cli/**
       - packages/core/**
       - packages/web/**

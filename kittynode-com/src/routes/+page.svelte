@@ -1,30 +1,16 @@
 <script lang="ts">
 import { ArrowRight, Layers, Lock, Package, Wifi } from "@lucide/svelte";
 import { Button } from "$lib/components/ui/button/index.js";
-import * as Tabs from "$lib/components/ui/tabs/index.js";
 
-const screenshots = {
-  app: {
-    label: "Desktop",
-    alt: "Kittynode desktop app dashboard",
-    height: 602,
-  },
-  cli: {
-    label: "Terminal",
-    alt: "Kittynode command-line interface overview",
-    height: 602,
-  },
-} as const;
+const screenshot = {
+  alt: "Kittynode command-line interface overview",
+  height: 602,
+};
 
-type ScreenshotId = keyof typeof screenshots;
-const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
-
-const src = (id: ScreenshotId, theme: "light" | "dark") =>
-  `/images/kittynode-${id}-${theme}-960.webp`;
-const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
-  `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
-
-let active: ScreenshotId = $state("app");
+const src = (theme: "light" | "dark") =>
+  `/images/kittynode-cli-${theme}-960.webp`;
+const srcset = (theme: "light" | "dark") =>
+  `${src(theme)} 960w, ${src(theme).replace("-960", "-1920")} 1920w`;
 </script>
 
 <div class="page">
@@ -45,33 +31,23 @@ let active: ScreenshotId = $state("app");
 
   <!-- Screenshot showcase -->
   <section class="showcase">
-    <Tabs.Root bind:value={active}>
-      <Tabs.List aria-label="Screenshot view" class="h-10">
-        {#each screenshotIds as id}
-          <Tabs.Trigger value={id} class="px-5">
-            {screenshots[id].label}
-          </Tabs.Trigger>
-        {/each}
-      </Tabs.List>
-    </Tabs.Root>
-
     <div class="screenshot-wrapper">
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcset={srcset(active, "dark")}
+          srcset={srcset("dark")}
           sizes="(min-width: 1200px) 1100px, 92vw"
         >
         <source
           media="(prefers-color-scheme: light)"
-          srcset={srcset(active, "light")}
+          srcset={srcset("light")}
           sizes="(min-width: 1200px) 1100px, 92vw"
         >
         <img
-          src={src(active, "light")}
-          alt={screenshots[active].alt}
+          src={src("light")}
+          alt={screenshot.alt}
           width="1920"
-          height={screenshots[active].height * 2}
+          height={screenshot.height * 2}
           loading="eager"
           decoding="async"
         >
@@ -94,8 +70,8 @@ let active: ScreenshotId = $state("app");
       <div class="feature-icon"><Layers class="h-6 w-6" /></div>
       <h2>One core, every surface</h2>
       <p>
-        CLI, desktop, and mobile apps share the same Rust core. Write once, run
-        everywhere.
+        The CLI and web service share the same Rust core. Keep the surface area
+        small without splitting the logic.
       </p>
     </div>
 

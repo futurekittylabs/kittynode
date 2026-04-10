@@ -3,6 +3,8 @@ name: CI - JavaScript
 on:
   push:
     paths:
+      - package.json
+      - bun.lock
       - kittynode-docs/**
       - kittynode-com/**
 
