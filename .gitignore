@@ -11,8 +11,6 @@ node_modules
 dist
 build
 target
-gen
-!**/gen-overrides/**
 
 # OS
 .DS_Store
@@ -34,9 +32,6 @@ tmp
 
 # Nix
 .direnv
-
-# Local screenshot images used to generate optimized homepage images
-screenshots
 
 # Agents
 AGENTS.md

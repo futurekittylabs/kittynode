@@ -775,7 +775,7 @@ fn render(frame: &mut Frame, state: &InitState) {
                 "The validator client will wait for activation. Press any key to exit.",
             ));
             lines.push(Line::from(
-                "Monitor progress with the Kittynode app, and soon with `kittynode monitor`.",
+                "Monitor progress soon with `kittynode monitor`.",
             ));
         }
         Step::Done => {}

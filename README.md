@@ -17,11 +17,6 @@ Download Kittynode at [kittynode.com](https://kittynode.com).
 
 View the documentation at [docs.kittynode.com](https://docs.kittynode.com).
 
-## Community
-
-- [Discord](https://discord.gg/kittynode)
-- [Farcaster](https://farcaster.xyz/kittynode)
-
 ## License
 
 Kittynode is free software released under the [MIT License](LICENSE).

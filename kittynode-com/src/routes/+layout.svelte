@@ -1,9 +1,8 @@
 <script lang="ts">
-  import "../app.css";
-  import { ModeWatcher } from "mode-watcher";
-  import { page } from "$app/state";
+import "../app.css";
+import { ModeWatcher } from "mode-watcher";
 
-  let { children } = $props();
+let { children } = $props();
 </script>
 
 <ModeWatcher />
@@ -49,14 +48,6 @@
         >
           Docs
         </a>
-        <a
-          href="/download"
-          class="nav-link"
-          class:text-link={page.url.pathname === "/download"}
-          aria-current={page.url.pathname === "/download" ? "page" : undefined}
-        >
-          Download
-        </a>
       </nav>
     </header>
 
@@ -65,16 +56,13 @@
     <footer class="border-t py-6">
       <div class="flex flex-col items-center gap-5">
         <div class="flex items-center gap-8 text-sm">
-          <a href="https://discord.kittynode.com" class="nav-link"> Discord </a>
-          <a href="https://farcaster.xyz/kittynode" class="nav-link">
-            Farcaster
-          </a>
           <a
             href="https://github.com/futurekittylabs/kittynode"
             class="nav-link"
           >
             GitHub
           </a>
+          <a href="https://x.com/kittynode" class="nav-link">X</a>
         </div>
         <div class="text-center text-sm text-muted-foreground">
           Kittynode is

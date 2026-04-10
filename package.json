@@ -2,20 +2,10 @@
   "name": "kittynode",
   "private": true,
   "workspaces": [
-    "kittynode-docs",
-    "packages/app",
-    "kittynode-com"
+    "kittynode-com",
+    "kittynode-docs"
   ],
-  "scripts": {
-    "knip": "knip"
-  },
   "devDependencies": {
-    "@biomejs/biome": "2.4.4",
-    "knip": "^5.81.0",
-    "ultracite": "7.2.4"
-  },
-  "trustedDependencies": [
-    "@tailwindcss/oxide",
-    "kittynode-com"
-  ]
+    "@biomejs/biome": "2.4.4"
+  }
 }

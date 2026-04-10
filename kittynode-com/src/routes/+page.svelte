@@ -1,82 +1,59 @@
 <script lang="ts">
-  import { ArrowRight, Layers, Lock, Package, Wifi } from "@lucide/svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
+import { Layers, Lock, Package, Wifi } from "@lucide/svelte";
+import cliRelease from "$lib/cli-release.json";
+import * as Code from "$lib/components/ui/code";
 
-  const screenshots = {
-    app: {
-      label: "Desktop",
-      alt: "Kittynode desktop app dashboard",
-      height: 602,
-    },
-    cli: {
-      label: "Terminal",
-      alt: "Kittynode command-line interface overview",
-      height: 602,
-    },
-  } as const;
+const { version: cliVersion, date: cliPubDate } = cliRelease;
 
-  type ScreenshotId = keyof typeof screenshots;
-  const screenshotIds = Object.keys(screenshots) as ScreenshotId[];
+const baseUrl = "https://github.com/futurekittylabs/kittynode";
+const changelogUrl = `${baseUrl}/releases`;
 
-  const src = (id: ScreenshotId, theme: "light" | "dark") =>
-    `/images/kittynode-${id}-${theme}-960.webp`;
-  const srcset = (id: ScreenshotId, theme: "light" | "dark") =>
-    `${src(id, theme)} 960w, ${src(id, theme).replace("-960", "-1920")} 1920w`;
+const releaseDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
 
-  let active: ScreenshotId = $state("app");
+function formatReleaseDate(pubDate: string | undefined): string {
+  if (!pubDate) return "";
+  const parsed = new Date(pubDate);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return releaseDateFormatter.format(parsed);
+}
+
+const cliReleaseDate = formatReleaseDate(cliPubDate);
+const cliVersionLabel = `Version ${cliVersion}`;
+
+const installCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh`;
 </script>
 
 <div class="page">
   <!-- Hero -->
-  <section class="hero">
+  <section class="section">
     <h1>Run Ethereum at home</h1>
     <p class="subtitle">
       Kittynode is a control center for world computer operators.
     </p>
-    <div class="cta-group">
-      <Button href="/download" size="lg" class="gap-2">
-        Download
-        <ArrowRight class="h-5 w-5" />
-      </Button>
-      <span class="platforms">Linux, macOS, Windows</span>
-    </div>
   </section>
 
-  <!-- Screenshot showcase -->
-  <section class="showcase">
-    <Tabs.Root bind:value={active}>
-      <Tabs.List aria-label="Screenshot view" class="h-10">
-        {#each screenshotIds as id}
-          <Tabs.Trigger value={id} class="px-5">
-            {screenshots[id].label}
-          </Tabs.Trigger>
-        {/each}
-      </Tabs.List>
-    </Tabs.Root>
-
-    <div class="screenshot-wrapper">
-      <picture>
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcset={srcset(active, "dark")}
-          sizes="(min-width: 1200px) 1100px, 92vw"
-        >
-        <source
-          media="(prefers-color-scheme: light)"
-          srcset={srcset(active, "light")}
-          sizes="(min-width: 1200px) 1100px, 92vw"
-        >
-        <img
-          src={src(active, "light")}
-          alt={screenshots[active].alt}
-          width="1920"
-          height={screenshots[active].height * 2}
-          loading="eager"
-          decoding="async"
-        >
-      </picture>
+  <!-- Install -->
+  <section class="section">
+    <p class="install-heading">Run Ethereum with a single command:</p>
+    <div class="install">
+      <Code.Root
+        lang="bash"
+        code={installCommand}
+        hideLines
+      >
+        <Code.CopyButton variant="secondary" />
+      </Code.Root>
     </div>
+    <p class="version">
+      <a href={changelogUrl} class="link">{cliVersionLabel}</a>
+      {#if cliReleaseDate}
+        — {cliReleaseDate}
+      {/if}
+    </p>
   </section>
 
   <!-- Features -->
@@ -94,8 +71,8 @@
       <div class="feature-icon"><Layers class="h-6 w-6" /></div>
       <h2>One core, every surface</h2>
       <p>
-        CLI, desktop, and mobile apps share the same Rust core. Write once, run
-        everywhere.
+        The CLI and web service share the same Rust core. Keep the surface area
+        small without splitting the logic.
       </p>
     </div>
 
@@ -117,14 +94,6 @@
       </p>
     </div>
   </section>
-
-  <!-- Bottom CTA -->
-  <section class="bottom-cta">
-    <a href="https://docs.kittynode.com" class="docs-link">
-      Read the docs
-      <ArrowRight class="h-4 w-4" />
-    </a>
-  </section>
 </div>
 
 <style>
@@ -135,8 +104,7 @@
     padding-block: clamp(3rem, 8vw, 5rem);
   }
 
-  /* Hero */
-  .hero {
+  .section {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -144,8 +112,8 @@
     text-align: center;
   }
 
-  .hero h1 {
-    font-size: clamp(2.1rem, 5.25vw, 3.25rem);
+  .section h1 {
+    font-size: clamp(1.85rem, 4.5vw, 2.75rem);
     font-weight: 500;
     line-height: 1.1;
     letter-spacing: -0.02em;
@@ -158,47 +126,24 @@
     color: var(--muted-foreground);
   }
 
-  .cta-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: center;
-    margin-top: 0.25rem;
-  }
-
-  .platforms {
-    font-family: "Space Grotesk Variable", sans-serif;
+  .install-heading {
+    font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 0.875rem;
     color: var(--muted-foreground);
   }
 
-  /* Screenshot showcase - break out of container */
-  .showcase {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    align-items: center;
-    width: 100vw;
-    padding-inline: max(1.5rem, calc(50vw - 600px));
-    margin-inline: calc(50% - 50vw);
+  .version {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
   }
 
-  .screenshot-wrapper {
-    width: 100%;
-    max-width: 1040px;
-    overflow: hidden;
-    background: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow:
-      0 5px 22px rgb(0 0 0 / 0.065),
-      0 0 0 1px rgb(0 0 0 / 0.02);
+  .install {
+    max-width: 100%;
   }
 
-  .screenshot-wrapper img {
-    display: block;
-    width: 100%;
-    height: auto;
+  .install :global(pre .line) {
+    padding-right: 3.5rem;
   }
 
   /* Features */
@@ -245,27 +190,5 @@
     font-size: 1rem;
     line-height: 1.6;
     color: var(--muted-foreground);
-  }
-
-  /* Bottom CTA */
-  .bottom-cta {
-    display: flex;
-    justify-content: center;
-  }
-
-  .docs-link {
-    display: inline-flex;
-    gap: 0.5rem;
-    align-items: center;
-    font-family: "Space Grotesk Variable", sans-serif;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--muted-foreground);
-    text-decoration: none;
-    transition: color 0.15s ease;
-  }
-
-  .docs-link:hover {
-    color: var(--foreground);
   }
 </style>

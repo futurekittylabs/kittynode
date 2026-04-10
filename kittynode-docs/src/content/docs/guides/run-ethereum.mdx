@@ -38,10 +38,6 @@ This guide covers how to run Ethereum with Kittynode.
     kittynode validator init
     ```
 
-3. Optionally, monitor your validator with the desktop app:
-
-   [Download the Kittynode app](https://kittynode.com/download) (available for Linux, macOS, and Windows).
-
 </Steps>
 
 ## Hardware requirements
@@ -70,68 +66,8 @@ For additional information please refer to:
     sudo apt install -y build-essential curl git
     ```
 
-3. Install Tailscale:
-
-    ```bash
-    curl -fsSL https://tailscale.com/install.sh | sh
-    ```
-
-</Steps>
-
-### Set up SSH access over Tailscale
-
-<Steps>
-
-1. Install openssh-server:
-
-    ```bash
-    sudo apt update
-    sudo apt install -y openssh-server
-    ```
-
-2. Enable and start the SSH service:
-
-    ```bash
-    sudo systemctl enable ssh
-    sudo systemctl start ssh
-    ```
-
 </Steps>
 
 ### Install Docker
 
-Follow the [Set up Docker](https://docs.kittynode.com/guides/set-up-docker) guide (Linux tab) before continuing.
-
-### Connect to remote Kittynode
-
-<Steps>
-
-1. Install Kittynode CLI:
-
-    <Tabs>
-      <TabItem label="Linux">
-        ```bash
-        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
-        ```
-      </TabItem>
-      <TabItem label="macOS">
-        ```bash
-        curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.com/sh | sh
-        ```
-      </TabItem>
-      <TabItem label="Windows">
-        ```bash
-        powershell -ExecutionPolicy Bypass -c "irm https://kittynode.com/ps1 | iex"
-        ```
-      </TabItem>
-    </Tabs>
-
-2. Start the local web server:
-
-    ```bash
-    kittynode web start
-    ```
-
-3. Open the [Kittynode desktop app](https://kittynode.com/download), visit settings, and connect to the remote server.
-
-</Steps>
+[Set up Docker](https://docs.kittynode.com/guides/set-up-docker) before continuing.

@@ -15,32 +15,19 @@ jobs:
   update-release-manifests:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine component metadata
+      - name: Extract version from tag
         id: meta
         shell: bash
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
 
-          if [[ -z "$TAG" ]]; then
-            echo "Missing ref name from caller context" >&2
+          if [[ "$TAG" != kittynode-cli-* ]]; then
+            echo "Unrecognized tag '$TAG'; refusing to update release.json" >&2
             exit 1
           fi
 
-          case "$TAG" in
-            kittynode-app-*)
-              echo "component=kittynode-app" >> "$GITHUB_OUTPUT"
-              echo "version=${TAG#kittynode-app-}" >> "$GITHUB_OUTPUT"
-              ;;
-            kittynode-cli-*)
-              echo "component=kittynode-cli" >> "$GITHUB_OUTPUT"
-              echo "version=${TAG#kittynode-cli-}" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unrecognized tag '$TAG'; refusing to update release.json" >&2
-              exit 1
-              ;;
-          esac
+          echo "version=${TAG#kittynode-cli-}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -48,56 +35,23 @@ jobs:
           ref: main
           token: ${{ secrets.MAYUSHII_PAT }}
 
-      - name: Download desktop updater manifest
-        if: steps.meta.outputs.component == 'kittynode-app'
-        id: download_manifest
-        shell: bash
-        env:
-          TAG: ${{ github.ref_name }}
-          GH_TOKEN: ${{ secrets.MAYUSHII_PAT }}
-        run: |
-          set -euo pipefail
-          MANIFEST_FILE="$RUNNER_TEMP/app-latest.json"
-          gh release download "$TAG" --pattern latest.json --output "$MANIFEST_FILE" --clobber
-          echo "path=$MANIFEST_FILE" >> "$GITHUB_OUTPUT"
-
       - name: Update release metadata
         shell: bash
-        env:
-          MANIFEST_FILE: ${{ steps.download_manifest.outputs.path }}
         run: |
           set -euo pipefail
           DATE="$(date +"%B %-d, %Y")"
-          case "${{ steps.meta.outputs.component }}" in
-            kittynode-app)
-              FILE="kittynode-com/src/lib/app-release.json"
-              mkdir -p "$(dirname "$FILE")"
-              if [[ -z "${MANIFEST_FILE:-}" || ! -f "$MANIFEST_FILE" ]]; then
-                echo "Missing downloaded manifest for app release" >&2
-                exit 1
-              fi
-              jq . "$MANIFEST_FILE" > "$FILE.tmp"
-              mv "$FILE.tmp" "$FILE"
-              ;;
-            kittynode-cli)
-              FILE="kittynode-com/src/lib/cli-release.json"
-              mkdir -p "$(dirname "$FILE")"
-              if [[ -f "$FILE" ]]; then
-                CONTENT=$(cat "$FILE")
-              else
-                CONTENT='{}'
-              fi
-              echo "$CONTENT" \
-              | jq --arg ver "${{ steps.meta.outputs.version }}" --arg date "$DATE" \
-                   '. as $in | .version = $ver | .date = $date' \
-              > "$FILE.tmp"
-              mv "$FILE.tmp" "$FILE"
-              ;;
-            *)
-              echo "Unexpected component ${{ steps.meta.outputs.component }}" >&2
-              exit 1
-              ;;
-          esac
+          FILE="kittynode-com/src/lib/cli-release.json"
+          mkdir -p "$(dirname "$FILE")"
+          if [[ -f "$FILE" ]]; then
+            CONTENT=$(cat "$FILE")
+          else
+            CONTENT='{}'
+          fi
+          echo "$CONTENT" \
+          | jq --arg ver "${{ steps.meta.outputs.version }}" --arg date "$DATE" \
+               '. as $in | .version = $ver | .date = $date' \
+          > "$FILE.tmp"
+          mv "$FILE.tmp" "$FILE"
 
       - name: Install signing key
         shell: bash
@@ -124,22 +78,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          case "${{ steps.meta.outputs.component }}" in
-            kittynode-app)
-              TARGET_FILE="kittynode-com/src/lib/app-release.json"
-              ;;
-            kittynode-cli)
-              TARGET_FILE="kittynode-com/src/lib/cli-release.json"
-              ;;
-          esac
+          FILE="kittynode-com/src/lib/cli-release.json"
 
-          if git diff --quiet "$TARGET_FILE"; then
+          if git diff --quiet "$FILE"; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git add "$TARGET_FILE"
-          git commit -m "Update ${TARGET_FILE##*/}: ${{ steps.meta.outputs.version }}"
+          git add "$FILE"
+          git commit -m "Update cli-release.json: ${{ steps.meta.outputs.version }}"
 
           git pull --rebase origin main
           git push

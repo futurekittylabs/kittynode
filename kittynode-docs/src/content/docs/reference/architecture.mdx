@@ -15,7 +15,6 @@ Kittynode is split into four crates. These boundaries let us reason clearly abou
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
 | `kittynode-core`   | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
 | `kittynode-cli`    | Thin wrapper that forwards subcommands to kittynode-core and can spin up kittynode-web                     |
-| `kittynode-tauri`  | Tauri desktop/mobile shell that communicates with kittynode-core over IPC or HTTP                          |
 | `kittynode-web`    | Axum HTTP service that exposes the core API for remote management and automation                           |
 
 ### Core API facade
@@ -36,17 +35,9 @@ This split keeps privileged logic small and makes it straightforward to add new 
 
 ## User facing apps
 
-Kittynode has three user facing apps:
+Kittynode has one user facing app: the command line interface (CLI).
 
-- A command line interface.
-- A desktop app.
-- A mobile app.
-
-Every app uses the same core library, and the desktop/mobile app uses the same frontend code. By re-using components, Kittynode is smaller, easier to audit, and more secure.
-
-The Tauri app switches between a local IPC client and an HTTP client (`kittynode-web`) based on the configured server URL. This allows us to manage a remote node without changing any UI code.
-
-Remote mode disables sensitive flows like key generation on the controlling device, but still surfaces live status from the node. The `kittynode-web` process is invoked from the CLI app. When operators execute the `kittynode-web` command, a background process spawns and runs the HTTP web server.
+The CLI is an imperative shell that invokes the core library. By separating a reusable core, Kittynode is simple, well tested, and extensible to other imperative app shells.
 
 ## Capabilities
 
