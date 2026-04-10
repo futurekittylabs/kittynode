@@ -10,13 +10,6 @@ kittynode-docs:
 docs-rs:
     cargo doc -p kittynode-core
 
-# optimize homepage screenshots for the dot-com hero
-optimize-homepage-images:
-    bunx sharp-cli -i screenshots/cli-light.png -o kittynode-com/static/images/kittynode-cli-light-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-light.png -o kittynode-com/static/images/kittynode-cli-light-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-dark.png -o kittynode-com/static/images/kittynode-cli-dark-960.webp resize 960 --withoutEnlargement -f webp -q 80
-    bunx sharp-cli -i screenshots/cli-dark.png -o kittynode-com/static/images/kittynode-cli-dark-1920.webp resize 1920 --withoutEnlargement -f webp -q 80
-
 # install dev tools
 install-dev-tools:
     cargo install cargo-edit cargo-llvm-cov cargo-nextest just
