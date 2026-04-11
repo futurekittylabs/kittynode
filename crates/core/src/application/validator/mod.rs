@@ -1,3 +1,4 @@
+mod deposit;
 mod input_validation;
 mod keygen;
 
