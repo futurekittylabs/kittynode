@@ -2565,7 +2565,7 @@ dependencies = [
 [[package]]
 name = "num-bigint-dig"
 version = "0.8.6"
-source = "git+https://github.com/dignifiedquire/num-bigint?tag=v0.8.6#1eb690d9170870c186a2795071482cfa472a170a"
+source = "git+https://github.com/dignifiedquire/num-bigint?rev=1eb690d9#1eb690d9170870c186a2795071482cfa472a170a"
 dependencies = [
  "lazy_static",
  "libm",

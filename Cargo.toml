@@ -15,8 +15,10 @@ repository = "https://github.com/futurekittylabs/kittynode"
 license = "MIT"
 publish = false
 
+# Patch num-bigint-dig 0.8.4 -> 0.8.6 to fix future Rust compat warning (private vec! macro).
+# Pulled in transitively via eth2_key_derivation in lighthouse. Remove when upstream bumps it.
 [patch.crates-io]
-num-bigint-dig = { git = "https://github.com/dignifiedquire/num-bigint", tag = "v0.8.6" }
+num-bigint-dig = { git = "https://github.com/dignifiedquire/num-bigint", rev = "1eb690d9" }
 
 # The profile that 'dist' will build with
 [profile.dist]
