@@ -2,8 +2,8 @@ pub mod validator;
 
 use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
-    Config, OperationalMode, OperationalState, Package, PackageConfig, RuntimeStatus, SystemInfo,
-    ServerStatus,
+    Config, OperationalMode, OperationalState, Package, PackageConfig, RuntimeStatus, ServerStatus,
+    SystemInfo,
 };
 use kittynode_core::api::{self, DEFAULT_SERVER_PORT, validate_server_port};
 use std::collections::{HashMap, VecDeque};
@@ -328,8 +328,9 @@ pub fn restart_server(port: Option<u16>) -> Result<()> {
     let port = match port {
         Some(port) => Some(port),
         None => match api::get_server_status()? {
-            ServerStatus::Started { port, .. }
-            | ServerStatus::AlreadyRunning { port, .. } => Some(port),
+            ServerStatus::Started { port, .. } | ServerStatus::AlreadyRunning { port, .. } => {
+                Some(port)
+            }
             _ => None,
         },
     };
@@ -342,8 +343,7 @@ pub fn restart_server(port: Option<u16>) -> Result<()> {
 
 pub fn server_status() -> Result<()> {
     match api::get_server_status()? {
-        ServerStatus::Started { pid, port }
-        | ServerStatus::AlreadyRunning { pid, port } => {
+        ServerStatus::Started { pid, port } | ServerStatus::AlreadyRunning { pid, port } => {
             println!("Kittynode server running on port {port} (pid {pid})");
             if let Ok(path) = api::get_server_log_path() {
                 println!("Logs: {}", path.display());
@@ -361,8 +361,7 @@ pub fn server_status() -> Result<()> {
 
 pub fn server_logs(follow: bool, tail: Option<usize>) -> Result<()> {
     let tail = tail.filter(|value| *value > 0);
-    let path =
-        api::get_server_log_path().wrap_err("Failed to locate kittynode server logs")?;
+    let path = api::get_server_log_path().wrap_err("Failed to locate kittynode server logs")?;
     stream_log_file(&path, tail, follow)
         .wrap_err_with(|| format!("Failed to stream logs from {}", path.display()))?;
     Ok(())

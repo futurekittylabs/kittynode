@@ -14,8 +14,8 @@ use crossterm::{
 use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::types::{
-    Config, OperationalMode, OperationalState, Package, PackageState, RuntimeStatus, SystemInfo,
-    ServerStatus,
+    Config, OperationalMode, OperationalState, Package, PackageState, RuntimeStatus, ServerStatus,
+    SystemInfo,
 };
 use ratatui::{
     Frame, Terminal,

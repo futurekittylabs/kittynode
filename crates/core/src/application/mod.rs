@@ -18,6 +18,7 @@ pub mod install_package;
 pub mod is_docker_running;
 pub mod is_validator_installed;
 pub mod remove_capability;
+pub mod server;
 pub mod set_auto_start_docker;
 pub mod set_onboarding_completed;
 pub mod set_server_url;
@@ -28,7 +29,6 @@ pub mod start_package;
 pub mod stop_package;
 pub mod update_package_config;
 pub mod validator;
-pub mod server;
 
 pub use add_capability::add_capability;
 pub use delete_kittynode::delete_kittynode;
@@ -50,6 +50,7 @@ pub use install_package::{install_package, install_package_with_network};
 pub use is_docker_running::is_docker_running;
 pub use is_validator_installed::is_validator_installed;
 pub use remove_capability::remove_capability;
+pub use server::{get_server_log_path, get_server_status, start_server, stop_server};
 pub use set_auto_start_docker::set_auto_start_docker;
 pub use set_onboarding_completed::set_onboarding_completed;
 pub use set_server_url::set_server_url;
@@ -59,6 +60,3 @@ pub use start_docker_if_needed::{DockerStartStatus, start_docker_if_needed};
 pub use start_package::start_package;
 pub use stop_package::stop_package;
 pub use update_package_config::update_package_config;
-pub use server::{
-    get_server_log_path, get_server_status, start_server, stop_server,
-};

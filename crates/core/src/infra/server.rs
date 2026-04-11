@@ -37,7 +37,8 @@ pub fn save_state(state: &ServerProcessState) -> Result<()> {
             .wrap_err("Failed to create directories for kittynode-server state file")?;
     }
 
-    let data = serde_json::to_string(state).wrap_err("Failed to serialize kittynode-server state")?;
+    let data =
+        serde_json::to_string(state).wrap_err("Failed to serialize kittynode-server state")?;
     fs::write(&path, data).wrap_err("Failed to write kittynode-server state file")?;
     Ok(())
 }

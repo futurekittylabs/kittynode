@@ -12,11 +12,7 @@ use std::time::Duration;
 use sysinfo::{Pid, Process, System};
 use tracing::info;
 
-pub fn start_server(
-    port: Option<u16>,
-    binary_path: &Path,
-    args: &[&str],
-) -> Result<ServerStatus> {
+pub fn start_server(port: Option<u16>, binary_path: &Path, args: &[&str]) -> Result<ServerStatus> {
     let port = validate_server_port(port.unwrap_or(DEFAULT_SERVER_PORT))?;
     if let Some(mut state) = server::load_state()? {
         if process_matches(&state) {

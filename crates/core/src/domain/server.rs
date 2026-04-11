@@ -18,10 +18,7 @@ impl fmt::Display for ServerStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ServerStatus::Started { pid, port } => {
-                write!(
-                    f,
-                    "Kittynode server started on port {port} (pid {pid})"
-                )
+                write!(f, "Kittynode server started on port {port} (pid {pid})")
             }
             ServerStatus::AlreadyRunning { pid, port } => {
                 write!(
@@ -30,10 +27,7 @@ impl fmt::Display for ServerStatus {
                 )
             }
             ServerStatus::Stopped { pid, port } => {
-                write!(
-                    f,
-                    "Kittynode server stopped on port {port} (pid {pid})"
-                )
+                write!(f, "Kittynode server stopped on port {port} (pid {pid})")
             }
             ServerStatus::NotRunning => write!(f, "Kittynode server is not running"),
         }
