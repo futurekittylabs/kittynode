@@ -15,6 +15,9 @@ repository = "https://github.com/futurekittylabs/kittynode"
 license = "MIT"
 publish = false
 
+[patch.crates-io]
+num-bigint-dig = { git = "https://github.com/dignifiedquire/num-bigint", tag = "v0.8.6" }
+
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"

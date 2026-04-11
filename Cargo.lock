@@ -2564,11 +2564,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint-dig"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc84195820f291c7697304f3cbdadd1cb7199c0efc917ff5eafd71225c136151"
+version = "0.8.6"
+source = "git+https://github.com/dignifiedquire/num-bigint?tag=v0.8.6#1eb690d9170870c186a2795071482cfa472a170a"
 dependencies = [
- "byteorder",
  "lazy_static",
  "libm",
  "num-integer",
