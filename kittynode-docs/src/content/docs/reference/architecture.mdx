@@ -14,8 +14,8 @@ Kittynode is split into four crates. These boundaries let us reason clearly abou
 | Crate              | What it does                                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------------------------- |
 | `kittynode-core`   | Rust library that defines the APIs, Docker integration, manifests, and persistence shared by every surface |
-| `kittynode-cli`    | Thin wrapper that forwards subcommands to kittynode-core and can spin up kittynode-web                     |
-| `kittynode-web`    | Axum HTTP service that exposes the core API for remote management and automation                           |
+| `kittynode-cli`    | Thin wrapper that forwards subcommands to kittynode-core and can spin up kittynode-server                  |
+| `kittynode-server` | Axum HTTP service that exposes the core API for remote management and automation                           |
 
 ### Core API facade
 

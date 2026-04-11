@@ -10,7 +10,7 @@ use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, LogsQuery, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
 };
-use kittynode_core::api::{DEFAULT_WEB_PORT, DockerStartStatus, validate_web_port};
+use kittynode_core::api::{DEFAULT_SERVER_PORT, DockerStartStatus, validate_server_port};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -238,11 +238,11 @@ pub fn app() -> Router {
 
 pub async fn run() -> Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
-    run_with_port(DEFAULT_WEB_PORT).await
+    run_with_port(DEFAULT_SERVER_PORT).await
 }
 
 pub async fn run_with_port(port: u16) -> Result<()> {
-    validate_web_port(port)?;
+    validate_server_port(port)?;
     let app = app();
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
     let listener = TcpListener::bind(address).await?;

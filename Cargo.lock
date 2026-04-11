@@ -2259,7 +2259,7 @@ dependencies = [
  "dunce",
  "eyre",
  "kittynode-core",
- "kittynode-web",
+ "kittynode-server",
  "predicates",
  "ratatui",
  "reqwest",
@@ -2309,7 +2309,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kittynode-web"
+name = "kittynode-server"
 version = "0.62.0"
 dependencies = [
  "axum",

@@ -7,7 +7,7 @@ on:
       - Cargo.lock
       - crates/cli/**
       - crates/core/**
-      - crates/web/**
+      - crates/server/**
 
 jobs:
   test:

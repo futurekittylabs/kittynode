@@ -55,10 +55,10 @@ enum Commands {
         #[command(subcommand)]
         command: ValidatorCommands,
     },
-    #[command(about = "Control the Kittynode web service")]
-    Web {
+    #[command(about = "Control the Kittynode server")]
+    Server {
         #[command(subcommand)]
-        command: WebCommands,
+        command: ServerCommands,
     },
     #[command(about = "Update Kittynode to the latest release")]
     Update,
@@ -237,30 +237,30 @@ enum ValidatorCommands {
 }
 
 #[derive(Subcommand)]
-enum WebCommands {
-    #[command(name = "start", about = "Start the Kittynode web service")]
+enum ServerCommands {
+    #[command(name = "start", about = "Start the Kittynode server")]
     Start {
         #[arg(
             long = "port",
             value_name = "PORT",
-            help = "Port to bind the Kittynode web service"
+            help = "Port to bind the Kittynode server"
         )]
         port: Option<u16>,
     },
-    #[command(name = "restart", about = "Restart the Kittynode web service")]
+    #[command(name = "restart", about = "Restart the Kittynode server")]
     Restart {
         #[arg(
             long = "port",
             value_name = "PORT",
-            help = "Port to bind the Kittynode web service"
+            help = "Port to bind the Kittynode server"
         )]
         port: Option<u16>,
     },
-    #[command(name = "stop", about = "Stop the Kittynode web service")]
+    #[command(name = "stop", about = "Stop the Kittynode server")]
     Stop,
-    #[command(name = "status", about = "Show Kittynode web service status")]
+    #[command(name = "status", about = "Show Kittynode server status")]
     Status,
-    #[command(name = "logs", about = "Stream logs from the Kittynode web service")]
+    #[command(name = "logs", about = "Stream logs from the Kittynode server")]
     Logs {
         #[arg(
             long = "follow",
@@ -280,14 +280,14 @@ enum WebCommands {
         #[arg(
             long = "port",
             value_name = "PORT",
-            help = "Port to bind the Kittynode web service"
+            help = "Port to bind the Kittynode server"
         )]
         port: Option<u16>,
         #[arg(
             long = "service-token",
             value_name = "TOKEN",
             hide = true,
-            help = "Internal token used to bind the web host to the parent process"
+            help = "Internal token used to bind the server to the parent process"
         )]
         service_token: Option<String>,
     },
@@ -303,7 +303,7 @@ impl Commands {
             Commands::Docker { command } => command.execute().await,
             Commands::Container { command } => command.execute().await,
             Commands::Validator { command } => command.execute().await,
-            Commands::Web { command } => command.execute().await,
+            Commands::Server { command } => command.execute().await,
             Commands::Update => commands::run_updater(),
             Commands::Ui => tui::run().await,
         }
@@ -397,18 +397,18 @@ impl ValidatorCommands {
     }
 }
 
-impl WebCommands {
+impl ServerCommands {
     async fn execute(self) -> Result<()> {
         match self {
-            WebCommands::Start { port } => commands::start_web_service(port),
-            WebCommands::Restart { port } => commands::restart_web_service(port),
-            WebCommands::Stop => commands::stop_web_service(),
-            WebCommands::Status => commands::web_status(),
-            WebCommands::Logs { follow, tail } => commands::web_logs(follow, tail),
-            WebCommands::RunInternal {
+            ServerCommands::Start { port } => commands::start_server(port),
+            ServerCommands::Restart { port } => commands::restart_server(port),
+            ServerCommands::Stop => commands::stop_server(),
+            ServerCommands::Status => commands::server_status(),
+            ServerCommands::Logs { follow, tail } => commands::server_logs(follow, tail),
+            ServerCommands::RunInternal {
                 port,
                 service_token,
-            } => commands::run_web_service(port, service_token).await,
+            } => commands::run_server(port, service_token).await,
         }
     }
 }

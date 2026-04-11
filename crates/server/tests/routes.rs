@@ -60,7 +60,7 @@ async fn json_response(response: axum::response::Response) -> Value {
 
 #[tokio::test]
 async fn root_route_returns_hello_world() {
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -77,7 +77,7 @@ async fn root_route_returns_hello_world() {
 
 #[tokio::test]
 async fn health_route_returns_ok() {
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -96,7 +96,7 @@ async fn health_route_returns_ok() {
 #[tokio::test(flavor = "current_thread")]
 async fn get_config_returns_defaults_in_fresh_home() {
     let _home = TempHomeGuard::new();
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
 
     let response = app
         .oneshot(
@@ -124,7 +124,7 @@ async fn get_config_returns_defaults_in_fresh_home() {
 async fn add_and_remove_capability_roundtrip() {
     let _home = TempHomeGuard::new();
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -137,7 +137,7 @@ async fn add_and_remove_capability_roundtrip() {
         .expect("service call");
     assert_eq!(response.status(), StatusCode::OK);
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -156,7 +156,7 @@ async fn add_and_remove_capability_roundtrip() {
         Some(vec!["ethereum"])
     );
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -169,7 +169,7 @@ async fn add_and_remove_capability_roundtrip() {
         .expect("service call");
     assert_eq!(response.status(), StatusCode::OK);
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -187,7 +187,7 @@ async fn add_and_remove_capability_roundtrip() {
 #[tokio::test(flavor = "current_thread")]
 async fn get_package_catalog_includes_ethereum() {
     let _home = TempHomeGuard::new();
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
 
     let response = app
         .oneshot(
@@ -208,7 +208,7 @@ async fn get_package_catalog_includes_ethereum() {
 #[tokio::test(flavor = "current_thread")]
 async fn get_package_config_returns_empty_for_missing_file() {
     let _home = TempHomeGuard::new();
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
 
     let response = app
         .oneshot(
@@ -234,7 +234,7 @@ async fn get_package_config_returns_empty_for_missing_file() {
 #[tokio::test(flavor = "current_thread")]
 async fn get_packages_skips_unknown_names() {
     let _home = TempHomeGuard::new();
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
 
     let response = app
         .oneshot(
@@ -260,7 +260,7 @@ async fn get_packages_skips_unknown_names() {
 async fn unknown_package_routes_map_to_404() {
     let _home = TempHomeGuard::new();
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()
@@ -273,7 +273,7 @@ async fn unknown_package_routes_map_to_404() {
         .expect("service call");
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
-    let app = kittynode_web::app();
+    let app = kittynode_server::app();
     let response = app
         .oneshot(
             Request::builder()

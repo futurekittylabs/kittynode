@@ -4,4 +4,4 @@ pub mod ephemery;
 pub mod file;
 pub mod package;
 pub mod package_config;
-pub mod web_service;
+pub mod server;

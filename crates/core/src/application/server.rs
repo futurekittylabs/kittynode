@@ -1,5 +1,5 @@
-use crate::domain::web_service::{DEFAULT_WEB_PORT, WebServiceStatus};
-use crate::infra::web_service::{self, WebProcessState};
+use crate::domain::server::{DEFAULT_SERVER_PORT, ServerStatus};
+use crate::infra::server::{self, ServerProcessState};
 use eyre::{Result, WrapErr, eyre};
 use rand::RngCore;
 use std::ffi::{OsStr, OsString};
@@ -12,24 +12,24 @@ use std::time::Duration;
 use sysinfo::{Pid, Process, System};
 use tracing::info;
 
-pub fn start_web_service(
+pub fn start_server(
     port: Option<u16>,
     binary_path: &Path,
     args: &[&str],
-) -> Result<WebServiceStatus> {
-    let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
-    if let Some(mut state) = web_service::load_state()? {
+) -> Result<ServerStatus> {
+    let port = validate_server_port(port.unwrap_or(DEFAULT_SERVER_PORT))?;
+    if let Some(mut state) = server::load_state()? {
         if process_matches(&state) {
             if state.log_path.is_none() {
-                state.log_path = Some(web_service::log_file_path()?);
-                let _ = web_service::save_state(&state);
+                state.log_path = Some(server::log_file_path()?);
+                let _ = server::save_state(&state);
             }
-            return Ok(WebServiceStatus::AlreadyRunning {
+            return Ok(ServerStatus::AlreadyRunning {
                 pid: state.pid,
                 port: state.port,
             });
         }
-        web_service::clear_state()?;
+        server::clear_state()?;
     }
 
     let binary_path = binary_path
@@ -38,17 +38,17 @@ pub fn start_web_service(
     let token = generate_service_token();
 
     let mut command = Command::new(&binary_path);
-    let log_path = web_service::log_file_path()?;
+    let log_path = server::log_file_path()?;
     if let Some(parent) = log_path.parent() {
         fs::create_dir_all(parent)
-            .wrap_err("Failed to create directories for kittynode-web log file")?;
+            .wrap_err("Failed to create directories for kittynode-server log file")?;
     }
     let log_file = OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .open(&log_path)
-        .wrap_err("Failed to open kittynode-web log file")?;
+        .wrap_err("Failed to open kittynode-server log file")?;
     let stdout = log_file
         .try_clone()
         .wrap_err("Failed to duplicate log handle for stdout")?;
@@ -65,31 +65,31 @@ pub fn start_web_service(
 
     let mut child = command
         .spawn()
-        .wrap_err("Failed to spawn kittynode-web process")?;
+        .wrap_err("Failed to spawn kittynode-server process")?;
 
     wait_for_service_ready(&mut child, port)?;
 
     let pid = child.id();
 
-    let state = WebProcessState {
+    let state = ServerProcessState {
         pid,
         port,
         binary: binary_path.clone(),
         token: Some(token),
         log_path: Some(log_path.clone()),
     };
-    if let Err(err) = web_service::save_state(&state) {
+    if let Err(err) = server::save_state(&state) {
         let kill_result = child.kill();
         if kill_result.is_ok() {
             let _ = child.wait();
         }
         let err = match kill_result {
             Ok(_) => err.wrap_err(format!(
-                "Failed to persist kittynode-web state for pid {} on port {} and terminated spawned process",
+                "Failed to persist kittynode-server state for pid {} on port {} and terminated spawned process",
                 pid, port
             )),
             Err(kill_err) => err.wrap_err(format!(
-                "Failed to persist kittynode-web state for pid {} on port {} and could not terminate spawned process: {kill_err}",
+                "Failed to persist kittynode-server state for pid {} on port {} and could not terminate spawned process: {kill_err}",
                 pid, port
             )),
         };
@@ -98,90 +98,90 @@ pub fn start_web_service(
 
     drop(child);
 
-    info!(pid, port = state.port, binary = %binary_path.display(), "Started kittynode-web service");
-    Ok(WebServiceStatus::Started {
+    info!(pid, port = state.port, binary = %binary_path.display(), "Started kittynode-server service");
+    Ok(ServerStatus::Started {
         pid: state.pid,
         port: state.port,
     })
 }
 
-pub fn get_web_service_log_path() -> Result<PathBuf> {
-    let path = web_service::log_file_path()?;
+pub fn get_server_log_path() -> Result<PathBuf> {
+    let path = server::log_file_path()?;
     if path.exists() {
         return Ok(path);
     }
 
-    if let Some(state) = web_service::load_state()?
+    if let Some(state) = server::load_state()?
         && process_matches(&state)
     {
         return Err(eyre!(
-            "Kittynode web service logs are not available yet; restart the service to enable logging"
+            "Kittynode server logs are not available yet; restart the service to enable logging"
         ));
     }
 
     Err(eyre!(
-        "Kittynode web service is not running; start it with `kittynode web start`"
+        "Kittynode server is not running; start it with `kittynode server start`"
     ))
 }
 
-pub fn stop_web_service() -> Result<WebServiceStatus> {
-    let Some(state) = web_service::load_state()? else {
-        return Ok(WebServiceStatus::NotRunning);
+pub fn stop_server() -> Result<ServerStatus> {
+    let Some(state) = server::load_state()? else {
+        return Ok(ServerStatus::NotRunning);
     };
 
     if !process_matches(&state) {
-        web_service::clear_state()?;
-        return Ok(WebServiceStatus::NotRunning);
+        server::clear_state()?;
+        return Ok(ServerStatus::NotRunning);
     }
 
     let system = System::new_all();
     let pid = Pid::from_u32(state.pid);
 
     let Some(process) = system.process(pid) else {
-        web_service::clear_state()?;
-        return Ok(WebServiceStatus::NotRunning);
+        server::clear_state()?;
+        return Ok(ServerStatus::NotRunning);
     };
 
     if !process.kill() {
         return Err(eyre!(
-            "Failed to stop kittynode-web process with pid {}",
+            "Failed to stop kittynode-server process with pid {}",
             state.pid
         ));
     }
 
-    web_service::clear_state()?;
+    server::clear_state()?;
     info!(
         pid = state.pid,
         port = state.port,
-        "Stopped kittynode-web service"
+        "Stopped kittynode-server service"
     );
-    Ok(WebServiceStatus::Stopped {
+    Ok(ServerStatus::Stopped {
         pid: state.pid,
         port: state.port,
     })
 }
 
-pub fn get_web_service_status() -> Result<WebServiceStatus> {
-    let Some(mut state) = web_service::load_state()? else {
-        return Ok(WebServiceStatus::NotRunning);
+pub fn get_server_status() -> Result<ServerStatus> {
+    let Some(mut state) = server::load_state()? else {
+        return Ok(ServerStatus::NotRunning);
     };
 
     if process_matches(&state) {
         if state.log_path.is_none() {
-            state.log_path = Some(web_service::log_file_path()?);
-            let _ = web_service::save_state(&state);
+            state.log_path = Some(server::log_file_path()?);
+            let _ = server::save_state(&state);
         }
-        return Ok(WebServiceStatus::AlreadyRunning {
+        return Ok(ServerStatus::AlreadyRunning {
             pid: state.pid,
             port: state.port,
         });
     }
 
-    web_service::clear_state()?;
-    Ok(WebServiceStatus::NotRunning)
+    server::clear_state()?;
+    Ok(ServerStatus::NotRunning)
 }
 
-fn process_matches(state: &WebProcessState) -> bool {
+fn process_matches(state: &ServerProcessState) -> bool {
     let system = System::new_all();
     let pid = Pid::from_u32(state.pid);
     if let Some(process) = system.process(pid)
@@ -229,7 +229,7 @@ fn generate_service_token() -> String {
     hex::encode(buf)
 }
 
-pub fn validate_web_port(port: u16) -> Result<u16> {
+pub fn validate_server_port(port: u16) -> Result<u16> {
     if port == 0 {
         return Err(eyre!("Port must be greater than zero"));
     }
@@ -247,14 +247,14 @@ fn wait_for_service_ready(child: &mut Child, port: u16) -> Result<()> {
     for _ in 0..MAX_ATTEMPTS {
         if let Some(status) = child
             .try_wait()
-            .wrap_err("Failed to poll kittynode-web process state")?
+            .wrap_err("Failed to poll kittynode-server process state")?
         {
             let detail = status
                 .code()
                 .map(|code| format!("exit code {code}"))
                 .unwrap_or_else(|| "terminated by signal".to_string());
             return Err(eyre!(
-                "kittynode-web process exited immediately ({detail}); check logs for details"
+                "kittynode-server process exited immediately ({detail}); check logs for details"
             ));
         }
 
@@ -271,7 +271,7 @@ fn wait_for_service_ready(child: &mut Child, port: u16) -> Result<()> {
     let _ = child.kill();
     let _ = child.wait();
     Err(eyre!(
-        "Timed out waiting for kittynode-web to bind on port {}",
+        "Timed out waiting for kittynode-server to bind on port {}",
         port
     ))
 }
@@ -284,9 +284,9 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn validate_web_port_rejects_zero() {
-        assert!(validate_web_port(0).is_err());
-        assert_eq!(validate_web_port(8080).unwrap(), 8080);
+    fn validate_server_port_rejects_zero() {
+        assert!(validate_server_port(0).is_err());
+        assert_eq!(validate_server_port(8080).unwrap(), 8080);
     }
 
     #[test]
@@ -331,10 +331,10 @@ mod tests {
         let temp = tempdir().expect("failed to create temp dir");
         let bin_dir = temp.path().join("bin");
         fs::create_dir_all(&bin_dir).expect("failed to create bin dir");
-        let target = bin_dir.join("kittynode-web");
+        let target = bin_dir.join("kittynode-server");
         File::create(&target).expect("failed to create dummy binary");
 
-        let alternate = bin_dir.join(".").join("kittynode-web");
+        let alternate = bin_dir.join(".").join("kittynode-server");
         assert!(paths_match(&target, &alternate));
     }
 
@@ -343,7 +343,7 @@ mod tests {
         let temp = tempdir().expect("failed to create temp dir");
         let bin_dir = temp.path().join("bin");
         fs::create_dir_all(&bin_dir).expect("failed to create bin dir");
-        let a = bin_dir.join("kittynode-web");
+        let a = bin_dir.join("kittynode-server");
         let b = bin_dir.join("other-binary");
         File::create(&a).expect("failed to create binary a");
         File::create(&b).expect("failed to create binary b");

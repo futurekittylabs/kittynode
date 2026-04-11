@@ -3,9 +3,9 @@ pub mod validator;
 use eyre::{Result, WrapErr, eyre};
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageConfig, RuntimeStatus, SystemInfo,
-    WebServiceStatus,
+    ServerStatus,
 };
-use kittynode_core::api::{self, DEFAULT_WEB_PORT, validate_web_port};
+use kittynode_core::api::{self, DEFAULT_SERVER_PORT, validate_server_port};
 use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::fs::OpenOptions;
@@ -307,62 +307,62 @@ fn render_operational_state(state: &OperationalState) -> String {
     output
 }
 
-pub fn start_web_service(port: Option<u16>) -> Result<()> {
+pub fn start_server(port: Option<u16>) -> Result<()> {
     let binary = env::current_exe().wrap_err("Failed to locate kittynode binary")?;
-    let port = port.map(validate_web_port).transpose()?;
-    let status = api::start_web_service(port, &binary, &["web", WEB_INTERNAL_SUBCOMMAND])?;
+    let port = port.map(validate_server_port).transpose()?;
+    let status = api::start_server(port, &binary, &["server", SERVER_INTERNAL_SUBCOMMAND])?;
     println!("{}", status);
-    if let Ok(path) = api::get_web_service_log_path() {
+    if let Ok(path) = api::get_server_log_path() {
         println!("Logs: {}", path.display());
     }
     Ok(())
 }
 
-pub fn stop_web_service() -> Result<()> {
-    let status = api::stop_web_service()?;
+pub fn stop_server() -> Result<()> {
+    let status = api::stop_server()?;
     println!("{}", status);
     Ok(())
 }
 
-pub fn restart_web_service(port: Option<u16>) -> Result<()> {
+pub fn restart_server(port: Option<u16>) -> Result<()> {
     let port = match port {
         Some(port) => Some(port),
-        None => match api::get_web_service_status()? {
-            WebServiceStatus::Started { port, .. }
-            | WebServiceStatus::AlreadyRunning { port, .. } => Some(port),
+        None => match api::get_server_status()? {
+            ServerStatus::Started { port, .. }
+            | ServerStatus::AlreadyRunning { port, .. } => Some(port),
             _ => None,
         },
     };
 
-    let status = api::stop_web_service()?;
+    let status = api::stop_server()?;
     println!("{}", status);
 
-    start_web_service(port)
+    start_server(port)
 }
 
-pub fn web_status() -> Result<()> {
-    match api::get_web_service_status()? {
-        WebServiceStatus::Started { pid, port }
-        | WebServiceStatus::AlreadyRunning { pid, port } => {
-            println!("Kittynode web service running on port {port} (pid {pid})");
-            if let Ok(path) = api::get_web_service_log_path() {
+pub fn server_status() -> Result<()> {
+    match api::get_server_status()? {
+        ServerStatus::Started { pid, port }
+        | ServerStatus::AlreadyRunning { pid, port } => {
+            println!("Kittynode server running on port {port} (pid {pid})");
+            if let Ok(path) = api::get_server_log_path() {
                 println!("Logs: {}", path.display());
             }
         }
-        WebServiceStatus::Stopped { pid, port } => {
-            println!("Kittynode web service stopped (last seen pid {pid}, port {port})");
+        ServerStatus::Stopped { pid, port } => {
+            println!("Kittynode server stopped (last seen pid {pid}, port {port})");
         }
-        WebServiceStatus::NotRunning => {
-            println!("Kittynode web service is not running");
+        ServerStatus::NotRunning => {
+            println!("Kittynode server is not running");
         }
     }
     Ok(())
 }
 
-pub fn web_logs(follow: bool, tail: Option<usize>) -> Result<()> {
+pub fn server_logs(follow: bool, tail: Option<usize>) -> Result<()> {
     let tail = tail.filter(|value| *value > 0);
     let path =
-        api::get_web_service_log_path().wrap_err("Failed to locate kittynode web service logs")?;
+        api::get_server_log_path().wrap_err("Failed to locate kittynode server logs")?;
     stream_log_file(&path, tail, follow)
         .wrap_err_with(|| format!("Failed to stream logs from {}", path.display()))?;
     Ok(())
@@ -437,7 +437,7 @@ fn collect_initial_log_output<R: BufRead>(mut reader: R, tail: Option<usize>) ->
         let mut content = String::new();
         reader
             .read_to_string(&mut content)
-            .map_err(|err| eyre!("Failed to read kittynode web log file: {err}"))?;
+            .map_err(|err| eyre!("Failed to read kittynode server log file: {err}"))?;
         Ok(content)
     }
 }
@@ -451,7 +451,7 @@ fn read_tail_lines<R: BufRead>(reader: &mut R, limit: usize) -> Result<String> {
             Ok(count) => count,
             Err(err) if err.kind() == ErrorKind::Interrupted => continue,
             Err(err) => {
-                return Err(eyre!("Failed to read kittynode web log file: {err}"));
+                return Err(eyre!("Failed to read kittynode server log file: {err}"));
             }
         };
         if bytes == 0 {
@@ -470,16 +470,16 @@ fn read_tail_lines<R: BufRead>(reader: &mut R, limit: usize) -> Result<String> {
     Ok(collected)
 }
 
-pub async fn run_web_service(port: Option<u16>, service_token: Option<String>) -> Result<()> {
-    let port = validate_web_port(port.unwrap_or(DEFAULT_WEB_PORT))?;
+pub async fn run_server(port: Option<u16>, service_token: Option<String>) -> Result<()> {
+    let port = validate_server_port(port.unwrap_or(DEFAULT_SERVER_PORT))?;
     let Some(_token) = service_token else {
-        return Err(eyre::eyre!("web service run invoked without token"));
+        return Err(eyre::eyre!("server run invoked without token"));
     };
-    kittynode_web::run_with_port(port).await?;
+    kittynode_server::run_with_port(port).await?;
     Ok(())
 }
 
-pub const WEB_INTERNAL_SUBCOMMAND: &str = "__internal-run";
+pub const SERVER_INTERNAL_SUBCOMMAND: &str = "__internal-run";
 
 /// Launch the standalone updater installed by cargo-dist installers.
 /// This expects a `kittynode-cli-update` binary to be on PATH.

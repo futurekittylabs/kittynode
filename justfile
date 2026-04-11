@@ -81,6 +81,6 @@ update:
     cd kittynode-com && bun update
     cd kittynode-docs && bun update
 
-# start the web server
-web:
-    cargo run -p kittynode-web
+# start the server
+server:
+    cargo run -p kittynode-server

@@ -144,15 +144,15 @@ fn package_install_ethereum_requires_network_flag() {
 }
 
 #[test]
-fn web_start_and_stop_roundtrip() {
+fn server_start_and_stop_roundtrip() {
     let temp_home = tempdir().expect("failed to create temp home directory");
-    let sandbox = WebServiceSandbox::new(temp_home.path().to_path_buf());
+    let sandbox = ServerSandbox::new(temp_home.path().to_path_buf());
     let port = find_free_port();
 
     let start_output = cargo_bin_cmd!("kittynode")
         .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
-        .args(["web", "start", "--port", &port.to_string()])
+        .args(["server", "start", "--port", &port.to_string()])
         .assert()
         .success()
         .get_output()
@@ -165,13 +165,13 @@ fn web_start_and_stop_roundtrip() {
     );
     assert!(
         sandbox.state_path().exists(),
-        "expected web state file to exist after start"
+        "expected server state file to exist after start"
     );
 
     let status_running = cargo_bin_cmd!("kittynode")
         .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
-        .args(["web", "status"])
+        .args(["server", "status"])
         .assert()
         .success()
         .get_output()
@@ -186,7 +186,7 @@ fn web_start_and_stop_roundtrip() {
     let stop_output = cargo_bin_cmd!("kittynode")
         .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
-        .args(["web", "stop"])
+        .args(["server", "stop"])
         .assert()
         .success()
         .get_output()
@@ -199,13 +199,13 @@ fn web_start_and_stop_roundtrip() {
     );
     assert!(
         !sandbox.state_path().exists(),
-        "expected web state file to be removed after stop"
+        "expected server state file to be removed after stop"
     );
 
     let status_stopped = cargo_bin_cmd!("kittynode")
         .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
         .env("HOME", sandbox.home())
-        .args(["web", "status"])
+        .args(["server", "status"])
         .assert()
         .success()
         .get_output()
@@ -226,11 +226,11 @@ fn find_free_port() -> u16 {
         .port()
 }
 
-struct WebServiceSandbox {
+struct ServerSandbox {
     home: PathBuf,
 }
 
-impl WebServiceSandbox {
+impl ServerSandbox {
     fn new(home: PathBuf) -> Self {
         Self { home }
     }
@@ -244,7 +244,7 @@ impl WebServiceSandbox {
             .join(".config")
             .join("kittynode")
             .join("runtime")
-            .join("kittynode-web.json")
+            .join("kittynode-server.json")
     }
 
     fn stop(&self) {
@@ -252,12 +252,12 @@ impl WebServiceSandbox {
         let _ = cmd
             .env("KITTYNODE_SKIP_UPDATE_CHECK", "1")
             .env("HOME", self.home())
-            .args(["web", "stop"])
+            .args(["server", "stop"])
             .output();
     }
 }
 
-impl Drop for WebServiceSandbox {
+impl Drop for ServerSandbox {
     fn drop(&mut self) {
         self.stop();
     }

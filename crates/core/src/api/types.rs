@@ -5,4 +5,4 @@ pub use crate::domain::package::{
     InstallStatus, Package, PackageConfig, PackageState, RuntimeStatus,
 };
 pub use crate::domain::system_info::SystemInfo;
-pub use crate::domain::web_service::WebServiceStatus;
+pub use crate::domain::server::ServerStatus;

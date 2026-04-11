@@ -15,7 +15,7 @@ use eyre::Result;
 use kittynode_core::api;
 use kittynode_core::api::types::{
     Config, OperationalMode, OperationalState, Package, PackageState, RuntimeStatus, SystemInfo,
-    WebServiceStatus,
+    ServerStatus,
 };
 use ratatui::{
     Frame, Terminal,
@@ -103,7 +103,7 @@ enum Section {
     Overview,
     Packages,
     Catalog,
-    Web,
+    Server,
     Docker,
     Config,
     System,
@@ -116,7 +116,7 @@ impl Section {
             Section::Overview => "Overview",
             Section::Packages => "Packages",
             Section::Catalog => "Catalog",
-            Section::Web => "Web",
+            Section::Server => "Server",
             Section::Docker => "Docker",
             Section::Config => "Config",
             Section::System => "System",
@@ -129,7 +129,7 @@ impl Section {
             Section::Overview => "r refresh | tab switch sections",
             Section::Packages => "enter start/stop | d delete | D delete+images | r refresh",
             Section::Catalog => "enter install | r refresh",
-            Section::Web => "s start/stop | R restart | r refresh",
+            Section::Server => "s start/stop | R restart | r refresh",
             Section::Docker => "s start docker | r refresh",
             Section::Config => "r refresh",
             Section::System => "r refresh",
@@ -155,8 +155,8 @@ struct AppData {
     operational_state: Option<OperationalState>,
     config: Option<Config>,
     system_info: Option<SystemInfo>,
-    web_status: Option<WebServiceStatus>,
-    web_log_path: Option<PathBuf>,
+    server_status: Option<ServerStatus>,
+    server_log_path: Option<PathBuf>,
     packages: Vec<Package>,
     package_states: HashMap<String, PackageState>,
     catalog: Vec<Package>,
@@ -168,8 +168,8 @@ impl AppData {
             operational_state: None,
             config: None,
             system_info: None,
-            web_status: None,
-            web_log_path: None,
+            server_status: None,
+            server_log_path: None,
             packages: Vec::new(),
             package_states: HashMap::new(),
             catalog: Vec::new(),
@@ -195,7 +195,7 @@ impl App {
             Section::Overview,
             Section::Packages,
             Section::Catalog,
-            Section::Web,
+            Section::Server,
             Section::Docker,
             Section::Config,
             Section::System,
@@ -277,17 +277,17 @@ impl App {
             }
         }
 
-        match api::get_web_service_status() {
+        match api::get_server_status() {
             Ok(status) => {
-                self.data.web_status = Some(status);
-                match api::get_web_service_log_path() {
-                    Ok(path) => self.data.web_log_path = Some(path),
-                    Err(_) => self.data.web_log_path = None,
+                self.data.server_status = Some(status);
+                match api::get_server_log_path() {
+                    Ok(path) => self.data.server_log_path = Some(path),
+                    Err(_) => self.data.server_log_path = None,
                 }
             }
             Err(err) => {
-                self.set_status(format!("Web status error: {err}"), StatusLevel::Error);
-                error!(error = %err, "Failed to load web status");
+                self.set_status(format!("Server status error: {err}"), StatusLevel::Error);
+                error!(error = %err, "Failed to load server status");
             }
         }
 
@@ -453,7 +453,7 @@ impl App {
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
         match self.current_section() {
-            Section::Web => self.toggle_web(handle, terminal),
+            Section::Server => self.toggle_server(handle, terminal),
             Section::Docker => self.start_docker(handle, terminal),
             _ => Ok(()),
         }
@@ -464,10 +464,10 @@ impl App {
         handle: &Handle,
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
-        if self.current_section() != Section::Web {
+        if self.current_section() != Section::Server {
             return Ok(());
         }
-        self.restart_web(handle, terminal)
+        self.restart_server(handle, terminal)
     }
 
     fn toggle_package(
@@ -596,29 +596,29 @@ impl App {
         Ok(())
     }
 
-    fn toggle_web(
+    fn toggle_server(
         &mut self,
         _handle: &Handle,
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
         let status = self
             .data
-            .web_status
+            .server_status
             .clone()
-            .unwrap_or(WebServiceStatus::NotRunning);
+            .unwrap_or(ServerStatus::NotRunning);
         match status {
-            WebServiceStatus::Started { .. } | WebServiceStatus::AlreadyRunning { .. } => {
-                self.stop_web(terminal)
+            ServerStatus::Started { .. } | ServerStatus::AlreadyRunning { .. } => {
+                self.stop_server(terminal)
             }
-            _ => self.start_web(terminal),
+            _ => self.start_server(terminal),
         }
     }
 
-    fn start_web(
+    fn start_server(
         &mut self,
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
-        self.set_status("Starting web service...", StatusLevel::Info);
+        self.set_status("Starting server...", StatusLevel::Info);
         terminal.draw(|frame| render(frame, self))?;
 
         let binary = match std::env::current_exe() {
@@ -632,69 +632,69 @@ impl App {
                 return Ok(());
             }
         };
-        let status = api::start_web_service(
+        let status = api::start_server(
             None,
             &binary,
-            &["web", crate::commands::WEB_INTERNAL_SUBCOMMAND],
+            &["server", crate::commands::SERVER_INTERNAL_SUBCOMMAND],
         );
 
         match status {
             Ok(state) => {
-                info!("Web service started");
-                self.data.web_status = Some(state);
-                self.set_status("Web service started", StatusLevel::Success);
+                info!("Server started");
+                self.data.server_status = Some(state);
+                self.set_status("Server started", StatusLevel::Success);
                 self.refresh(&Handle::current());
             }
             Err(err) => {
-                error!(error = %err, "Failed to start web service");
-                self.set_status(format!("Web start failed: {err}"), StatusLevel::Error);
+                error!(error = %err, "Failed to start server");
+                self.set_status(format!("Server start failed: {err}"), StatusLevel::Error);
             }
         }
         Ok(())
     }
 
-    fn stop_web(
+    fn stop_server(
         &mut self,
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
-        self.set_status("Stopping web service...", StatusLevel::Info);
+        self.set_status("Stopping server...", StatusLevel::Info);
         terminal.draw(|frame| render(frame, self))?;
 
-        match api::stop_web_service() {
+        match api::stop_server() {
             Ok(state) => {
-                info!("Web service stopped");
-                self.data.web_status = Some(state);
-                self.set_status("Web service stopped", StatusLevel::Success);
+                info!("Server stopped");
+                self.data.server_status = Some(state);
+                self.set_status("Server stopped", StatusLevel::Success);
                 self.refresh(&Handle::current());
             }
             Err(err) => {
-                error!(error = %err, "Failed to stop web service");
-                self.set_status(format!("Web stop failed: {err}"), StatusLevel::Error);
+                error!(error = %err, "Failed to stop server");
+                self.set_status(format!("Server stop failed: {err}"), StatusLevel::Error);
             }
         }
         Ok(())
     }
 
-    fn restart_web(
+    fn restart_server(
         &mut self,
         handle: &Handle,
         terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     ) -> Result<()> {
-        self.set_status("Restarting web service...", StatusLevel::Info);
+        self.set_status("Restarting server...", StatusLevel::Info);
         terminal.draw(|frame| render(frame, self))?;
 
-        let port = restart_port_from_status(self.data.web_status.as_ref());
+        let port = restart_port_from_status(self.data.server_status.as_ref());
 
-        match api::stop_web_service() {
+        match api::stop_server() {
             Ok(_) => {}
             Err(err) => {
-                error!(error = %err, "Failed to stop web service during restart");
+                error!(error = %err, "Failed to stop server during restart");
                 self.set_status(format!("Restart failed: {err}"), StatusLevel::Error);
                 return Ok(());
             }
         }
 
-        match api::start_web_service(
+        match api::start_server(
             port,
             &match std::env::current_exe() {
                 Ok(path) => path,
@@ -707,16 +707,16 @@ impl App {
                     return Ok(());
                 }
             },
-            &["web", crate::commands::WEB_INTERNAL_SUBCOMMAND],
+            &["server", crate::commands::SERVER_INTERNAL_SUBCOMMAND],
         ) {
             Ok(state) => {
-                info!("Web service restarted");
-                self.data.web_status = Some(state);
-                self.set_status("Web service restarted", StatusLevel::Success);
+                info!("Server restarted");
+                self.data.server_status = Some(state);
+                self.set_status("Server restarted", StatusLevel::Success);
                 self.refresh(handle);
             }
             Err(err) => {
-                error!(error = %err, "Failed to start web service during restart");
+                error!(error = %err, "Failed to start server during restart");
                 self.set_status(format!("Restart failed: {err}"), StatusLevel::Error);
             }
         }
@@ -749,11 +749,11 @@ impl App {
     }
 }
 
-fn restart_port_from_status(status: Option<&WebServiceStatus>) -> Option<u16> {
+fn restart_port_from_status(status: Option<&ServerStatus>) -> Option<u16> {
     match status {
-        Some(WebServiceStatus::Started { port, .. })
-        | Some(WebServiceStatus::AlreadyRunning { port, .. })
-        | Some(WebServiceStatus::Stopped { port, .. }) => Some(*port),
+        Some(ServerStatus::Started { port, .. })
+        | Some(ServerStatus::AlreadyRunning { port, .. })
+        | Some(ServerStatus::Stopped { port, .. }) => Some(*port),
         _ => None,
     }
 }
@@ -988,7 +988,7 @@ fn render_section(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         Section::Overview => render_overview(frame, area, app, theme),
         Section::Packages => render_packages(frame, area, app, theme),
         Section::Catalog => render_catalog(frame, area, app, theme),
-        Section::Web => render_web(frame, area, app, theme),
+        Section::Server => render_server(frame, area, app, theme),
         Section::Docker => render_docker(frame, area, app, theme),
         Section::Config => render_config(frame, area, app, theme),
         Section::System => render_system(frame, area, app, theme),
@@ -1022,7 +1022,7 @@ fn render_overview(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         );
     frame.render_widget(operational, left[0]);
 
-    let service_lines = build_service_lines(app.data.web_status.as_ref(), theme);
+    let service_lines = build_service_lines(app.data.server_status.as_ref(), theme);
     let services = Paragraph::new(service_lines)
         .wrap(Wrap { trim: true })
         .block(Block::new().borders(Borders::ALL).title("Services"));
@@ -1082,31 +1082,31 @@ fn build_operational_lines(state: Option<&OperationalState>, theme: &Theme) -> V
     lines
 }
 
-fn build_service_lines(status: Option<&WebServiceStatus>, theme: &Theme) -> Vec<Line<'static>> {
+fn build_service_lines(status: Option<&ServerStatus>, theme: &Theme) -> Vec<Line<'static>> {
     match status {
-        Some(WebServiceStatus::Started { pid, port })
-        | Some(WebServiceStatus::AlreadyRunning { pid, port }) => vec![
+        Some(ServerStatus::Started { pid, port })
+        | Some(ServerStatus::AlreadyRunning { pid, port }) => vec![
             Line::from(vec![
-                Span::raw("Web: "),
+                Span::raw("Server: "),
                 Span::styled("running", Style::default().fg(theme.success)),
             ]),
             Line::from(format!("Port: {port}")),
             Line::from(format!("PID: {pid}")),
         ],
-        Some(WebServiceStatus::Stopped { pid, port }) => vec![
+        Some(ServerStatus::Stopped { pid, port }) => vec![
             Line::from(vec![
-                Span::raw("Web: "),
+                Span::raw("Server: "),
                 Span::styled("stopped", Style::default().fg(theme.warning)),
             ]),
             Line::from(format!("Last port: {port}")),
             Line::from(format!("Last PID: {pid}")),
         ],
-        Some(WebServiceStatus::NotRunning) => vec![Line::from(vec![
-            Span::raw("Web: "),
+        Some(ServerStatus::NotRunning) => vec![Line::from(vec![
+            Span::raw("Server: "),
             Span::styled("not running", Style::default().fg(theme.muted)),
         ])],
         None => vec![Line::from(Span::styled(
-            "Web status unavailable",
+            "Server status unavailable",
             Style::default().fg(theme.muted),
         ))],
     }
@@ -1330,19 +1330,19 @@ fn render_catalog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     frame.render_stateful_widget(table, area, &mut app.catalog_state);
 }
 
-fn render_web(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let lines = build_web_lines(app, theme);
+fn render_server(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let lines = build_server_lines(app, theme);
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: true })
-        .block(Block::new().borders(Borders::ALL).title("Web Service"));
+        .block(Block::new().borders(Borders::ALL).title("Server"));
     frame.render_widget(paragraph, area);
 }
 
-fn build_web_lines(app: &App, theme: &Theme) -> Vec<Line<'static>> {
+fn build_server_lines(app: &App, theme: &Theme) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
-    match app.data.web_status.as_ref() {
-        Some(WebServiceStatus::Started { pid, port })
-        | Some(WebServiceStatus::AlreadyRunning { pid, port }) => {
+    match app.data.server_status.as_ref() {
+        Some(ServerStatus::Started { pid, port })
+        | Some(ServerStatus::AlreadyRunning { pid, port }) => {
             lines.push(Line::from(vec![
                 Span::raw("Status: "),
                 Span::styled("running", Style::default().fg(theme.success)),
@@ -1350,7 +1350,7 @@ fn build_web_lines(app: &App, theme: &Theme) -> Vec<Line<'static>> {
             lines.push(Line::from(format!("Port: {port}")));
             lines.push(Line::from(format!("PID: {pid}")));
         }
-        Some(WebServiceStatus::Stopped { pid, port }) => {
+        Some(ServerStatus::Stopped { pid, port }) => {
             lines.push(Line::from(vec![
                 Span::raw("Status: "),
                 Span::styled("stopped", Style::default().fg(theme.warning)),
@@ -1358,7 +1358,7 @@ fn build_web_lines(app: &App, theme: &Theme) -> Vec<Line<'static>> {
             lines.push(Line::from(format!("Last port: {port}")));
             lines.push(Line::from(format!("Last PID: {pid}")));
         }
-        Some(WebServiceStatus::NotRunning) => {
+        Some(ServerStatus::NotRunning) => {
             lines.push(Line::from(vec![
                 Span::raw("Status: "),
                 Span::styled("not running", Style::default().fg(theme.muted)),
@@ -1366,13 +1366,13 @@ fn build_web_lines(app: &App, theme: &Theme) -> Vec<Line<'static>> {
         }
         None => {
             lines.push(Line::from(Span::styled(
-                "Web service status unavailable.",
+                "Server status unavailable.",
                 Style::default().fg(theme.muted),
             )));
         }
     }
 
-    if let Some(path) = &app.data.web_log_path {
+    if let Some(path) = &app.data.server_log_path {
         lines.push(Line::from(""));
         lines.push(Line::from(format!("Logs: {}", path.display())));
     }
@@ -1541,7 +1541,7 @@ fn render_help(frame: &mut Frame, area: Rect, theme: &Theme) {
         Line::from(""),
         Line::from("Packages: enter start/stop, d delete, D delete+images"),
         Line::from("Catalog: enter install, ethereum prompts for network"),
-        Line::from("Web: s start/stop, R restart"),
+        Line::from("Server: s start/stop, R restart"),
         Line::from("Docker: s start"),
     ];
     let paragraph = Paragraph::new(lines)
@@ -1727,16 +1727,16 @@ mod tests {
 
     #[test]
     fn restart_port_from_status_prefers_existing_port() {
-        let started = WebServiceStatus::Started {
+        let started = ServerStatus::Started {
             pid: 42,
             port: 8080,
         };
-        let running = WebServiceStatus::AlreadyRunning {
+        let running = ServerStatus::AlreadyRunning {
             pid: 12,
             port: 9090,
         };
-        let stopped = WebServiceStatus::Stopped { pid: 7, port: 7070 };
-        let not_running = WebServiceStatus::NotRunning;
+        let stopped = ServerStatus::Stopped { pid: 7, port: 7070 };
+        let not_running = ServerStatus::NotRunning;
 
         assert_eq!(restart_port_from_status(Some(&started)), Some(8080));
         assert_eq!(restart_port_from_status(Some(&running)), Some(9090));

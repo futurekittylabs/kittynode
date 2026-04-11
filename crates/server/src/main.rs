@@ -1,16 +1,16 @@
 use eyre::{Result, eyre};
-use kittynode_core::api::{DEFAULT_WEB_PORT, validate_web_port};
+use kittynode_core::api::{DEFAULT_SERVER_PORT, validate_server_port};
 use std::env;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let port = parse_port()?;
-    kittynode_web::run_with_port(port).await
+    kittynode_server::run_with_port(port).await
 }
 
 fn parse_port() -> Result<u16> {
-    let mut port = DEFAULT_WEB_PORT;
+    let mut port = DEFAULT_SERVER_PORT;
     let mut args = env::args().skip(1);
 
     while let Some(arg) = args.next() {
@@ -33,5 +33,5 @@ fn parse_port_value(value: &str) -> Result<u16> {
     let port: u16 = value
         .parse()
         .map_err(|_| eyre!("Invalid port value: {value}"))?;
-    validate_web_port(port)
+    validate_server_port(port)
 }

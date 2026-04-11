@@ -71,8 +71,8 @@ const installCommand = `curl --proto '=https' --tlsv1.2 -LsSf https://kittynode.
       <div class="feature-icon"><Layers class="h-6 w-6" /></div>
       <h2>One core, every surface</h2>
       <p>
-        The CLI and web service share the same Rust core. Keep the surface area
-        small without splitting the logic.
+        The CLI and server share the same Rust core. Keep the surface area small
+        without splitting the logic.
       </p>
     </div>
 

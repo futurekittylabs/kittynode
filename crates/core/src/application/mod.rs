@@ -28,7 +28,7 @@ pub mod start_package;
 pub mod stop_package;
 pub mod update_package_config;
 pub mod validator;
-pub mod web_service;
+pub mod server;
 
 pub use add_capability::add_capability;
 pub use delete_kittynode::delete_kittynode;
@@ -59,6 +59,6 @@ pub use start_docker_if_needed::{DockerStartStatus, start_docker_if_needed};
 pub use start_package::start_package;
 pub use stop_package::stop_package;
 pub use update_package_config::update_package_config;
-pub use web_service::{
-    get_web_service_log_path, get_web_service_status, start_web_service, stop_web_service,
+pub use server::{
+    get_server_log_path, get_server_status, start_server, stop_server,
 };
