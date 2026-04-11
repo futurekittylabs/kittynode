@@ -5,9 +5,9 @@ on:
     paths:
       - Cargo.toml
       - Cargo.lock
-      - packages/cli/**
-      - packages/core/**
-      - packages/web/**
+      - crates/cli/**
+      - crates/core/**
+      - crates/web/**
 
 jobs:
   test:

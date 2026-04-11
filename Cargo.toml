@@ -1,8 +1,8 @@
 [workspace]
 members = [
-  "packages/cli",
-  "packages/core",
-  "packages/web",
+  "crates/cli",
+  "crates/core",
+  "crates/web",
 ]
 resolver = "2"
 
