@@ -2,9 +2,9 @@
 build:
     cargo build
 
-# start the docs dev server
-kittynode-docs:
-    bun --cwd kittynode-docs dev --open
+# show coverage with codecov percentage at the end
+coverage:
+    cargo llvm-cov --all-features --workspace 2>&1 | awk '{print} /^TOTAL/ {pct=$4} END {print "\ncodecov: " pct}'
 
 # generate the kittynode-core docs
 docs-rs:
@@ -17,6 +17,14 @@ install-dev-tools:
 # run the kittynode cli with the given args
 kittynode *args='':
     @if [ -z "{{ args }}" ]; then target/debug/kittynode help; else target/debug/kittynode {{ args }}; fi
+
+# start the dot-com site
+kittynode-com:
+    bun --cwd kittynode-com dev --open
+
+# start the docs dev server
+kittynode-docs:
+    bun --cwd kittynode-docs dev --open
 
 # lint the javascript code
 lint-js:
@@ -35,7 +43,7 @@ lint-rs-pedantic:
     cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::too_many_lines && cargo fmt --all -- --check
 
 # release cli
-release-cli:
+release:
     #!/usr/bin/env bash
     set -euxo pipefail
     git pull --rebase origin main
@@ -66,10 +74,6 @@ test-coverage:
 test-coverage-all:
     cargo llvm-cov nextest -- --include-ignored
 
-# show coverage with codecov percentage at the end
-coverage:
-    cargo llvm-cov --all-features --workspace 2>&1 | awk '{print} /^TOTAL/ {pct=$4} END {print "\ncodecov: " pct}'
-
 # update dependencies
 update:
     nix flake update
@@ -80,7 +84,3 @@ update:
 # start the web server
 web:
     cargo run -p kittynode-web
-
-# start the dot-com site
-kittynode-com:
-    bun --cwd kittynode-com dev --open
