@@ -4,25 +4,23 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use super::deposit::{
+    ChainSpec, DepositData, PublicKeyBytes, chain_spec_for_network, chain_spec_from_dir,
+    compounding_withdrawal_credentials, eth1_withdrawal_credentials, hardcoded_net_names,
+};
 use crate::infra::ephemery::{EPHEMERY_NETWORK_NAME, ensure_ephemery_config};
 use alloy_primitives::{
-    U256,
+    Address, U256,
     utils::{Unit, format_units, keccak256},
 };
 use bip32::{DerivationPath, Seed as Bip32Seed, XPrv};
 use bip39::{Language, Mnemonic, Seed as Bip39Seed};
 use eth2_key_derivation::DerivedKey;
 use eth2_keystore::{Keystore, KeystoreBuilder, keypair_from_secret};
-use eth2_network_config::{Eth2NetworkConfig, HARDCODED_NET_NAMES};
 use eyre::{ContextCompat, Result, WrapErr, eyre};
 use hex::encode as hex_encode;
 use k256::ecdsa::SigningKey;
 use serde::Serialize;
-use tree_hash::TreeHash;
-use types::{
-    Address, ChainSpec, DepositData, Hash256, MainnetEthSpec, PublicKeyBytes, SignatureBytes,
-    WithdrawalCredentials,
-};
 use zeroize::Zeroizing;
 
 const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
@@ -33,9 +31,9 @@ const CONNECTIVITY_PROBES: &[(&str, u16)] = &[
 const CONNECTIVITY_TIMEOUT: Duration = Duration::from_secs(2);
 const DEPOSIT_CLI_VERSION: &str = "1.2.0";
 
-/// Returns the list of Lighthouse networks supported by this build.
+/// Returns the list of networks supported by this build.
 pub fn available_networks() -> Vec<&'static str> {
-    let mut networks = HARDCODED_NET_NAMES.to_vec();
+    let mut networks = hardcoded_net_names();
     if !networks.contains(&EPHEMERY_NETWORK_NAME) {
         networks.push(EPHEMERY_NETWORK_NAME);
     }
@@ -267,20 +265,20 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
     write_keystore(&keystore_path, &keystore)?;
 
     let withdrawal_credentials = if params.compounding {
-        compounding_withdrawal_credentials(params.withdrawal_address, params.spec)
+        compounding_withdrawal_credentials(params.withdrawal_address)
     } else {
-        WithdrawalCredentials::eth1(params.withdrawal_address, params.spec).into()
+        eth1_withdrawal_credentials(params.withdrawal_address)
     };
 
-    let mut deposit_data = DepositData {
-        pubkey: PublicKeyBytes::from(keypair.pk.clone()),
-        withdrawal_credentials,
-        amount: params.deposit_gwei,
-        signature: SignatureBytes::empty(),
-    };
-    deposit_data.signature = deposit_data.create_signature(&keypair.sk, params.spec);
+    let pubkey_bytes: [u8; 48] = PublicKeyBytes::from(keypair.pk.clone())
+        .as_serialized()
+        .try_into()
+        .expect("BLS public key is always 48 bytes");
 
-    let deposit_message_root = deposit_data.as_deposit_message().tree_hash_root();
+    let mut deposit_data = DepositData::new(pubkey_bytes, withdrawal_credentials, params.deposit_gwei);
+    deposit_data.sign(&keypair.sk, params.spec);
+
+    let deposit_message_root = deposit_data.deposit_message_root();
     let deposit_data_root = deposit_data.tree_hash_root();
 
     let network_name = if params.network == EPHEMERY_NETWORK_NAME {
@@ -293,20 +291,13 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
             .context("Network config name missing")?
     };
 
-    let DepositData {
-        pubkey,
-        withdrawal_credentials,
-        amount,
-        signature,
-    } = deposit_data;
-
     let deposit_entry = DepositEntry {
-        pubkey: to_hex(pubkey.as_serialized()),
-        withdrawal_credentials: to_hex(withdrawal_credentials.as_slice()),
-        amount,
-        signature: to_hex(signature.serialize()),
-        deposit_message_root: to_hex(deposit_message_root.as_slice()),
-        deposit_data_root: to_hex(deposit_data_root.as_slice()),
+        pubkey: to_hex(deposit_data.pubkey),
+        withdrawal_credentials: to_hex(deposit_data.withdrawal_credentials),
+        amount: deposit_data.amount,
+        signature: to_hex(deposit_data.signature),
+        deposit_message_root: to_hex(deposit_message_root),
+        deposit_data_root: to_hex(deposit_data_root),
         fork_version: to_hex(params.spec.genesis_fork_version),
         network_name,
         deposit_cli_version: DEPOSIT_CLI_VERSION.to_string(),
@@ -360,45 +351,19 @@ fn load_chain_spec(network: &str) -> Result<ChainSpec> {
     if network == EPHEMERY_NETWORK_NAME {
         let config =
             ensure_ephemery_config().wrap_err("Failed to prepare Ephemery configuration")?;
-        return build_spec_from_dir(&config.metadata_dir);
+        return chain_spec_from_dir(&config.metadata_dir)
+            .wrap_err("Failed to load Ephemery chain spec");
     }
 
-    if let Some(spec) = build_spec(network)? {
+    if let Some(spec) = chain_spec_for_network(network) {
         return Ok(spec);
     }
 
-    let available = HARDCODED_NET_NAMES.join(", ");
+    let available = hardcoded_net_names().join(", ");
     Err(eyre!(
-        "Unsupported or unavailable network: {network}. Available in this Lighthouse build: {available}. \
-Please upgrade Lighthouse (and Kittynode CLI if needed) if your desired network is missing"
+        "Unsupported or unavailable network: {network}. Available: {available}. \
+Please upgrade Kittynode if your desired network is missing"
     ))
-}
-
-fn build_spec(network: &str) -> Result<Option<ChainSpec>> {
-    match Eth2NetworkConfig::constant(network) {
-        Ok(Some(config)) => {
-            Ok(Some(config.chain_spec::<MainnetEthSpec>().map_err(
-                |error| eyre!("Failed to build chain spec for {network}: {error}"),
-            )?))
-        }
-        Ok(None) => Ok(None),
-        Err(error) => Err(eyre!("Failed to load network config {network}: {error}")),
-    }
-}
-
-fn build_spec_from_dir(path: &Path) -> Result<ChainSpec> {
-    let config = Eth2NetworkConfig::load(path.to_path_buf()).map_err(|error| {
-        eyre!(
-            "Failed to load network configuration from {}: {error}",
-            path.display()
-        )
-    })?;
-    config.chain_spec::<MainnetEthSpec>().map_err(|error| {
-        eyre!(
-            "Failed to build chain spec from {}: {error}",
-            path.display()
-        )
-    })
 }
 
 fn prepare_output_dir(path: &Path) -> Result<()> {
@@ -475,13 +440,6 @@ fn to_hex(bytes: impl AsRef<[u8]>) -> String {
     hex_encode(bytes.as_ref())
 }
 
-fn compounding_withdrawal_credentials(address: Address, spec: &ChainSpec) -> Hash256 {
-    let mut credentials = [0u8; 32];
-    credentials[0] = spec.compounding_withdrawal_prefix_byte;
-    credentials[12..].copy_from_slice(address.as_slice());
-    Hash256::from_slice(&credentials)
-}
-
 fn next_available_deposit_path(
     output_dir: &Path,
     timestamp: u64,
@@ -508,7 +466,6 @@ fn next_available_deposit_path(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::Address as AlloyAddress;
     use eth2_keystore::json_keystore::Kdf;
     use eth2_keystore::{Keystore, default_kdf};
     use eyre::{Result, eyre};
@@ -613,10 +570,9 @@ mod tests {
 
     #[test]
     fn compounding_withdrawal_credentials_uses_prefix_byte() -> Result<()> {
-        let spec = ChainSpec::default();
         let address: Address = WITHDRAWAL_ADDRESS.parse()?;
-        let creds = compounding_withdrawal_credentials(address, &spec);
-        assert_eq!(creds.as_slice()[0], spec.compounding_withdrawal_prefix_byte);
+        let creds = compounding_withdrawal_credentials(address);
+        assert_eq!(creds[0], 0x02);
         Ok(())
     }
 
@@ -764,8 +720,8 @@ mod tests {
         let seed = Bip39Seed::new(&mnemonic, "");
         let address = derive_execution_address(seed.as_bytes())?;
         let expected =
-            AlloyAddress::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
-        assert_eq!(address, Address::from(expected));
+            Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
+        assert_eq!(address, expected);
         Ok(())
     }
 
