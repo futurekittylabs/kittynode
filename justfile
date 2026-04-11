@@ -74,8 +74,8 @@ coverage:
 update:
     nix flake update
     cargo upgrade
-    cd kittynode-com && bun update --latest
-    cd kittynode-docs && bun update --latest
+    cd kittynode-com && bun update
+    cd kittynode-docs && bun update
 
 # start the web server
 web:

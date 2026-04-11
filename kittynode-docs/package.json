@@ -22,7 +22,7 @@
     "starlight-links-validator": "^0.23.0",
     "starlight-llms-txt": "^0.8.0",
     "typescript": "^6.0.2",
-    "vite": "7.3.2"
+    "vite": "^7.3.2"
   },
   "devDependencies": {
     "wrangler": "^4.81.1"
