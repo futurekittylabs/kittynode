@@ -48,6 +48,17 @@ pub fn chain_spec_for_network(name: &str) -> Option<ChainSpec> {
         })
 }
 
+/// Extracts the scalar value from a YAML `KEY: value # comment` line,
+/// stripping inline comments and surrounding whitespace.
+fn yaml_value(raw: &str) -> &str {
+    let trimmed = raw.trim();
+    // YAML inline comments start with ` #` (space then hash).
+    match trimmed.find(" #") {
+        Some(pos) => trimmed[..pos].trim_end(),
+        None => trimmed,
+    }
+}
+
 /// Loads a [`ChainSpec`] from a directory containing a `config.yaml` file.
 ///
 /// Only reads `GENESIS_FORK_VERSION` and `CONFIG_NAME` — everything else is ignored.
@@ -66,7 +77,7 @@ pub fn chain_spec_from_dir(path: &Path) -> Result<ChainSpec> {
     for line in contents.lines() {
         let line = line.trim();
         if let Some(value) = line.strip_prefix("GENESIS_FORK_VERSION:") {
-            let hex = value.trim().trim_start_matches("0x");
+            let hex = yaml_value(value).trim_start_matches("0x");
             let bytes = hex::decode(hex)
                 .map_err(|e| eyre!("Invalid GENESIS_FORK_VERSION hex: {e}"))?;
             genesis_fork_version = Some(
@@ -75,7 +86,7 @@ pub fn chain_spec_from_dir(path: &Path) -> Result<ChainSpec> {
                     .map_err(|_| eyre!("GENESIS_FORK_VERSION must be exactly 4 bytes"))?,
             );
         } else if let Some(value) = line.strip_prefix("CONFIG_NAME:") {
-            config_name = Some(value.trim().to_string());
+            config_name = Some(yaml_value(value).to_string());
         }
     }
 
@@ -318,6 +329,27 @@ mod tests {
         assert_eq!(creds[0], 0x02);
         assert_eq!(&creds[1..12], &[0u8; 11]);
         assert_eq!(&creds[12..], addr.as_slice());
+    }
+
+    #[test]
+    fn yaml_value_strips_inline_comments() {
+        assert_eq!(yaml_value(" testnet # ephemery rotation"), "testnet");
+        assert_eq!(yaml_value(" 0x10000910 # hoodi"), "0x10000910");
+        assert_eq!(yaml_value(" plain_value"), "plain_value");
+        assert_eq!(yaml_value(" hash#tag"), "hash#tag"); // no space before #
+    }
+
+    #[test]
+    fn chain_spec_from_dir_strips_yaml_comments() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("config.yaml"),
+            "GENESIS_FORK_VERSION: 0x10000910 # hoodi\nCONFIG_NAME: testnet # ephemery\n",
+        )
+        .unwrap();
+        let spec = chain_spec_from_dir(tmp.path()).unwrap();
+        assert_eq!(spec.genesis_fork_version, [0x10, 0x00, 0x09, 0x10]);
+        assert_eq!(spec.config_name.as_deref(), Some("testnet"));
     }
 
     #[test]
