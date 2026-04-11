@@ -78,8 +78,8 @@ pub fn chain_spec_from_dir(path: &Path) -> Result<ChainSpec> {
         let line = line.trim();
         if let Some(value) = line.strip_prefix("GENESIS_FORK_VERSION:") {
             let hex = yaml_value(value).trim_start_matches("0x");
-            let bytes = hex::decode(hex)
-                .map_err(|e| eyre!("Invalid GENESIS_FORK_VERSION hex: {e}"))?;
+            let bytes =
+                hex::decode(hex).map_err(|e| eyre!("Invalid GENESIS_FORK_VERSION hex: {e}"))?;
             genesis_fork_version = Some(
                 bytes
                     .try_into()

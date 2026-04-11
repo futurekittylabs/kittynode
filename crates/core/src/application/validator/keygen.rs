@@ -275,7 +275,8 @@ fn produce_materials(index: u16, params: &GenerationParams<'_>) -> Result<(PathB
         .try_into()
         .expect("BLS public key is always 48 bytes");
 
-    let mut deposit_data = DepositData::new(pubkey_bytes, withdrawal_credentials, params.deposit_gwei);
+    let mut deposit_data =
+        DepositData::new(pubkey_bytes, withdrawal_credentials, params.deposit_gwei);
     deposit_data.sign(&keypair.sk, params.spec);
 
     let deposit_message_root = deposit_data.deposit_message_root();
@@ -719,8 +720,7 @@ mod tests {
         )?;
         let seed = Bip39Seed::new(&mnemonic, "");
         let address = derive_execution_address(seed.as_bytes())?;
-        let expected =
-            Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
+        let expected = Address::from_str("0x9858effd232b4033e47d90003d41ec34ecaeda94").unwrap();
         assert_eq!(address, expected);
         Ok(())
     }
