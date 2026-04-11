@@ -27,6 +27,7 @@
     "wrangler": "^4.81.1"
   },
   "overrides": {
+    "//": "Astro 6 doesn't support Vite 8 yet; remove once it does",
     "vite": "^7.3.1"
   }
 }
