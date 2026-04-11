@@ -1,28 +1,19 @@
-pub mod add_capability;
+pub mod config;
 pub mod delete_kittynode;
 pub mod delete_package;
-pub mod get_capabilities;
-pub mod get_config;
 pub mod get_container_logs;
 pub mod get_installed_packages;
-pub mod get_onboarding_completed;
 pub mod get_operational_state;
 pub mod get_package;
 pub mod get_package_catalog;
 pub mod get_package_config;
 pub mod get_packages;
-pub mod get_server_url;
 pub mod get_system_info;
 pub mod init_kittynode;
 pub mod install_package;
 pub mod is_docker_running;
 pub mod is_validator_installed;
-pub mod remove_capability;
 pub mod server;
-pub mod set_auto_start_docker;
-pub mod set_onboarding_completed;
-pub mod set_server_url;
-pub mod set_show_tray_icon;
 pub mod start_docker;
 pub mod start_docker_if_needed;
 pub mod start_package;
@@ -30,31 +21,26 @@ pub mod stop_package;
 pub mod update_package_config;
 pub mod validator;
 
-pub use add_capability::add_capability;
+pub use config::{
+    add_capability, get_capabilities, get_config, get_onboarding_completed, get_server_url,
+    remove_capability, set_auto_start_docker, set_onboarding_completed, set_server_url,
+    set_show_tray_icon,
+};
 pub use delete_kittynode::delete_kittynode;
 pub use delete_package::delete_package;
-pub use get_capabilities::get_capabilities;
-pub use get_config::get_config;
 pub use get_container_logs::get_container_logs;
 pub use get_installed_packages::get_installed_packages;
-pub use get_onboarding_completed::get_onboarding_completed;
 pub use get_operational_state::get_operational_state;
 pub use get_package::get_package;
 pub use get_package_catalog::get_package_catalog;
 pub use get_package_config::get_package_config;
 pub use get_packages::get_packages;
-pub use get_server_url::get_server_url;
 pub use get_system_info::get_system_info;
 pub use init_kittynode::init_kittynode;
 pub use install_package::{install_package, install_package_with_network};
 pub use is_docker_running::is_docker_running;
 pub use is_validator_installed::is_validator_installed;
-pub use remove_capability::remove_capability;
 pub use server::{get_server_log_path, get_server_status, start_server, stop_server};
-pub use set_auto_start_docker::set_auto_start_docker;
-pub use set_onboarding_completed::set_onboarding_completed;
-pub use set_server_url::set_server_url;
-pub use set_show_tray_icon::set_show_tray_icon;
 pub use start_docker::start_docker;
 pub use start_docker_if_needed::{DockerStartStatus, start_docker_if_needed};
 pub use start_package::start_package;
