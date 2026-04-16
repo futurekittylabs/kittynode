@@ -20,6 +20,9 @@ publish = false
 [patch.crates-io]
 num-bigint-dig = { git = "https://github.com/dignifiedquire/num-bigint", rev = "1eb690d9" }
 
+[profile.dev]
+codegen-backend = "cranelift"
+
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"
