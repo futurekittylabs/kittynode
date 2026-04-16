@@ -1,3 +1,4 @@
+use clap::Subcommand;
 use std::{
     collections::HashMap,
     io::{self, Write, stdout},
@@ -47,6 +48,23 @@ use kittynode_core::validator::{
     parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
     validate_endpoint_url, validate_password,
 };
+
+#[derive(Subcommand)]
+pub enum ValidatorCommands {
+    #[command(name = "keygen", about = "Generate Ethereum validator keys")]
+    Keygen,
+    #[command(name = "init", about = "Initialize the validator setup workflow")]
+    Init,
+}
+
+impl ValidatorCommands {
+    pub async fn execute(self) -> Result<()> {
+        match self {
+            Self::Keygen => keygen(None).map(|_| ()),
+            Self::Init => init().await,
+        }
+    }
+}
 
 /// Lighthouse validator container name shared across the CLI.
 pub const VALIDATOR_CONTAINER_NAME: &str = LIGHTHOUSE_VALIDATOR_CONTAINER_NAME;

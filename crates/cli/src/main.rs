@@ -1,7 +1,14 @@
-mod commands;
+mod capability;
+mod config;
+mod container;
+mod docker;
+mod package;
+mod server;
+mod system;
+mod update;
 mod update_checker;
-
-use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
+mod validator;
+use clap::{CommandFactory, Parser, Subcommand};
 use eyre::{Result, eyre};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing_subscriber::fmt::MakeWriter;
@@ -21,272 +28,45 @@ enum Commands {
     #[command(about = "Manage packages available to Kittynode")]
     Package {
         #[command(subcommand)]
-        command: PackageCommands,
+        command: package::PackageCommands,
     },
     #[command(about = "Inspect or update Kittynode configuration")]
     Config {
         #[command(subcommand)]
-        command: ConfigCommands,
+        command: config::ConfigCommands,
     },
     #[command(about = "Manage capability flags on this Kittynode")]
     Capability {
         #[command(subcommand)]
-        command: CapabilityCommands,
+        command: capability::CapabilityCommands,
     },
     #[command(about = "Inspect system diagnostics and environment")]
     System {
         #[command(subcommand)]
-        command: SystemCommands,
+        command: system::SystemCommands,
     },
     #[command(about = "Control Docker services used by Kittynode")]
     Docker {
         #[command(subcommand)]
-        command: DockerCommands,
+        command: docker::DockerCommands,
     },
     #[command(about = "Inspect managed containers")]
     Container {
         #[command(subcommand)]
-        command: ContainerCommands,
+        command: container::ContainerCommands,
     },
     #[command(about = "Manage validator key material")]
     Validator {
         #[command(subcommand)]
-        command: ValidatorCommands,
+        command: validator::ValidatorCommands,
     },
     #[command(about = "Control the Kittynode server")]
     Server {
         #[command(subcommand)]
-        command: ServerCommands,
+        command: server::ServerCommands,
     },
     #[command(about = "Update Kittynode to the latest release")]
     Update,
-}
-
-#[derive(Copy, Clone, Debug, ValueEnum)]
-enum EthereumNetwork {
-    Mainnet,
-    Hoodi,
-    Sepolia,
-    Ephemery,
-}
-
-impl EthereumNetwork {
-    const fn as_str(self) -> &'static str {
-        match self {
-            Self::Mainnet => "mainnet",
-            Self::Hoodi => "hoodi",
-            Self::Sepolia => "sepolia",
-            Self::Ephemery => "ephemery",
-        }
-    }
-}
-
-#[derive(Subcommand)]
-enum PackageCommands {
-    #[command(name = "catalog", about = "List packages from the catalog")]
-    Catalog,
-    #[command(name = "list", about = "List packages currently installed")]
-    List,
-    #[command(about = "Install a package from the catalog")]
-    Install {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to install")]
-        name: String,
-        #[arg(
-            long = "network",
-            value_name = "NETWORK",
-            help = "Select the network for supported packages"
-        )]
-        network: Option<EthereumNetwork>,
-    },
-    #[command(about = "Delete a package and optionally remove its Docker images")]
-    Delete {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to delete")]
-        name: String,
-        #[arg(long = "include-images", help = "Remove associated Docker images")]
-        include_images: bool,
-    },
-    #[command(about = "Stop all containers that belong to a package")]
-    Stop {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to stop")]
-        name: String,
-    },
-    #[command(about = "Start containers for a previously stopped package")]
-    Start {
-        #[arg(value_name = "PACKAGE_NAME", help = "Name of the package to start")]
-        name: String,
-    },
-    #[command(about = "Manage package-specific configuration overrides")]
-    Config {
-        #[command(subcommand)]
-        command: PackageConfigCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum PackageConfigCommands {
-    #[command(
-        name = "show",
-        about = "Show configuration overrides applied to a package"
-    )]
-    Show {
-        #[arg(
-            value_name = "PACKAGE_NAME",
-            help = "Package whose overrides should be shown"
-        )]
-        name: String,
-    },
-    #[command(name = "set", about = "Set configuration overrides for a package")]
-    Set {
-        #[arg(
-            value_name = "PACKAGE_NAME",
-            help = "Package whose overrides should be updated"
-        )]
-        name: String,
-        #[arg(
-            long = "value",
-            value_name = "KEY=VALUE",
-            value_parser = parse_key_val,
-            num_args = 0..
-        )]
-        values: Vec<(String, String)>,
-    },
-}
-
-#[derive(Subcommand)]
-enum ConfigCommands {
-    #[command(name = "show", about = "Print global Kittynode configuration values")]
-    Show,
-    #[command(
-        name = "init",
-        about = "Initialize Kittynode data directories and defaults"
-    )]
-    Init,
-    #[command(
-        name = "delete",
-        about = "Delete local Kittynode data and configuration"
-    )]
-    Delete,
-}
-
-#[derive(Subcommand)]
-enum CapabilityCommands {
-    #[command(name = "list", about = "List capabilities enabled on this Kittynode")]
-    List,
-    #[command(about = "Enable a capability in the local Kittynode config")]
-    Add {
-        #[arg(value_name = "CAPABILITY", help = "Capability identifier to enable")]
-        name: String,
-    },
-    #[command(about = "Disable a capability in the local Kittynode config")]
-    Remove {
-        #[arg(value_name = "CAPABILITY", help = "Capability identifier to disable")]
-        name: String,
-    },
-}
-
-#[derive(Subcommand)]
-enum SystemCommands {
-    #[command(
-        name = "info",
-        about = "Display hardware and OS details used by Kittynode"
-    )]
-    Info,
-    #[command(
-        name = "state",
-        about = "Show overall operational status and readiness flags"
-    )]
-    State,
-}
-
-#[derive(Subcommand)]
-enum DockerCommands {
-    #[command(
-        name = "status",
-        about = "Check whether Docker is reachable from Kittynode"
-    )]
-    Status,
-    #[command(name = "start", about = "Start Docker if it is not already running")]
-    Start,
-}
-
-#[derive(Subcommand)]
-enum ContainerCommands {
-    #[command(name = "logs", about = "Show recent logs from a managed container")]
-    Logs {
-        #[arg(value_name = "CONTAINER_NAME", help = "Managed container to inspect")]
-        container: String,
-        #[arg(
-            long = "tail",
-            value_name = "LINES",
-            help = "Number of log lines to fetch"
-        )]
-        tail: Option<usize>,
-    },
-}
-
-#[derive(Subcommand)]
-enum ValidatorCommands {
-    #[command(name = "keygen", about = "Generate Ethereum validator keys")]
-    Keygen,
-    #[command(name = "init", about = "Initialize the validator setup workflow")]
-    Init,
-}
-
-#[derive(Subcommand)]
-enum ServerCommands {
-    #[command(name = "start", about = "Start the Kittynode server")]
-    Start {
-        #[arg(
-            long = "port",
-            value_name = "PORT",
-            help = "Port to bind the Kittynode server"
-        )]
-        port: Option<u16>,
-    },
-    #[command(name = "restart", about = "Restart the Kittynode server")]
-    Restart {
-        #[arg(
-            long = "port",
-            value_name = "PORT",
-            help = "Port to bind the Kittynode server"
-        )]
-        port: Option<u16>,
-    },
-    #[command(name = "stop", about = "Stop the Kittynode server")]
-    Stop,
-    #[command(name = "status", about = "Show Kittynode server status")]
-    Status,
-    #[command(name = "logs", about = "Stream logs from the Kittynode server")]
-    Logs {
-        #[arg(
-            long = "follow",
-            short = 'f',
-            help = "Follow log output until interrupted"
-        )]
-        follow: bool,
-        #[arg(
-            long = "tail",
-            value_name = "LINES",
-            help = "Number of lines to show from the end of the log"
-        )]
-        tail: Option<usize>,
-    },
-    #[command(name = "__internal-run", hide = true)]
-    RunInternal {
-        #[arg(
-            long = "port",
-            value_name = "PORT",
-            help = "Port to bind the Kittynode server"
-        )]
-        port: Option<u16>,
-        #[arg(
-            long = "service-token",
-            value_name = "TOKEN",
-            hide = true,
-            help = "Internal token used to bind the server to the parent process"
-        )]
-        service_token: Option<String>,
-    },
 }
 
 impl Commands {
@@ -300,124 +80,9 @@ impl Commands {
             Commands::Container { command } => command.execute().await,
             Commands::Validator { command } => command.execute().await,
             Commands::Server { command } => command.execute().await,
-            Commands::Update => commands::run_updater(),
+            Commands::Update => update::run(),
         }
     }
-}
-
-impl PackageCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            PackageCommands::Catalog => commands::get_package_catalog().await,
-            PackageCommands::List => commands::get_installed_packages().await,
-            PackageCommands::Install { name, network } => {
-                commands::install_package(name, network.map(EthereumNetwork::as_str)).await
-            }
-            PackageCommands::Delete {
-                name,
-                include_images,
-            } => commands::delete_package(name, include_images).await,
-            PackageCommands::Stop { name } => commands::stop_package(name).await,
-            PackageCommands::Start { name } => commands::start_package(name).await,
-            PackageCommands::Config { command } => command.execute().await,
-        }
-    }
-}
-
-impl PackageConfigCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            PackageConfigCommands::Show { name } => commands::get_package_config(name).await,
-            PackageConfigCommands::Set { name, values } => {
-                commands::update_package_config(name, values).await
-            }
-        }
-    }
-}
-
-impl ConfigCommands {
-    fn execute(self) -> Result<()> {
-        match self {
-            ConfigCommands::Show => commands::get_config(),
-            ConfigCommands::Init => commands::init_kittynode(),
-            ConfigCommands::Delete => commands::delete_kittynode(),
-        }
-    }
-}
-
-impl CapabilityCommands {
-    fn execute(self) -> Result<()> {
-        match self {
-            CapabilityCommands::List => commands::get_capabilities(),
-            CapabilityCommands::Add { name } => commands::add_capability(name),
-            CapabilityCommands::Remove { name } => commands::remove_capability(name),
-        }
-    }
-}
-
-impl SystemCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            SystemCommands::Info => commands::system_info().await,
-            SystemCommands::State => commands::get_operational_state().await,
-        }
-    }
-}
-
-impl DockerCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            DockerCommands::Status => commands::is_docker_running().await,
-            DockerCommands::Start => commands::start_docker_if_needed().await,
-        }
-    }
-}
-
-impl ContainerCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            ContainerCommands::Logs { container, tail } => {
-                commands::get_container_logs(container, tail).await
-            }
-        }
-    }
-}
-
-impl ValidatorCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            ValidatorCommands::Keygen => commands::validator::keygen(None).map(|_| ()),
-            ValidatorCommands::Init => commands::validator::init().await,
-        }
-    }
-}
-
-impl ServerCommands {
-    async fn execute(self) -> Result<()> {
-        match self {
-            ServerCommands::Start { port } => commands::start_server(port),
-            ServerCommands::Restart { port } => commands::restart_server(port),
-            ServerCommands::Stop => commands::stop_server(),
-            ServerCommands::Status => commands::server_status(),
-            ServerCommands::Logs { follow, tail } => commands::server_logs(follow, tail),
-            ServerCommands::RunInternal {
-                port,
-                service_token,
-            } => commands::run_server(port, service_token).await,
-        }
-    }
-}
-
-fn parse_key_val(s: &str) -> Result<(String, String), String> {
-    let position = s
-        .find('=')
-        .ok_or_else(|| "expected KEY=VALUE".to_string())?;
-    let key = s[..position].trim();
-    let value = s[position + 1..].trim();
-    if key.is_empty() {
-        return Err("key cannot be empty".to_string());
-    }
-    Ok((key.to_string(), value.to_string()))
 }
 
 mod log_control {
@@ -484,34 +149,5 @@ async fn main() -> Result<()> {
             println!();
             Ok(())
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::parse_key_val;
-
-    #[test]
-    fn parse_key_val_returns_trimmed_pair() {
-        let result = parse_key_val("FOO = bar").expect("expected key=val to parse");
-        assert_eq!(result, ("FOO".to_string(), "bar".to_string()));
-    }
-
-    #[test]
-    fn parse_key_val_handles_values_with_equals() {
-        let result = parse_key_val("TOKEN=abc=123").expect("expected parser to keep tail");
-        assert_eq!(result, ("TOKEN".to_string(), "abc=123".to_string()));
-    }
-
-    #[test]
-    fn parse_key_val_missing_delimiter_errors() {
-        let error = parse_key_val("NOVALUE").expect_err("missing '=' should error");
-        assert_eq!(error, "expected KEY=VALUE");
-    }
-
-    #[test]
-    fn parse_key_val_rejects_empty_key() {
-        let error = parse_key_val(" =value").expect_err("empty key should error");
-        assert_eq!(error, "key cannot be empty");
     }
 }
