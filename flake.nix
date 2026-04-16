@@ -73,6 +73,7 @@
             env = {
               RUST_BACKTRACE = "1";
               RUSTFLAGS = "-Z threads=8";
+              CARGO_UNSTABLE_CODEGEN_BACKEND = "true";
               CARGO_PROFILE_DEV_CODEGEN_BACKEND = "cranelift";
             };
           };

@@ -3,7 +3,6 @@ name: CI - Rust
 on:
   push:
     paths:
-      - .cargo/**
       - Cargo.toml
       - Cargo.lock
       - crates/cli/**
@@ -16,9 +15,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
 
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
@@ -42,11 +38,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rustfmt, clippy
 
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
