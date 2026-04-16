@@ -21,6 +21,7 @@
       flake-schemas,
       nixpkgs,
       rust-overlay,
+      ...
     }:
     let
       # Nixpkgs overlays
@@ -71,6 +72,8 @@
             # Environment variables
             env = {
               RUST_BACKTRACE = "1";
+              RUSTFLAGS = "-Z threads=8";
+              CARGO_PROFILE_DEV_CODEGEN_BACKEND = "cranelift";
             };
           };
         }
