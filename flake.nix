@@ -27,7 +27,9 @@
       overlays = [
         rust-overlay.overlays.default
         (final: prev: {
-          rustToolchain = final.rust-bin.stable.latest.default;
+          rustToolchain = final.rust-bin.nightly.latest.default.override {
+            extensions = [ "rustc-codegen-cranelift-preview" ];
+          };
         })
       ];
 

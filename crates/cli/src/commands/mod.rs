@@ -23,7 +23,7 @@ macro_rules! writeln_string {
 pub async fn get_package_catalog() -> Result<()> {
     let packages = api::get_package_catalog()?;
     let mut entries: Vec<(&String, &Package)> = packages.iter().collect();
-    entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+    entries.sort_by_key(|(a, _)| *a);
     for (_name, package) in entries {
         println!("{}", package);
     }

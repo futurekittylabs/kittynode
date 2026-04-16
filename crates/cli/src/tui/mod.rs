@@ -813,15 +813,11 @@ impl Modal {
                 networks,
                 selected,
             } => match key.code {
-                KeyCode::Up => {
-                    if *selected > 0 {
-                        *selected -= 1;
-                    }
+                KeyCode::Up if *selected > 0 => {
+                    *selected -= 1;
                 }
-                KeyCode::Down => {
-                    if *selected + 1 < networks.len() {
-                        *selected += 1;
-                    }
+                KeyCode::Down if *selected + 1 < networks.len() => {
+                    *selected += 1;
                 }
                 KeyCode::Enter => {
                     let name = package_name.clone();
