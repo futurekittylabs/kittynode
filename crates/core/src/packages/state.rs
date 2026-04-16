@@ -111,7 +111,7 @@ fn get_package_without_docker(package: &Package) -> Result<PackageState> {
 }
 
 fn get_package_without_docker_at(base: &Path, package: &Package) -> Result<PackageState> {
-    let config_path = PackageConfigStore::config_file_path(&base, package.name());
+    let config_path = PackageConfigStore::config_file_path(base, package.name());
     let config_present = config_path.exists();
 
     let install = if config_present {
