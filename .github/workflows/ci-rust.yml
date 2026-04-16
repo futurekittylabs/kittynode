@@ -17,10 +17,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install Rust nightly with Cranelift
+      - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rustc-codegen-cranelift-preview
 
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
@@ -29,7 +27,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Generate code coverage
-        run: CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         if: github.actor != 'dependabot[bot]'
@@ -45,10 +43,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install Rust nightly with Cranelift
+      - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@nightly
         with:
-          components: rustfmt, clippy, rustc-codegen-cranelift-preview
+          components: rustfmt, clippy
 
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
