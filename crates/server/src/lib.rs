@@ -6,11 +6,12 @@ use axum::{
     routing::{get, post},
 };
 use eyre::Result;
-use kittynode_core::api;
-use kittynode_core::api::types::{
-    Config, LogsQuery, OperationalState, Package, PackageConfig, PackageState, SystemInfo,
-};
-use kittynode_core::api::{DEFAULT_SERVER_PORT, DockerStartStatus, validate_server_port};
+use kittynode_core::config::Config;
+use kittynode_core::daemon::{DEFAULT_SERVER_PORT, validate_server_port};
+use kittynode_core::docker::LogsQuery;
+use kittynode_core::node::{DockerStartStatus, OperationalState};
+use kittynode_core::packages::{Package, PackageConfig, PackageState};
+use kittynode_core::system::SystemInfo;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -30,27 +31,33 @@ fn to_http_error<E: std::fmt::Display>(err: E) -> (StatusCode, String) {
 }
 
 pub async fn add_capability(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::add_capability(&name).map_err(to_http_error)?;
+    kittynode_core::config::add_capability(&name).map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn remove_capability(
     Path(name): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    api::remove_capability(&name).map_err(to_http_error)?;
+    kittynode_core::config::remove_capability(&name).map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn get_capabilities() -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    api::get_capabilities().map(Json).map_err(to_http_error)
+    kittynode_core::config::get_capabilities()
+        .map(Json)
+        .map_err(to_http_error)
 }
 
 pub async fn get_package_catalog() -> Result<Json<HashMap<String, Package>>, (StatusCode, String)> {
-    api::get_package_catalog().map(Json).map_err(to_http_error)
+    kittynode_core::packages::get_package_catalog()
+        .map(Json)
+        .map_err(to_http_error)
 }
 
 pub async fn get_config() -> Result<Json<Config>, (StatusCode, String)> {
-    api::get_config().map(Json).map_err(to_http_error)
+    kittynode_core::config::get_config()
+        .map(Json)
+        .map_err(to_http_error)
 }
 
 #[derive(Default, Deserialize)]
@@ -62,7 +69,7 @@ pub async fn install_package(
     Path(name): Path<String>,
     Query(params): Query<InstallPackageQuery>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    api::install_package_with_network(&name, params.network.as_deref())
+    kittynode_core::packages::install_package_with_network(&name, params.network.as_deref())
         .await
         .map_err(to_http_error)?;
     Ok(StatusCode::OK)
@@ -78,19 +85,23 @@ pub async fn delete_package(
     Query(params): Query<DeletePackageQuery>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let include_images = params.include_images.unwrap_or(false);
-    api::delete_package(&name, include_images)
+    kittynode_core::packages::delete_package(&name, include_images)
         .await
         .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn stop_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::stop_package(&name).await.map_err(to_http_error)?;
+    kittynode_core::packages::stop_package(&name)
+        .await
+        .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn start_package(Path(name): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
-    api::start_package(&name).await.map_err(to_http_error)?;
+    kittynode_core::packages::start_package(&name)
+        .await
+        .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
@@ -102,7 +113,7 @@ pub struct RuntimeStatesRequest {
 pub async fn get_package(
     Path(name): Path<String>,
 ) -> Result<Json<PackageState>, (StatusCode, String)> {
-    api::get_package(&name)
+    kittynode_core::packages::get_package(&name)
         .await
         .map(Json)
         .map_err(to_http_error)
@@ -112,21 +123,21 @@ pub async fn get_packages(
     Json(payload): Json<RuntimeStatesRequest>,
 ) -> Result<Json<HashMap<String, PackageState>>, (StatusCode, String)> {
     let name_refs: Vec<&str> = payload.names.iter().map(|name| name.as_str()).collect();
-    api::get_packages(&name_refs)
+    kittynode_core::packages::get_packages(&name_refs)
         .await
         .map(Json)
         .map_err(to_http_error)
 }
 
 pub async fn get_installed_packages() -> Result<Json<Vec<Package>>, (StatusCode, String)> {
-    api::get_installed_packages()
+    kittynode_core::packages::get_installed_packages()
         .await
         .map(Json)
         .map_err(to_http_error)
 }
 
 pub async fn is_docker_running() -> Result<StatusCode, (StatusCode, String)> {
-    match api::is_docker_running().await {
+    match kittynode_core::docker::is_docker_running().await {
         true => Ok(StatusCode::OK),
         false => Err((
             StatusCode::SERVICE_UNAVAILABLE,
@@ -136,21 +147,23 @@ pub async fn is_docker_running() -> Result<StatusCode, (StatusCode, String)> {
 }
 
 pub async fn init_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    api::init_kittynode().map_err(to_http_error)?;
+    kittynode_core::node::init_kittynode().map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn delete_kittynode() -> Result<StatusCode, (StatusCode, String)> {
-    api::delete_kittynode().map_err(to_http_error)?;
+    kittynode_core::node::delete_kittynode().map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn get_system_info() -> Result<Json<SystemInfo>, (StatusCode, String)> {
-    api::get_system_info().map(Json).map_err(to_http_error)
+    kittynode_core::system::get_system_info()
+        .map(Json)
+        .map_err(to_http_error)
 }
 
 pub async fn is_validator_installed() -> Result<Json<bool>, (StatusCode, String)> {
-    api::is_validator_installed()
+    kittynode_core::ethereum::is_validator_installed()
         .await
         .map(Json)
         .map_err(to_http_error)
@@ -160,7 +173,7 @@ pub async fn get_container_logs(
     Path(container_name): Path<String>,
     Query(params): Query<LogsQuery>,
 ) -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    api::get_container_logs(&container_name, params.tail)
+    kittynode_core::docker::get_container_logs(&container_name, params.tail)
         .await
         .map(Json)
         .map_err(to_http_error)
@@ -169,7 +182,7 @@ pub async fn get_container_logs(
 pub async fn get_package_config(
     Path(name): Path<String>,
 ) -> Result<Json<PackageConfig>, (StatusCode, String)> {
-    api::get_package_config(&name)
+    kittynode_core::packages::get_package_config(&name)
         .await
         .map(Json)
         .map_err(to_http_error)
@@ -179,21 +192,21 @@ pub async fn update_package_config(
     Path(name): Path<String>,
     Json(config): Json<PackageConfig>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    api::update_package_config(&name, config)
+    kittynode_core::packages::update_package_config(&name, config)
         .await
         .map_err(to_http_error)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn start_docker_if_needed() -> Result<Json<DockerStartStatus>, (StatusCode, String)> {
-    api::start_docker_if_needed()
+    kittynode_core::node::start_docker_if_needed()
         .await
         .map(Json)
         .map_err(to_http_error)
 }
 
 pub async fn get_operational_state() -> Result<Json<OperationalState>, (StatusCode, String)> {
-    api::get_operational_state()
+    kittynode_core::node::get_operational_state()
         .await
         .map(Json)
         .map_err(to_http_error)

@@ -1,10 +1,8 @@
 mod commands;
-mod tui;
 mod update_checker;
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use eyre::{Result, eyre};
-use std::io::IsTerminal;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing_subscriber::fmt::MakeWriter;
 
@@ -62,8 +60,6 @@ enum Commands {
     },
     #[command(about = "Update Kittynode to the latest release")]
     Update,
-    #[command(about = "Launch the interactive terminal dashboard")]
-    Ui,
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -305,7 +301,6 @@ impl Commands {
             Commands::Validator { command } => command.execute().await,
             Commands::Server { command } => command.execute().await,
             Commands::Update => commands::run_updater(),
-            Commands::Ui => tui::run().await,
         }
     }
 }
@@ -482,16 +477,12 @@ async fn main() -> Result<()> {
     match cli.command {
         Some(command) => command.execute().await,
         None => {
-            if std::io::stdout().is_terminal() {
-                tui::run().await
-            } else {
-                let mut command = Cli::command();
-                command
-                    .print_help()
-                    .map_err(|err| eyre!("Failed to print help: {err}"))?;
-                println!();
-                Ok(())
-            }
+            let mut command = Cli::command();
+            command
+                .print_help()
+                .map_err(|err| eyre!("Failed to print help: {err}"))?;
+            println!();
+            Ok(())
         }
     }
 }

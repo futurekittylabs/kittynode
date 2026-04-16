@@ -15,7 +15,7 @@
 // - error!() for unexpected errors (API failures, filesystem issues)
 
 use eyre::{Result, eyre};
-use kittynode_core::api::kittynode_cli_path;
+use kittynode_core::paths::kittynode_cli_path;
 use semver::Version;
 use serde::Deserialize;
 use std::path::PathBuf;

@@ -32,18 +32,20 @@ use tokio::{
 use tracing::error;
 use zeroize::Zeroizing;
 
+use kittynode_core::docker::get_docker;
+use kittynode_core::docker::is_docker_running;
+use kittynode_core::ethereum::{
+    LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME, LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
+};
+use kittynode_core::packages::{PackageConfig, install_package, update_package_config};
 #[cfg(target_os = "linux")]
-use kittynode_core::api::validator::swap_active;
-use kittynode_core::api::{
-    self, LIGHTHOUSE_DATA_DIR, LIGHTHOUSE_DATA_VOLUME, LIGHTHOUSE_VALIDATOR_CONTAINER_NAME,
-    types::PackageConfig,
-    validator::{
-        EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
-        available_networks, check_internet_connectivity, ensure_ephemery_config,
-        format_eth_from_gwei, generate_validator_files_with_progress, normalize_withdrawal_address,
-        parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
-        validate_endpoint_url, validate_password,
-    },
+use kittynode_core::validator::swap_active;
+use kittynode_core::validator::{
+    EPHEMERY_NETWORK_NAME, ValidatorKeygenOutcome, ValidatorKeygenRequest, ValidatorProgress,
+    available_networks, check_internet_connectivity, ensure_ephemery_config, format_eth_from_gwei,
+    generate_validator_files_with_progress, normalize_withdrawal_address,
+    parse_deposit_amount_gwei, parse_validator_count, resolve_withdrawal_address,
+    validate_endpoint_url, validate_password,
 };
 
 /// Lighthouse validator container name shared across the CLI.
@@ -423,7 +425,7 @@ fn run_init_blocking() -> Result<()> {
 
     loop {
         if state.step == Step::Docker && last_docker_check.elapsed() >= Duration::from_secs(1) {
-            state.docker_running = handle.block_on(api::is_docker_running());
+            state.docker_running = handle.block_on(is_docker_running());
             last_docker_check = Instant::now();
             if state.docker_running {
                 state.status = Some("Docker is running. Continuing setup.".to_string());
@@ -884,7 +886,7 @@ fn run_launch_flow(
         let mut needs_install = false;
         let update_result = handle
             .clone()
-            .block_on(async { api::update_package_config("ethereum", config.clone()).await });
+            .block_on(async { update_package_config("ethereum", config.clone()).await });
         if let Err(error) = update_result {
             if is_missing_docker_resource_error(&error) {
                 needs_install = true;
@@ -893,7 +895,7 @@ fn run_launch_flow(
             }
         }
         if needs_install {
-            handle.block_on(async { api::install_package("ethereum").await })?;
+            handle.block_on(async { install_package("ethereum").await })?;
         }
         println!("Execution and validator clients are running.");
         Ok(())
@@ -943,7 +945,7 @@ fn run_validator_import(summary: &KeygenSummary, network: &str) -> Result<()> {
         network: &str,
         use_ephemery: bool,
     ) -> Result<()> {
-        let docker: Docker = kittynode_core::api::get_docker().await?;
+        let docker: Docker = get_docker().await?;
 
         let create_image_opts = Some(
             bollard::query_parameters::CreateImageOptionsBuilder::default()
@@ -1256,7 +1258,7 @@ fn normalize_mnemonic(value: &str) -> String {
 
 /// Removes the validator container if present so other commands can safely reconfigure Ethereum state.
 pub async fn remove_validator_container_if_present() {
-    if let Ok(docker) = kittynode_core::api::get_docker().await {
+    if let Ok(docker) = get_docker().await {
         let _ = docker
             .remove_container(
                 VALIDATOR_CONTAINER_NAME,

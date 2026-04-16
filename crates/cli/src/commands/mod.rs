@@ -1,11 +1,11 @@
 pub mod validator;
 
 use eyre::{Result, WrapErr, eyre};
-use kittynode_core::api::types::{
-    Config, OperationalMode, OperationalState, Package, PackageConfig, RuntimeStatus, ServerStatus,
-    SystemInfo,
-};
-use kittynode_core::api::{self, DEFAULT_SERVER_PORT, validate_server_port};
+use kittynode_core::config::Config;
+use kittynode_core::daemon::{DEFAULT_SERVER_PORT, ServerStatus, validate_server_port};
+use kittynode_core::node::{OperationalMode, OperationalState};
+use kittynode_core::packages::{Package, PackageConfig, RuntimeStatus};
+use kittynode_core::system::SystemInfo;
 use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::fs::OpenOptions;
@@ -21,7 +21,7 @@ macro_rules! writeln_string {
 }
 
 pub async fn get_package_catalog() -> Result<()> {
-    let packages = api::get_package_catalog()?;
+    let packages = kittynode_core::packages::get_package_catalog()?;
     let mut entries: Vec<(&String, &Package)> = packages.iter().collect();
     entries.sort_by_key(|(a, _)| *a);
     for (_name, package) in entries {
@@ -31,10 +31,10 @@ pub async fn get_package_catalog() -> Result<()> {
 }
 
 pub async fn get_installed_packages() -> Result<()> {
-    let packages = api::get_installed_packages().await?;
+    let packages = kittynode_core::packages::get_installed_packages().await?;
     let names: Vec<String> = packages.iter().map(|pkg| pkg.name().to_string()).collect();
     let name_refs: Vec<&str> = names.iter().map(|name| name.as_str()).collect();
-    let runtime_states = match api::get_packages(&name_refs).await {
+    let runtime_states = match kittynode_core::packages::get_packages(&name_refs).await {
         Ok(map) => map,
         Err(error) => {
             tracing::warn!(%error, "failed to retrieve runtime state information");
@@ -69,12 +69,12 @@ pub async fn get_installed_packages() -> Result<()> {
 
 pub async fn install_package(name: String, network: Option<&str>) -> Result<()> {
     if name == "ethereum" && network.is_none() {
-        let supported = api::ethereum_supported_networks_display("|");
+        let supported = kittynode_core::ethereum::supported_networks_display("|");
         return Err(eyre!(
             "Network must be provided when installing ethereum. Use --network <{supported}>"
         ));
     }
-    api::install_package_with_network(&name, network)
+    kittynode_core::packages::install_package_with_network(&name, network)
         .await
         .wrap_err_with(|| format!("Failed to install {name}"))?;
     tracing::info!("installed {name}");
@@ -82,7 +82,7 @@ pub async fn install_package(name: String, network: Option<&str>) -> Result<()> 
 }
 
 pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
-    let packages = api::get_installed_packages()
+    let packages = kittynode_core::packages::get_installed_packages()
         .await
         .wrap_err("Failed to list installed packages")?;
     let Some(pkg) = packages.iter().find(|pkg| pkg.name() == name) else {
@@ -91,7 +91,7 @@ pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
     };
     let resolved_name = pkg.name();
 
-    api::delete_package(resolved_name, include_images)
+    kittynode_core::packages::delete_package(resolved_name, include_images)
         .await
         .wrap_err_with(|| format!("Failed to delete {resolved_name}"))?;
     tracing::info!("deleted {resolved_name}");
@@ -99,7 +99,7 @@ pub async fn delete_package(name: String, include_images: bool) -> Result<()> {
 }
 
 pub async fn stop_package(name: String) -> Result<()> {
-    api::stop_package(&name)
+    kittynode_core::packages::stop_package(&name)
         .await
         .wrap_err_with(|| format!("Failed to stop {name}"))?;
     tracing::info!("stopped {name}");
@@ -107,7 +107,7 @@ pub async fn stop_package(name: String) -> Result<()> {
 }
 
 pub async fn start_package(name: String) -> Result<()> {
-    api::start_package(&name)
+    kittynode_core::packages::start_package(&name)
         .await
         .wrap_err_with(|| format!("Failed to start {name}"))?;
     tracing::info!("started {name}");
@@ -115,7 +115,7 @@ pub async fn start_package(name: String) -> Result<()> {
 }
 
 pub async fn system_info() -> Result<()> {
-    let info = api::get_system_info()?;
+    let info = kittynode_core::system::get_system_info()?;
     print_system_info_text(&info);
     Ok(())
 }
@@ -149,7 +149,7 @@ fn render_system_info(info: &SystemInfo) -> String {
 }
 
 pub async fn get_container_logs(container: String, tail: Option<usize>) -> Result<()> {
-    let logs = api::get_container_logs(&container, tail).await?;
+    let logs = kittynode_core::docker::get_container_logs(&container, tail).await?;
     for line in logs {
         println!("{line}");
     }
@@ -157,7 +157,7 @@ pub async fn get_container_logs(container: String, tail: Option<usize>) -> Resul
 }
 
 pub fn get_config() -> Result<()> {
-    let config = api::get_config()?;
+    let config = kittynode_core::config::get_config()?;
     print_config_text(&config);
     Ok(())
 }
@@ -194,7 +194,7 @@ fn render_config(config: &Config) -> String {
 }
 
 pub async fn get_package_config(name: String) -> Result<()> {
-    let config = api::get_package_config(&name).await?;
+    let config = kittynode_core::packages::get_package_config(&name).await?;
     if config.values.is_empty() {
         println!("No overrides set for {name}");
     } else {
@@ -212,7 +212,7 @@ pub async fn update_package_config(name: String, values: Vec<(String, String)>) 
         map.insert(key, value);
     }
     let config = PackageConfig { values: map };
-    api::update_package_config(&name, config)
+    kittynode_core::packages::update_package_config(&name, config)
         .await
         .wrap_err_with(|| format!("Failed to update config for {name}"))?;
     tracing::info!("updated config for {name}");
@@ -220,7 +220,7 @@ pub async fn update_package_config(name: String, values: Vec<(String, String)>) 
 }
 
 pub fn get_capabilities() -> Result<()> {
-    let capabilities = api::get_capabilities()?;
+    let capabilities = kittynode_core::config::get_capabilities()?;
     if capabilities.is_empty() {
         println!("No capabilities configured");
     } else {
@@ -232,32 +232,33 @@ pub fn get_capabilities() -> Result<()> {
 }
 
 pub fn add_capability(name: String) -> Result<()> {
-    api::add_capability(&name).wrap_err_with(|| format!("Failed to add capability {name}"))?;
+    kittynode_core::config::add_capability(&name)
+        .wrap_err_with(|| format!("Failed to add capability {name}"))?;
     tracing::info!("added capability {name}");
     Ok(())
 }
 
 pub fn remove_capability(name: String) -> Result<()> {
-    api::remove_capability(&name)
+    kittynode_core::config::remove_capability(&name)
         .wrap_err_with(|| format!("Failed to remove capability {name}"))?;
     tracing::info!("removed capability {name}");
     Ok(())
 }
 
 pub fn init_kittynode() -> Result<()> {
-    api::init_kittynode().wrap_err("Failed to initialize Kittynode")?;
+    kittynode_core::node::init_kittynode().wrap_err("Failed to initialize Kittynode")?;
     tracing::info!("initialized kittynode");
     Ok(())
 }
 
 pub fn delete_kittynode() -> Result<()> {
-    api::delete_kittynode().wrap_err("Failed to delete Kittynode data")?;
+    kittynode_core::node::delete_kittynode().wrap_err("Failed to delete Kittynode data")?;
     tracing::info!("deleted kittynode data");
     Ok(())
 }
 
 pub async fn is_docker_running() -> Result<()> {
-    let running = api::is_docker_running().await;
+    let running = kittynode_core::docker::is_docker_running().await;
     println!(
         "{}",
         if running {
@@ -270,13 +271,13 @@ pub async fn is_docker_running() -> Result<()> {
 }
 
 pub async fn start_docker_if_needed() -> Result<()> {
-    let status = api::start_docker_if_needed().await?;
+    let status = kittynode_core::node::start_docker_if_needed().await?;
     println!("{}", status.as_str());
     Ok(())
 }
 
 pub async fn get_operational_state() -> Result<()> {
-    let state = api::get_operational_state().await?;
+    let state = kittynode_core::node::get_operational_state().await?;
     print_operational_state_text(&state);
     Ok(())
 }
@@ -310,16 +311,20 @@ fn render_operational_state(state: &OperationalState) -> String {
 pub fn start_server(port: Option<u16>) -> Result<()> {
     let binary = env::current_exe().wrap_err("Failed to locate kittynode binary")?;
     let port = port.map(validate_server_port).transpose()?;
-    let status = api::start_server(port, &binary, &["server", SERVER_INTERNAL_SUBCOMMAND])?;
+    let status = kittynode_core::daemon::start_server(
+        port,
+        &binary,
+        &["server", SERVER_INTERNAL_SUBCOMMAND],
+    )?;
     println!("{}", status);
-    if let Ok(path) = api::get_server_log_path() {
+    if let Ok(path) = kittynode_core::daemon::get_server_log_path() {
         println!("Logs: {}", path.display());
     }
     Ok(())
 }
 
 pub fn stop_server() -> Result<()> {
-    let status = api::stop_server()?;
+    let status = kittynode_core::daemon::stop_server()?;
     println!("{}", status);
     Ok(())
 }
@@ -327,7 +332,7 @@ pub fn stop_server() -> Result<()> {
 pub fn restart_server(port: Option<u16>) -> Result<()> {
     let port = match port {
         Some(port) => Some(port),
-        None => match api::get_server_status()? {
+        None => match kittynode_core::daemon::get_server_status()? {
             ServerStatus::Started { port, .. } | ServerStatus::AlreadyRunning { port, .. } => {
                 Some(port)
             }
@@ -335,17 +340,17 @@ pub fn restart_server(port: Option<u16>) -> Result<()> {
         },
     };
 
-    let status = api::stop_server()?;
+    let status = kittynode_core::daemon::stop_server()?;
     println!("{}", status);
 
     start_server(port)
 }
 
 pub fn server_status() -> Result<()> {
-    match api::get_server_status()? {
+    match kittynode_core::daemon::get_server_status()? {
         ServerStatus::Started { pid, port } | ServerStatus::AlreadyRunning { pid, port } => {
             println!("Kittynode server running on port {port} (pid {pid})");
-            if let Ok(path) = api::get_server_log_path() {
+            if let Ok(path) = kittynode_core::daemon::get_server_log_path() {
                 println!("Logs: {}", path.display());
             }
         }
@@ -361,7 +366,8 @@ pub fn server_status() -> Result<()> {
 
 pub fn server_logs(follow: bool, tail: Option<usize>) -> Result<()> {
     let tail = tail.filter(|value| *value > 0);
-    let path = api::get_server_log_path().wrap_err("Failed to locate kittynode server logs")?;
+    let path = kittynode_core::daemon::get_server_log_path()
+        .wrap_err("Failed to locate kittynode server logs")?;
     stream_log_file(&path, tail, follow)
         .wrap_err_with(|| format!("Failed to stream logs from {}", path.display()))?;
     Ok(())
