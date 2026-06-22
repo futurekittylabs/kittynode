@@ -30,7 +30,7 @@ jobs:
           echo "version=${TAG#kittynode-cli-}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           token: ${{ secrets.MAYUSHII_PAT }}
