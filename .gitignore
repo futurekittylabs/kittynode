@@ -33,6 +33,5 @@ tmp
 # Nix
 .direnv
 
-# Agents
-AGENTS.md
-CLAUDE.md
+# AI
+.codex
