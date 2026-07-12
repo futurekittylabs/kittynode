@@ -7,11 +7,8 @@ import starlightLlmsTxt from "starlight-llms-txt";
 
 // https://astro.build/config
 export default defineConfig({
-  redirects: {
-    "/": "/start-here/getting-started",
-  },
   adapter: cloudflare({
-    imageService: "compile",
+    imageService: "passthrough",
     prerenderEnvironment: "node",
   }),
   site: "https://docs.kittynode.com",
